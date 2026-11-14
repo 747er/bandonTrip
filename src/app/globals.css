@@ -1,0 +1,275 @@
+@import "tailwindcss";
+
+/*
+  Two deliberately different worlds share this file:
+  - the public trip pages: an editorial travel publication (tokens below)
+  - /admin: plain, dense software built from Tailwind's neutral palette and system fonts
+*/
+
+@theme inline {
+  /* Bandon palette: shore pine, wet limestone, dune sand, sea mist, weathered copper */
+  --color-forest: #17332b;
+  --color-forest-deep: #0d211b;
+  --color-pine: #14261f;
+  --color-moss: #56655d;
+  --color-limestone: #e9e7e0;
+  --color-paper: #f3f1ec;
+  --color-sand: #cbbb97;
+  --color-mist: #c3d0cd;
+  --color-copper: #a65f36;
+  --color-copper-light: #d99a6c;
+  --color-rule: rgb(20 38 31 / 0.16);
+  --color-rule-light: rgb(233 231 224 / 0.18);
+
+  --font-display: var(--font-caslon-display), "Libre Caslon Text", Georgia, serif;
+  --font-serif: var(--font-caslon-text), Georgia, serif;
+  --font-sans: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
+
+  --ease-settle: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@layer components {
+/* ---------- Public: the publication ---------- */
+
+.pub {
+  background: var(--color-limestone);
+  color: var(--color-pine);
+  font-family: var(--font-sans);
+  min-height: 100svh;
+}
+
+.pub ::selection {
+  background: var(--color-forest);
+  color: var(--color-limestone);
+}
+
+.pub :focus-visible {
+  outline: 2px solid var(--color-copper);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.012em;
+  line-height: 0.95;
+  text-wrap: balance;
+}
+
+.serif {
+  font-family: var(--font-serif);
+}
+
+.figures {
+  font-variant-numeric: lining-nums;
+}
+.tabular {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* An underlined text action: the only button style the publication needs. */
+.action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 5px;
+  text-decoration-color: var(--color-copper);
+  transition: text-decoration-color 160ms, color 160ms;
+}
+.action:hover {
+  color: var(--color-copper);
+}
+.on-forest .action {
+  text-decoration-color: var(--color-copper-light);
+}
+.on-forest .action:hover {
+  color: var(--color-copper-light);
+}
+
+/* Schedule rows open in place. */
+details.event > summary {
+  list-style: none;
+  cursor: pointer;
+}
+details.event > summary::-webkit-details-marker {
+  display: none;
+}
+details.event .toggle {
+  transition: transform 220ms var(--ease-settle);
+}
+details.event[open] .toggle {
+  transform: rotate(45deg);
+}
+details.event[open] .event-body {
+  animation: reveal 260ms var(--ease-settle);
+}
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* ---------- Hero: the one orchestrated moment ---------- */
+
+.coast-layer {
+  animation: coast-rise 1400ms var(--ease-settle) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+@keyframes coast-rise {
+  from {
+    transform: translateY(calc(var(--i, 0) * 9px + 10px));
+    opacity: 0;
+  }
+}
+.coast-mist {
+  animation: mist-drift 46s linear infinite alternate;
+}
+.coast-mist.slow {
+  animation-duration: 70s;
+  animation-direction: alternate-reverse;
+}
+@keyframes mist-drift {
+  from {
+    transform: translateX(-90px);
+  }
+  to {
+    transform: translateX(110px);
+  }
+}
+.hero-copy > * {
+  animation: copy-in 900ms var(--ease-settle) both;
+  animation-delay: calc(500ms + var(--i, 0) * 110ms);
+}
+@keyframes copy-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coast-layer,
+  .coast-mist,
+  .hero-copy > *,
+  details.event[open] .event-body {
+    animation: none;
+  }
+  details.event .toggle {
+    transition: none;
+  }
+}
+
+/* ---------- Admin: the software ---------- */
+
+.admin {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #fafafa;
+  color: #18181b;
+  min-height: 100svh;
+  font-size: 14px;
+}
+
+.admin input[type="text"],
+.admin input[type="email"],
+.admin input[type="password"],
+.admin input[type="number"],
+.admin input[type="date"],
+.admin input[type="time"],
+.admin input[type="url"],
+.admin select,
+.admin textarea {
+  width: 100%;
+  border: 1px solid #d4d4d8;
+  border-radius: 6px;
+  background: #fff;
+  padding: 6px 9px;
+  font-size: 14px;
+  line-height: 1.4;
+  min-height: 34px;
+}
+.admin input:focus-visible,
+.admin select:focus-visible,
+.admin textarea:focus-visible,
+.admin button:focus-visible,
+.admin a:focus-visible {
+  outline: 2px solid #17332b;
+  outline-offset: 1px;
+}
+.admin label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #52525b;
+  margin-bottom: 4px;
+}
+.admin .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid #d4d4d8;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.admin .btn:hover {
+  background: #f4f4f5;
+}
+.admin .btn-primary {
+  background: #17332b;
+  border-color: #17332b;
+  color: #fff;
+}
+.admin .btn-primary:hover {
+  background: #0d211b;
+}
+.admin .btn-danger {
+  color: #b91c1c;
+}
+.admin .btn-danger:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+.admin .panel {
+  background: #fff;
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+}
+.admin table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.admin th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #71717a;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e4e4e7;
+  white-space: nowrap;
+}
+.admin td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f4f4f5;
+  vertical-align: middle;
+}
+.admin tr:last-child td {
+  border-bottom: 0;
+}
+}
