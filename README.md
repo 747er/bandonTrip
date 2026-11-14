@@ -41,6 +41,7 @@ over. The organizer account comes from `ORGANIZER_EMAIL` / `ORGANIZER_PASSWORD` 
 | `src/lib/standings.ts` | Leaderboard rules (ties, missed rounds) |
 | `src/lib/auth.ts` | Organizer session cookie and trip ownership checks |
 | `src/app/admin/actions.ts` | All organizer mutations |
-| `src/components/public/CoastScene.tsx` | The illustrated cover. A trip can swap in a photo URL |
+| `public/images/` | Trip photography. Drop files in by name; see the README there |
+| `src/lib/weather.ts` | Forecast from Open-Meteo for the trip's coordinates. Nothing is estimated |
 
 After changing the schema: `npm run db:generate`, commit the new file in `drizzle/`.
