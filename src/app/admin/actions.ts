@@ -25,6 +25,11 @@ const isDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v);
 const isUuid = (v: string) => /^[0-9a-f-]{36}$/i.test(v);
 const intOrNull = (v: string) => (v !== "" && Number.isInteger(Number(v)) ? Number(v) : null);
 
+const coordinate = (v: string, limit: number) => {
+  const n = Number(v);
+  return v !== "" && Number.isFinite(n) && Math.abs(n) <= limit ? n : null;
+};
+
 function done(tripId: string) {
   revalidatePath("/", "layout");
   void tripId;
@@ -110,6 +115,8 @@ export async function updateTrip(fd: FormData) {
       tagline: text(fd, "tagline"),
       timezone: text(fd, "timezone") || "America/Los_Angeles",
       visibility,
+      latitude: coordinate(text(fd, "latitude"), 90),
+      longitude: coordinate(text(fd, "longitude"), 180),
       heroImageUrl: /^https:\/\//.test(heroImageUrl) ? heroImageUrl : null,
       heroImageCredit: text(fd, "heroImageCredit") || null,
     })
