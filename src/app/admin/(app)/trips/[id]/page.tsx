@@ -66,6 +66,14 @@ export default async function TripDetails({ params }: PageProps<"/admin/trips/[i
             </select>
           </div>
           <div>
+            <label htmlFor="latitude">Latitude (for the forecast)</label>
+            <input id="latitude" name="latitude" type="text" inputMode="decimal" defaultValue={trip.latitude ?? ""} placeholder="43.188" />
+          </div>
+          <div>
+            <label htmlFor="longitude">Longitude</label>
+            <input id="longitude" name="longitude" type="text" inputMode="decimal" defaultValue={trip.longitude ?? ""} placeholder="-124.39" />
+          </div>
+          <div>
             <label htmlFor="heroImageUrl">Cover photo URL (optional)</label>
             <input
               id="heroImageUrl"
@@ -75,7 +83,7 @@ export default async function TripDetails({ params }: PageProps<"/admin/trips/[i
               placeholder="https://…"
             />
             <p className="mt-1 text-[12px] text-zinc-500">
-              Leave empty to use the illustrated coastline. Only use photos you have the rights to.
+              Overrides public/images/hero/bandon-coast.jpg. Only use photos you have the rights to.
             </p>
           </div>
           <div>
