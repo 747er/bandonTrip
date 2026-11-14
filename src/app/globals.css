@@ -11,7 +11,7 @@
   --color-forest: #17332b;
   --color-forest-deep: #0d211b;
   --color-pine: #14261f;
-  --color-moss: #56655d;
+  --color-moss: #4b5a52;
   --color-limestone: #e9e7e0;
   --color-paper: #f3f1ec;
   --color-sand: #cbbb97;
@@ -24,6 +24,20 @@
   --font-display: var(--font-caslon-display), "Libre Caslon Text", Georgia, serif;
   --font-serif: var(--font-caslon-text), Georgia, serif;
   --font-sans: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
+
+  /* Type scale for functional text. Headlines stay in the serif and size themselves.
+     fine: credits and attributions only. label: the name of a value.
+     meta: secondary lines. ui: times, temperatures, reservations. fact: the key figure. */
+  --text-fine: 0.8125rem;
+  --text-fine--line-height: 1.4;
+  --text-label: 0.875rem;
+  --text-label--line-height: 1.35;
+  --text-meta: 0.9375rem;
+  --text-meta--line-height: 1.45;
+  --text-ui: 1.0625rem;
+  --text-ui--line-height: 1.4;
+  --text-fact: 1.25rem;
+  --text-fact--line-height: 1.25;
 
   --ease-settle: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
@@ -78,8 +92,8 @@ html {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  font-size: 0.9375rem;
-  font-weight: 500;
+  font-size: 1rem;
+  font-weight: 600;
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 5px;
@@ -120,32 +134,11 @@ details.event[open] .event-body {
   }
 }
 
-/* ---------- Hero: the one orchestrated moment ---------- */
+/* ---------- Cover: the one orchestrated moment ---------- */
 
-.coast-layer {
-  animation: coast-rise 1400ms var(--ease-settle) both;
-  animation-delay: calc(var(--i, 0) * 90ms);
-}
-@keyframes coast-rise {
-  from {
-    transform: translateY(calc(var(--i, 0) * 9px + 10px));
-    opacity: 0;
-  }
-}
-.coast-mist {
-  animation: mist-drift 46s linear infinite alternate;
-}
-.coast-mist.slow {
-  animation-duration: 70s;
-  animation-direction: alternate-reverse;
-}
-@keyframes mist-drift {
-  from {
-    transform: translateX(-90px);
-  }
-  to {
-    transform: translateX(110px);
-  }
+/* Switching days on the schedule: the new day settles in. */
+.day-panel {
+  animation: reveal 320ms var(--ease-settle);
 }
 .hero-copy > * {
   animation: copy-in 900ms var(--ease-settle) both;
@@ -159,8 +152,7 @@ details.event[open] .event-body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .coast-layer,
-  .coast-mist,
+  .day-panel,
   .hero-copy > *,
   details.event[open] .event-body {
     animation: none;
