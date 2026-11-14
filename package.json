@@ -9,7 +9,10 @@
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env.local scripts/migrate.ts",
-    "vercel-build": "tsx scripts/migrate.ts && next build"
+    "vercel-build": "node scripts/photos.mjs && tsx scripts/migrate.ts && next build",
+    "photos": "node scripts/photos.mjs",
+    "predev": "node scripts/photos.mjs",
+    "prebuild": "node scripts/photos.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.16",
