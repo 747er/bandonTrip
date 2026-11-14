@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TabNav } from "@/components/public/TabNav";
 import { getOrganizer } from "@/lib/auth";
@@ -44,23 +43,15 @@ export default async function TripLayout({ children, params }: LayoutProps<"/t/[
       )}
 
       <header className="absolute inset-x-0 z-20">
-        <div className="flex h-14 items-center justify-between gap-8 px-5 md:h-20 md:justify-start md:px-10 lg:px-16">
-          <TabNav slug={trip.slug} title={trip.title} />
-          {owns && (
-            <Link
-              href="/admin"
-              className="text-[13px] font-medium text-forest-deep underline decoration-copper underline-offset-4 md:ml-auto"
-            >
-              Edit trip
-            </Link>
-          )}
+        <div className="mx-auto max-w-[90rem]">
+          <TabNav slug={trip.slug} title={trip.title} canEdit={owns} />
         </div>
       </header>
 
       <main>{children}</main>
 
       <footer className="border-t border-rule px-5 pb-28 pt-10 md:px-8 md:pb-14">
-        <div className="mx-auto max-w-5xl text-[13px] leading-relaxed text-moss">
+        <div className="mx-auto max-w-6xl text-[13px] leading-relaxed text-moss md:px-2">
           <p className="serif text-[15px] italic text-pine">BandonTrip</p>
           <p className="mt-2 max-w-md">
             Made by golfers for their own trip. An independent site, not affiliated with or
