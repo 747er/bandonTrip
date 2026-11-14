@@ -1,80 +1,85 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { EventDetails } from "@/components/public/EventList";
-import { dayCount, eachDay, monthDay, weekday } from "@/lib/time";
+import type { RoundInfo } from "@/components/public/features";
+import { ScheduleView } from "@/components/public/ScheduleView";
+import { courseFacts, type CourseFacts } from "@/lib/catalog";
+import { photosForEvents, slotFor } from "@/lib/photos";
+import { dateRange, eachDay, zonedToUtc } from "@/lib/time";
 import { getTrip, getTripNow, isPast, isUnderway } from "@/lib/trip";
+import { getForecast } from "@/lib/weather";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Schedule" };
 
-export default async function SchedulePage({ params }: PageProps<"/t/[slug]/schedule">) {
+export default async function SchedulePage({
+  params,
+  searchParams,
+}: PageProps<"/t/[slug]/schedule">) {
   const { slug } = await params;
+  const { day } = await searchParams;
   const data = await getTrip(slug);
   if (!data) notFound();
-  const { trip, events, people } = data;
-  const { now, phase } = await getTripNow(trip);
+  const { trip, events, people, rounds } = data;
+  const [{ now, phase }, weather] = await Promise.all([getTripNow(trip), getForecast(trip)]);
 
-  // Every trip day gets a chapter, plus any days outside the trip that have events.
-  const days = [
-    ...new Set([...eachDay(trip.startDate, trip.endDate), ...events.map((e) => e.date)]),
-  ].sort();
+  // Every trip day gets a tab, plus any day outside the trip that has an event.
   const tripDays = eachDay(trip.startDate, trip.endDate);
+  const days = [...new Set([...tripDays, ...events.map((e) => e.date)])].sort();
+  const requested = typeof day === "string" && days.includes(day) ? day : null;
+  const today = phase === "during" ? now.date : null;
+
+  const counting = rounds.filter((r) => r.countsTowardTotal && r.eventId);
+  const roundInfo: Record<string, RoundInfo> = {};
+  counting.forEach((r, i) => {
+    roundInfo[r.eventId!] = { number: i + 1, total: counting.length, par: r.par };
+  });
+
+  const facts: Record<string, CourseFacts> = {};
+  const states: Record<string, "past" | "now"> = {};
+  for (const e of events) {
+    const fact = e.type === "golf" ? courseFacts(e.venue || e.title) : null;
+    if (fact) facts[e.id] = fact;
+    if (phase === "during") {
+      if (isUnderway(e, now)) states[e.id] = "now";
+      else if (isPast(e, now)) states[e.id] = "past";
+    }
+  }
+
+  const next =
+    phase === "after"
+      ? null
+      : events.find((e) => e.startTime && !isPast(e, now) && !isUnderway(e, now));
 
   return (
-    <div className="mx-auto max-w-2xl px-5 pb-16 pt-24 md:px-8 md:pt-36">
-      <h1 className="display text-[clamp(3.25rem,16vw,6rem)]">Schedule</h1>
-      <p className="mt-4 text-[14.5px] text-moss">
-        All times Pacific. Tap an event for details.{" "}
-        <a
-          className="underline decoration-copper underline-offset-4"
-          href={`/t/${trip.slug}/calendar.ics`}
-        >
-          Add everything to your calendar
-        </a>
-      </p>
-
-      {days.map((date) => {
-        const dayEvents = events.filter((e) => e.date === date);
-        const index = tripDays.indexOf(date);
-        const isToday = phase === "during" && date === now.date;
-        return (
-          <section key={date} aria-labelledby={`day-${date}`} className="mt-14">
-            <header className="flex items-end justify-between border-b border-pine pb-3">
-              <h2 id={`day-${date}`} className="display text-[40px] md:text-[48px]">
-                {weekday(date)}
-              </h2>
-              <p className="pb-1 text-right text-[13.5px] leading-snug text-moss">
-                {isToday && <span className="block font-semibold text-copper">Today</span>}
-                {monthDay(date)}
-                {index >= 0 && <span className="block">Day {dayCount(index + 1)}</span>}
-              </p>
-            </header>
-            {dayEvents.length === 0 ? (
-              <p className="serif py-6 text-[16px] italic text-moss">Nothing scheduled yet.</p>
-            ) : (
-              <div className="divide-y divide-rule border-b border-rule">
-                {dayEvents.map((e) => (
-                  <EventDetails
-                    key={e.id}
-                    event={e}
-                    people={people}
-                    slug={trip.slug}
-                    state={
-                      phase === "before"
-                        ? null
-                        : isUnderway(e, now)
-                          ? "now"
-                          : isPast(e, now) && phase === "during"
-                            ? "past"
-                            : null
-                    }
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-        );
-      })}
-    </div>
+    <ScheduleView
+      trip={{
+        slug: trip.slug,
+        title: trip.title,
+        location: trip.location,
+        dates: dateRange(trip.startDate, trip.endDate),
+      }}
+      days={days}
+      tripDays={tripDays}
+      events={events}
+      names={Object.fromEntries(people.map((p) => [p.id, p.name]))}
+      photos={photosForEvents(events)}
+      slots={Object.fromEntries(events.map((e) => [e.id, slotFor(e)]))}
+      weather={weather}
+      rounds={roundInfo}
+      facts={facts}
+      states={states}
+      initialDay={requested ?? today ?? days[0]}
+      today={today}
+      upNext={
+        next?.startTime
+          ? {
+              title: next.title,
+              date: next.date,
+              target: zonedToUtc(next.date, next.startTime, trip.timezone).toISOString(),
+              now: now.instant.toISOString(),
+            }
+          : null
+      }
+    />
   );
 }
