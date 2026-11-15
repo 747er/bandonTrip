@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { contours } from "./contours";
 
 const WIDE = [...contours(1180, 140, 11, 48, 0.9), ...contours(150, 760, 10, 52, 2.6)];
@@ -32,6 +32,7 @@ export function WhoSheet({
   /** Name of the cookie the server reads the choice from */
   cookie: string;
 }) {
+  const dialog = useRef<HTMLDialogElement>(null);
   const router = useRouter();
   const pathname = usePathname();
   // Open from the first paint when nobody has been chosen yet.
@@ -55,12 +56,13 @@ export function WhoSheet({
     };
   }, [open]);
 
+  // Native modal focus containment also restores focus to the invoking control.
   useEffect(() => {
-    if (!open || !viewer) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, viewer]);
+    const sheet = dialog.current;
+    if (!sheet) return;
+    if (open && !sheet.open) sheet.showModal();
+    else if (!open && sheet.open) sheet.close();
+  }, [open]);
 
   const choose = (id: string) => {
     setPicked(id);
@@ -95,14 +97,11 @@ export function WhoSheet({
         </button>
       )}
 
-      <div
-        role="dialog"
-        aria-modal="true"
+      <dialog
+        ref={dialog}
         aria-label="Who's playing?"
-        inert={!open}
-        className={`on-forest fixed inset-0 z-50 overflow-y-auto overscroll-contain text-limestone transition-[transform,opacity,visibility] duration-[650ms] ease-settle motion-reduce:transition-none ${
-          open ? "visible translate-y-0 opacity-100" : "invisible -translate-y-[6%] opacity-0"
-        }`}
+        onCancel={event => { event.preventDefault(); if (viewer) setOpen(false); }}
+        className="on-forest fixed inset-0 z-50 m-0 h-full max-h-none w-full max-w-none overflow-y-auto overscroll-contain border-0 p-0 text-limestone"
         style={{ background: "linear-gradient(to bottom, #1b3d31 0%, #17332b 40%, #10261f 100%)" }}
       >
         <svg aria-hidden="true" className="pointer-events-none absolute inset-0 hidden h-full w-full opacity-[0.15] md:block" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" fill="none" stroke="#cbbb97" strokeWidth="1">
@@ -134,11 +133,8 @@ export function WhoSheet({
           </div>
 
           <div className="my-auto py-8 md:py-12">
-            <p className="flex items-center gap-3 text-meta text-mist">
-              {viewer ? `You're in as ${viewer.firstName}` : "Bandon 2026"}
-              <span aria-hidden="true" className="h-px w-9 bg-copper-light" />
-            </p>
-            <h2 className="display mt-2 text-[clamp(3rem,11vw,6rem)]">Who&rsquo;s playing?</h2>
+            <h2 className="display text-[clamp(3rem,11vw,6rem)]">Who&rsquo;s playing?</h2>
+            {viewer && <p className="mt-4 text-meta text-copper-light">Currently viewing as {viewer.firstName}</p>}
             <p className="mt-3 max-w-md text-meta text-mist md:text-ui">
               Choose your name for your tee times, your foursomes and where you&rsquo;re staying.
             </p>
@@ -174,7 +170,7 @@ export function WhoSheet({
             Your choice is remembered on this device.
           </p>
         </div>
-      </div>
+      </dialog>
     </>
   );
 }
