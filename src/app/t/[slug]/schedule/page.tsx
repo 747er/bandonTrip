@@ -5,9 +5,11 @@ import { ScheduleView } from "@/components/public/ScheduleView";
 import { courseFacts, type CourseFacts } from "@/lib/catalog";
 import { photosForEvents, slotFor } from "@/lib/photos";
 import { placeFor } from "@/lib/resortMap";
-import { dateRange, eachDay, zonedToUtc } from "@/lib/time";
+import { clock, dateRange, eachDay, zonedToUtc } from "@/lib/time";
 import { getTrip, getTripNow, isPast, isUnderway } from "@/lib/trip";
 import { getForecast } from "@/lib/weather";
+import { getWind } from "@/lib/wind";
+import { compass, hourIndex, minutesFromStart } from "@/lib/windMath";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Schedule" };
@@ -21,7 +23,11 @@ export default async function SchedulePage({
   const data = await getTrip(slug);
   if (!data) notFound();
   const { trip, events, people, rounds, lodgings } = data;
-  const [{ now, phase }, weather] = await Promise.all([getTripNow(trip), getForecast(trip)]);
+  const [{ now, phase }, weather, wind] = await Promise.all([
+    getTripNow(trip),
+    getForecast(trip),
+    getWind(trip),
+  ]);
 
   // Every trip day gets a tab, plus any day outside the trip that has an event.
   const tripDays = eachDay(trip.startDate, trip.endDate);
@@ -54,6 +60,30 @@ export default async function SchedulePage({
   }
   const homePlace = lodgings.map((l) => placeFor(l.name)).find(Boolean) ?? null;
 
+  // Hour-by-hour: what it is forecast to be doing when each event starts, the day's
+  // daylight, and a note on anything outdoors that runs past sunset.
+  const atStart: Record<string, string> = {};
+  const lateNote: Record<string, string> = {};
+  const daylight: Record<string, { sunrise: string; sunset: string }> = {};
+  if (wind) {
+    for (const d of wind.days) daylight[d.date] = { sunrise: clock(d.sunrise.slice(11)), sunset: clock(d.sunset.slice(11)) };
+    for (const e of events) {
+      if (!e.startTime) continue;
+      const h = hourIndex(wind.times, e.date, e.startTime);
+      if (h < 0) continue;
+      const { temp, speed, gust, direction } = wind.point;
+      atStart[e.id] = `${temp[h]}°, wind ${speed[h]} mph from the ${compass(direction[h])}${
+        gust[h] > speed[h] ? `, gusts ${gust[h]}` : ""
+      }`;
+      const day = wind.days.find((d) => d.date === e.date);
+      if (day && e.endTime && e.type !== "dining") {
+        const late =
+          minutesFromStart(wind.times, `${e.date}T${e.endTime}`) - minutesFromStart(wind.times, day.sunset);
+        if (late > 0) lateNote[e.id] = `Ends ${late} min after sunset (${clock(day.sunset.slice(11))})`;
+      }
+    }
+  }
+
   const next =
     phase === "after"
       ? null
@@ -77,6 +107,9 @@ export default async function SchedulePage({
       rounds={roundInfo}
       facts={facts}
       states={states}
+      atStart={atStart}
+      lateNote={lateNote}
+      daylight={daylight}
       places={places}
       homePlace={homePlace}
       initialDay={requested ?? today ?? days[0]}
