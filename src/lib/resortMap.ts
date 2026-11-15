@@ -75,6 +75,7 @@ export const GEO: Record<string, [number, number]> = {
   "lily-pond": [43.18633, -124.38881],
   "round-lake": [43.18507, -124.38772],
   "grove-cottages": [43.1866, -124.3855], // placed by eye: south of Randolph Ln, above Round Lake
+  "chrome-lake": [43.1878, -124.3836], // placed by eye: north of Randolph Ln, east of Chrome Lake
   "bandon-trails": [43.18472, -124.39117],
   shortys: [43.17599, -124.3937],
 };
