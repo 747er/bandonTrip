@@ -27,8 +27,8 @@ void main() { gl_FragColor = v_color; }`;
 
 /** Pixels a particle moves per frame for each mph of wind */
 const PX_PER_MPH = 0.13;
-const WIDTH = 1.5;
-const FADE = 0.09;
+const WIDTH = 2;
+const FADE = 0.075;
 const STRIDE = 6; // x, y, r, g, b, a
 const VERTS = 6; // two triangles per ribbon
 
@@ -165,8 +165,9 @@ export class WindParticles {
       const nx = (-(y1 - y0) / len) * (WIDTH / 2);
       const ny = ((x1 - x0) / len) * (WIDTH / 2);
       const [r, g, b] = speedColor(mph);
-      // Fade in at birth and out at death; calmer air is drawn fainter.
-      const a = Math.sin((Math.PI * this.age[i]) / this.life[i]) * Math.min(1, 0.45 + mph / 14) * 0.95;
+      // Fade in at birth and out at death; calmer air is drawn fainter, but never so faint
+      // it is lost on sunlit dune grass.
+      const a = Math.sin((Math.PI * this.age[i]) / this.life[i]) * Math.min(1, 0.62 + mph / 16);
       const cr = (r / 255) * a;
       const cg = (g / 255) * a;
       const cb = (b / 255) * a;
