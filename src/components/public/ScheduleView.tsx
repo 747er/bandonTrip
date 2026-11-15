@@ -25,6 +25,8 @@ export type ScheduleProps = {
   rounds: Record<string, RoundInfo>;
   /** "past" | "now" per event id, only set while the trip is under way */
   states: Record<string, "past" | "now">;
+  /** Address of the course page for each round that has one */
+  courses: Record<string, string>;
   /** Forecast at each event's start hour, as a short line of text */
   atStart: Record<string, string>;
   /** A note for outdoor events that run past sunset */
@@ -224,13 +226,20 @@ export function ScheduleView(props: ScheduleProps) {
 
 type EventProps = ScheduleProps & { event: PublicEvent };
 
-function Actions({ event }: { event: PublicEvent }) {
-  if (!event.venue && !event.address) return null;
+function Actions({ event, course }: { event: PublicEvent; course?: string }) {
+  if (!event.venue && !event.address && !course) return null;
   return (
     <div className="flex flex-wrap gap-x-7">
-      <a className="action" href={directionsUrl(event)} target="_blank" rel="noreferrer">
-        Get directions
-      </a>
+      {(event.venue || event.address) && (
+        <a className="action" href={directionsUrl(event)} target="_blank" rel="noreferrer">
+          Get directions
+        </a>
+      )}
+      {course && (
+        <Link className="action" href={course}>
+          About the course
+        </Link>
+      )}
     </div>
   );
 }
@@ -301,7 +310,7 @@ const Toggle = () => (
 );
 
 /** Golf leads the day: the course's photograph, round and tee times up front. */
-function GolfEvent({ event: e, photos, slots, rounds, states, atStart }: EventProps) {
+function GolfEvent({ event: e, photos, slots, rounds, states, atStart, courses }: EventProps) {
   const round = rounds[e.id];
   const state = states[e.id];
   return (
@@ -347,7 +356,7 @@ function GolfEvent({ event: e, photos, slots, rounds, states, atStart }: EventPr
           )}
         </div>
         <div className="px-5 md:px-7">
-          <Actions event={e} />
+          <Actions event={e} course={courses[e.id]} />
         </div>
         <details className="event border-t border-rule" open={e.teeTimes.length > 0}>
           <summary className="flex min-h-14 items-center justify-between gap-4 px-5 text-ui font-semibold md:px-7">

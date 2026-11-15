@@ -9,18 +9,47 @@ import type { DayWeather } from "@/lib/weather";
 import { Countdown } from "./Countdown";
 import { eventSummary } from "./EventList";
 import { Conditions, type RoundInfo } from "./features";
-import { Photo, type PhotoData } from "./Photo";
 
 export type NextUpSlide = {
   event: PublicEvent;
   round: RoundInfo | null;
   weather?: DayWeather;
-  photo: PhotoData;
-  slot: string;
   /** ISO instant it starts, when it has a start time */
   start: string | null;
   /** Where it stands against the clock when the page was rendered */
   state: "past" | "now" | "upcoming";
+};
+
+const line = {
+  width: 18,
+  height: 18,
+  viewBox: "0 0 18 18",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.3,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true,
+  className: "shrink-0 text-mist",
+};
+const icon = {
+  day: (
+    <svg {...line}>
+      <rect x="2.5" y="3.5" width="13" height="12" rx="1" />
+      <path d="M2.5 7.5h13M6 2v3M12 2v3" />
+    </svg>
+  ),
+  time: (
+    <svg {...line}>
+      <circle cx="9" cy="9" r="6.5" />
+      <path d="M9 5.5V9l2.5 1.5" />
+    </svg>
+  ),
+  round: (
+    <svg {...line}>
+      <path d="M5 16V2.5l8.5 3L5 9" />
+    </svg>
+  ),
 };
 
 const Arrow = ({ back = false }: { back?: boolean }) => (
@@ -72,9 +101,9 @@ export function NextUp({
     <section
       aria-roledescription="carousel"
       aria-label="Trip events, in order"
-      className="on-forest bg-forest text-limestone lg:bg-forest/92 lg:shadow-[0_24px_60px_-20px_rgb(13_33_27/0.7)] lg:backdrop-blur-md"
+      className="on-forest @container bg-forest text-limestone md:bg-transparent"
     >
-      <div className="flex items-center justify-between border-b border-rule-light pl-5 md:pl-7">
+      <div className="flex items-center justify-between border-b border-rule-light pl-5 @md:pl-7">
         <p className="figures text-label text-mist" aria-live="polite">
           <span className="font-semibold text-limestone">{index + 1}</span> of {slides.length}
           {index !== initial && (
@@ -98,7 +127,7 @@ export function NextUp({
         onScroll={onScroll}
         className="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {slides.map(({ event, round, weather, photo, slot, start, state }, i) => {
+        {slides.map(({ event, round, weather, start, state }, i) => {
           const golf = event.type === "golf";
           return (
             <article
@@ -109,40 +138,45 @@ export function NextUp({
               inert={i !== index}
               className="flex w-full shrink-0 snap-center flex-col"
             >
-              {photo && (
-                <div className="relative hidden h-36 shrink-0 overflow-hidden lg:block">
-                  <Photo photo={photo} slot={slot} sizes="400px" />
-                </div>
-              )}
-              <div className="flex-1 p-5 md:p-7">
-                <p className="text-meta text-mist">
-                  {state === "now" ? (
-                    <span className="font-semibold text-copper-light">Happening now</span>
-                  ) : state === "past" ? (
-                    "Finished"
-                  ) : (
-                    <>
-                      {i === initial ? "Next up" : "Starts"}{" "}
-                      {start && <Countdown className="font-semibold text-limestone" target={start} initialNow={now} timeZone={timeZone} />}
-                    </>
+              <div className="flex-1 p-5 @md:p-7">
+                <p className="flex items-center gap-3 text-meta text-mist">
+                  <span>
+                    {state === "now" ? (
+                      <span className="font-semibold text-copper-light">Happening now</span>
+                    ) : state === "past" ? (
+                      "Finished"
+                    ) : (
+                      <>
+                        {i === initial ? "Next up" : "Starts"}{" "}
+                        {start && <Countdown className="font-semibold text-limestone" target={start} initialNow={now} timeZone={timeZone} />}
+                      </>
+                    )}
+                  </span>
+                  <span aria-hidden="true" className="h-px w-9 bg-copper-light" />
+                </p>
+                <h2 className="display mt-2 text-[clamp(2.5rem,10vw,3rem)] @md:text-[3.5rem]">{event.title}</h2>
+                <ul className="figures mt-4 space-y-2 text-ui">
+                  <li className="flex items-center gap-3 font-medium">
+                    {icon.day}
+                    {weekday(event.date)}, {monthDay(event.date)}
+                  </li>
+                  {event.startTime && (
+                    <li className="flex items-start gap-3 font-semibold">
+                      <span className="mt-0.5">{icon.time}</span>
+                      <span>
+                        {golf && <span className="mr-2 font-medium text-mist">Tee times</span>}
+                        {eventTimes(event)}
+                      </span>
+                    </li>
                   )}
-                </p>
-                <h2 className="display mt-1.5 text-[clamp(2.5rem,10vw,3rem)]">{event.title}</h2>
-                <p className="figures mt-3 text-ui font-medium">
-                  {weekday(event.date)}, {monthDay(event.date)}
-                </p>
-                {event.startTime && (
-                  <p className="figures mt-1 text-fact font-semibold">
-                    {golf && <span className="mr-2 text-ui font-medium text-mist">Tee times</span>}
-                    {eventTimes(event)}
-                  </p>
-                )}
-                <p className="figures mt-1 text-meta text-mist">
-                  {round ? `Round ${round.number} of ${round.total}` : eventSummary(event)}
-                </p>
+                  <li className="flex items-center gap-3 text-meta text-mist">
+                    {icon.round}
+                    {round ? `Round ${round.number} of ${round.total}` : eventSummary(event)}
+                  </li>
+                </ul>
                 {weather && <Conditions weather={weather} grid="phone" className="mt-4 border-t border-rule-light pt-4" />}
               </div>
-              <div className="flex items-center gap-x-8 border-t border-rule-light px-5 md:px-7">
+              <div className="flex flex-wrap items-center gap-x-8 border-t border-rule-light px-5 @md:px-7">
                 <Link className="action" href={`/t/${slug}/schedule?day=${event.date}`}>
                   {weekday(event.date)}&rsquo;s schedule
                 </Link>

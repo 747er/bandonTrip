@@ -44,7 +44,8 @@ export function TabNav({
   ];
   const isActive = (href: string) => (href === base ? pathname === base : pathname.startsWith(href));
   // The home page opens on a photograph, so its masthead is set in light type.
-  const onCover = pathname === base || pathname === `${base}/weather`;
+  const year = title.match(/\b(19|20)\d{2}\b/)?.[0];
+  const onCover = pathname === base || pathname === `${base}/weather` || pathname.startsWith(`${base}/courses/`);
   const ink = onCover ? "text-paper" : "text-forest-deep";
 
   return (
@@ -56,7 +57,15 @@ export function TabNav({
         }`}
       >
         <Link href={base} className={`serif text-[17px] italic ${ink}`}>
-          {onCover ? "BandonTrip" : title}
+          {onCover ? (
+            <>
+              BandonTrip
+              {/* On phones the home page has no big title, so the year rides with the name. */}
+              {pathname === base && year && <span className="md:hidden"> {year}</span>}
+            </>
+          ) : (
+            title
+          )}
         </Link>
 
         <nav aria-label="Trip" className="hidden md:block">
@@ -89,7 +98,7 @@ export function TabNav({
       {/* Phones: a thumb-reach bar. */}
       <nav
         aria-label="Trip"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-rule bg-paper/92 backdrop-blur-md md:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-rule bg-paper/88 backdrop-blur-lg md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <ul className="mx-auto grid max-w-md grid-cols-4">
@@ -100,13 +109,13 @@ export function TabNav({
                 <Link
                   href={tab.href}
                   aria-current={active ? "page" : undefined}
-                  className={`relative flex h-16 flex-col items-center justify-center gap-1 text-[13px] transition-colors ${
+                  className={`relative flex h-[66px] flex-col items-center justify-center gap-1 text-[12.5px] transition-colors ${
                     active ? "font-semibold text-forest-deep" : "font-medium text-moss"
                   }`}
                 >
                   <span
                     aria-hidden="true"
-                    className={`absolute top-0 h-[3px] w-10 bg-copper transition-transform duration-300 ${
+                    className={`absolute top-0 h-[2px] w-7 bg-copper transition-transform duration-300 ${
                       active ? "scale-x-100" : "scale-x-0"
                     }`}
                   />

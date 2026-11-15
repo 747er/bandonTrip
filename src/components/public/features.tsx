@@ -37,7 +37,8 @@ export function Conditions({
   grid = false,
   className = "",
 }: {
-  /** Two columns instead of one row, for narrow panels: always, or only on phones */
+  /** Two columns instead of one row, for narrow panels: always, or ("phone")
+   *  whenever the surrounding container is narrower than 24rem */
   grid?: boolean | "phone";
   weather: DayWeather;
   /** "dark" sits on forest green, "light" on limestone */
@@ -61,7 +62,7 @@ export function Conditions({
     <dl
       className={`${
         grid === "phone"
-          ? "grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-between"
+          ? "grid grid-cols-2 @sm:flex @sm:flex-wrap @sm:justify-between"
           : grid
             ? "grid grid-cols-2"
             : "flex flex-wrap justify-between"
@@ -164,7 +165,7 @@ export function CourseFeature({ event, photo, slot, round, weather, href, classN
           </dl>
           {weather && <Conditions weather={weather} grid className="mt-5" />}
           <p className="mt-6 text-meta font-semibold underline decoration-copper-light decoration-1 underline-offset-[5px] group-hover:text-copper-light">
-            See {weekday(event.date)}&rsquo;s schedule
+            About the course
           </p>
         </div>
       </div>

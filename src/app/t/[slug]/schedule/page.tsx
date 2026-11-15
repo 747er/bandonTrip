@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { RoundInfo } from "@/components/public/features";
 import { ScheduleView } from "@/components/public/ScheduleView";
-import { photosForEvents, slotFor } from "@/lib/photos";
+import { courseById } from "@/data/courses";
+import { photosForEvents, slotFor, slotName } from "@/lib/photos";
 import { placeFor } from "@/lib/resortMap";
 import { clock, dateRange, eachDay, zonedToUtc } from "@/lib/time";
 import { getTrip, getTripNow, isPast, isUnderway, roundNumbers } from "@/lib/trip";
@@ -97,6 +98,11 @@ export default async function SchedulePage({
       weather={weather}
       rounds={roundInfo}
       states={states}
+      courses={Object.fromEntries(
+        events
+          .filter((e) => e.type === "golf" && courseById(slotName(e.title)))
+          .map((e) => [e.id, `/t/${trip.slug}/courses/${slotName(e.title)}`]),
+      )}
       atStart={atStart}
       lateNote={lateNote}
       daylight={daylight}

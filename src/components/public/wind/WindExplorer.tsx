@@ -583,7 +583,7 @@ export function WindExplorer({
           </span>
         </p>
 
-        <div className="absolute inset-x-0 bottom-[calc(65px+env(safe-area-inset-bottom))] bg-forest-deep/88 px-4 pb-2 backdrop-blur-md md:hidden">
+        <div className="absolute inset-x-0 bottom-[calc(67px+env(safe-area-inset-bottom))] bg-forest-deep/88 px-4 pb-2 backdrop-blur-md md:hidden">
           <div role="group" aria-label="Day" className="figures flex items-center text-label">
             {dates.map((d, i) => (
               <button
