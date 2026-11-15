@@ -13,7 +13,7 @@ import {
 } from "@/components/public/features";
 import { WindGlyph } from "@/components/public/Glyphs";
 import { MobileDay, type MobileStop } from "@/components/public/MobileDay";
-import { CardDay, NextUp, StripMarker, type NextUpSlide } from "@/components/public/NextUp";
+import { NextUp, type NextUpSlide } from "@/components/public/NextUp";
 import { Photo, PhotoCredit, type PhotoData } from "@/components/public/Photo";
 import { HERO_SLOT, photoFor, photosForEvents, slotFor, slotName } from "@/lib/photos";
 import {
@@ -23,7 +23,6 @@ import {
   eachDay,
   monthDay,
   weekday,
-  weekdayShort,
   zonedToUtc,
   type ZonedNow,
 } from "@/lib/time";
@@ -72,7 +71,8 @@ const scheduleHref = (slug: string, date?: string) =>
 
 // ---------- Shared sections ----------
 
-const HERO_TALL = "md:h-[78svh] md:min-h-[640px] lg:h-[90svh] lg:max-h-[960px] lg:min-h-[680px]";
+// On desktop the cover fills the window exactly, so no sliver of the next section shows.
+const HERO_TALL = "md:h-[78svh] md:min-h-[640px] lg:h-svh lg:min-h-[680px]";
 const HERO_SHORT = "md:h-[64svh] md:min-h-[600px] lg:h-[70svh]";
 /** The panel takes a third of the screen from tablet width up, and never less than it needs. */
 const PANEL_W = "md:w-[max(34%,18.5rem)]";
@@ -81,24 +81,22 @@ const PANEL_GAP = "md:right-[max(34%,18.5rem)]";
 const CONTOURS = [...contours(360, 70, 9, 34, 0.4), ...contours(40, 760, 7, 38, 2.1)];
 
 /**
- * The cover. On phones: a compact photograph with the title, the four-day strip, then
+ * The cover. On phones: a compact photograph with the title, then
  * the panel as a card. On wide screens the photograph is the whole first screen, the
  * title sits lower left, and the panel is a green field cut into the right of the
- * picture along a curve, with the strip running underneath.
+ * picture along a curve, with nothing beneath it.
  */
 function Cover({
   hero,
   tall,
   title,
   panel,
-  strip,
   phone,
 }: {
   hero: PhotoData;
   tall: boolean;
   title: React.ReactNode;
   panel?: React.ReactNode;
-  strip?: React.ReactNode;
   /** Phones get their own day tabs and summary in place of the strip and the panel */
   phone?: React.ReactNode;
 }) {
@@ -141,7 +139,6 @@ function Cover({
       </div>
 
       {phone}
-      <div className={phone ? "hidden md:block" : ""}>{strip}</div>
 
       {panel && (
         <div
@@ -323,70 +320,6 @@ function Stay({ data }: Ctx) {
   );
 }
 
-/**
- * The trip at a glance: each day and the course played on it. With the opening card
- * beside it, a day turns the card to that day; otherwise it opens the day's schedule.
- */
-function Itinerary({ data, now, cardDate }: Ctx & { cardDate?: string }) {
-  const { trip, events } = data;
-  const days = eachDay(trip.startDate, trip.endDate);
-  // With the card beside it, the day the card shows is marked, and the mark follows the
-  // card. Without one, the next round still to be played marks its day.
-  const nextRound = events.find((e) => e.type === "golf" && !isPast(e, now));
-  return (
-    <nav aria-label="The itinerary" className="bg-forest-deep text-limestone">
-      <div className="relative mx-auto max-w-6xl px-2.5 md:px-4">
-        {cardDate && (
-          <div className="pointer-events-none absolute inset-y-0 left-2.5 right-2.5 z-10 md:left-4 md:right-4">
-            <StripMarker days={days} shown={cardDate} />
-          </div>
-        )}
-        <ol
-          className="grid divide-x divide-rule-light"
-          style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}
-        >
-          {days.map((date) => {
-            const main = events.find((e) => e.date === date && e.type === "golf") ?? events.find((e) => e.date === date);
-            const card = cardDate !== undefined && main;
-            const on = !cardDate && nextRound?.date === date;
-            const href = scheduleHref(trip.slug, date);
-            const className = `group flex h-full min-h-[4.5rem] flex-col justify-center border-t-2 px-2 py-3 transition-colors hover:bg-forest/70 md:px-6 md:py-5 ${
-              on ? "border-copper-light" : "border-transparent"
-            }`;
-            const label = (
-              <>
-                <span
-                  className={`figures text-label font-semibold transition-colors duration-500 group-aria-[current=true]:text-copper-light ${
-                    on ? "text-copper-light" : "text-mist"
-                  }`}
-                >
-                  {weekdayShort(date)} {Number(date.slice(8))}
-                </span>
-                <span className="serif mt-0.5 text-[14px] italic leading-tight md:text-[21px]">
-                  {main ? main.title : "Open"}
-                </span>
-              </>
-            );
-            return (
-              <li key={date}>
-                {card ? (
-                  <CardDay href={href} eventId={card.id} date={date} shown={cardDate} className={className}>
-                    {label}
-                  </CardDay>
-                ) : (
-                  <Link href={href} className={className}>
-                    {label}
-                  </Link>
-                )}
-              </li>
-            );
-          })}
-        </ol>
-      </div>
-    </nav>
-  );
-}
-
 /** The opening card's slides: every event, and which one to open on. */
 function cardDeck({ data, now, weather, roundOf }: Ctx) {
   const { trip, events } = data;
@@ -405,10 +338,10 @@ function cardDeck({ data, now, weather, roundOf }: Ctx) {
   return { slides, initial };
 }
 
-/** The opening card, and the day it opens on so the itinerary strip can mark it. */
+/** The opening card. */
 function nextUp(ctx: Ctx) {
   const deck = cardDeck(ctx);
-  if (!deck) return { card: null, cardDate: undefined };
+  if (!deck) return { card: null };
   const { slides, initial } = deck;
   const { data, now } = ctx;
   const { trip } = data;
@@ -423,7 +356,7 @@ function nextUp(ctx: Ctx) {
       timeZone={trip.timezone}
     />
   );
-  return { card, cardDate: slides[initial].event.date };
+  return { card };
 }
 
 function Forecast({
@@ -538,7 +471,7 @@ function Before(ctx: Ctx) {
   const { data, hero, weather } = ctx;
   const { trip, events } = data;
   const golf = events.filter((e) => e.type === "golf");
-  const { card, cardDate } = nextUp(ctx);
+  const { card } = nextUp(ctx);
 
   return (
     <>
@@ -562,7 +495,6 @@ function Before(ctx: Ctx) {
           </>
         }
         panel={card}
-        strip={<Itinerary {...ctx} cardDate={cardDate} />}
         phone={phoneDays(ctx)}
       />
 
@@ -587,7 +519,7 @@ function During(ctx: Ctx) {
   const tomorrowDate = addDays(now.date, 1);
   const tomorrow = events.filter((e) => e.date === tomorrowDate);
   const tomorrowGolf = tomorrow.find((e) => e.type === "golf");
-  const { card, cardDate } = nextUp(ctx);
+  const { card } = nextUp(ctx);
 
   const row = (e: PublicEvent) => (
     <EventRow key={e.id} event={e} photo={photos[e.id]} slot={slotFor(e)} summary={eventSummary(e)} />
@@ -598,7 +530,6 @@ function During(ctx: Ctx) {
       <Cover
         hero={hero}
         tall={false}
-        strip={<Itinerary {...ctx} cardDate={cardDate} />}
         phone={phoneDays(ctx)}
         title={
           <>
@@ -683,7 +614,6 @@ function After(ctx: Ctx) {
       <Cover
         hero={hero}
         tall={false}
-        strip={<Itinerary {...ctx} />}
         phone={phoneDays(ctx)}
         title={
           <>
