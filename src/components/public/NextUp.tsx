@@ -138,7 +138,7 @@ export function NextUp({
                   </p>
                 )}
                 <p className="figures mt-1 text-meta text-mist">
-                  {round ? `Round ${round.number} of ${round.total}, par ${round.par}` : eventSummary(event)}
+                  {round ? `Round ${round.number} of ${round.total}` : eventSummary(event)}
                 </p>
                 {weather && <Conditions weather={weather} grid="phone" className="mt-4 border-t border-rule-light pt-4" />}
               </div>
