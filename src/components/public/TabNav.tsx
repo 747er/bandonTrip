@@ -13,6 +13,13 @@ const icons = {
   ),
   schedule: <path d="M4 6.5h14M4 11.5h14M4 16.5h9" />,
   scores: <path d="M5 18V11M11 18V5M17 18v-9" />,
+  weather: (
+    <>
+      <path d="M3 8.5h9.5a2.5 2.5 0 10-2.4-3.2" />
+      <path d="M3 12h13.5a2.5 2.5 0 11-2.4 3.2" />
+      <path d="M3 15.5h6" />
+    </>
+  ),
   packing: (
     <>
       <path d="M5 8.5h12v9.5a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 015 18z" />
@@ -35,12 +42,13 @@ export function TabNav({
   const tabs = [
     { href: base, label: "Home", icon: icons.home },
     { href: `${base}/schedule`, label: "Schedule", icon: icons.schedule },
+    { href: `${base}/weather`, label: "Wind", icon: icons.weather },
     { href: `${base}/scores`, label: "Scores", icon: icons.scores },
     { href: `${base}/packing`, label: "Packing", icon: icons.packing },
   ];
   const isActive = (href: string) => (href === base ? pathname === base : pathname.startsWith(href));
   // The home page opens on a photograph, so its masthead is set in light type.
-  const onCover = pathname === base;
+  const onCover = pathname === base || pathname === `${base}/weather`;
   const ink = onCover ? "text-paper" : "text-forest-deep";
 
   return (
@@ -93,7 +101,7 @@ export function TabNav({
         className="fixed inset-x-0 bottom-0 z-30 border-t border-rule bg-paper/92 backdrop-blur-md md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <ul className="mx-auto grid max-w-md grid-cols-4">
+        <ul className="mx-auto grid max-w-md grid-cols-5">
           {tabs.map((tab) => {
             const active = isActive(tab.href);
             return (
