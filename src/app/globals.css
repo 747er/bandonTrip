@@ -14,6 +14,8 @@
   --color-mist: #c3d0cd;
   --color-copper: #a65f36;
   --color-copper-light: #d99a6c;
+  /* The Pacific off the resort: the wind map's open sea */
+  --color-ocean: #183a48;
   --color-rule: rgb(20 38 31 / 0.16);
   --color-rule-light: rgb(233 231 224 / 0.18);
 
@@ -169,106 +171,153 @@ details.event[open] .event-body {
 }
 }
 
-/* Wind: one compact instrument, with geography kept clear between the readouts. */
+/* Wind: the resort on a clear day. Daylight imagery over deep Pacific, the wind drawn on
+   it, and the readouts set on paper like the rest of the publication. */
 .wind-instrument {
-  position: relative; isolation: isolate; height: 100svh; min-height: 680px;
-  overflow: hidden; background: var(--color-forest-deep); color: var(--color-limestone);
-  --instrument-rule: rgb(233 231 224 / .2);
-  --instrument-ground: rgb(13 33 27 / .96);
+  position: relative; isolation: isolate; height: 100svh; min-height: 640px; overflow: hidden;
+  background: var(--color-ocean); color: var(--color-pine);
+  --panel: var(--color-paper);
+  --panel-rule: var(--color-rule);
+  --panel-hover: var(--color-limestone);
+  --panel-shadow: 0 1px 2px rgb(12 34 44 / .16), 0 16px 34px -16px rgb(12 34 44 / .6);
 }
 .wind-instrument button { cursor: pointer; }
-.wind-instrument button:disabled { opacity: .35; cursor: default; }
-.wind-instrument :focus-visible { outline-color: var(--color-copper-light); }
+.wind-instrument button:disabled { opacity: .3; cursor: default; }
+.wind-instrument :focus-visible { outline-color: var(--color-copper); }
 .wind-canvas { pointer-events: none; position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 350ms; }
 .wind-canvas.is-ready { opacity: 1; }
-.wind-map-shade { pointer-events: none; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(13 33 27 / .7), transparent 22%, transparent 70%, rgb(13 33 27 / .6)); }
-.wind-map-status { position: absolute; top: 43%; left: 50%; transform: translate(-50%, -50%); max-width: 26rem; padding: 12px 18px; background: var(--instrument-ground); font-size: 14px; text-align: center; }
-.wind-readout { position: absolute; top: 96px; left: 40px; width: 278px; background: var(--instrument-ground); border: 1px solid var(--instrument-rule); padding: 16px; }
-.wind-readout-heading { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--color-mist); }
-.wind-readout-heading h2 { font-weight: 600; color: var(--color-limestone); }
-.wind-main-reading { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 12px; }
-.wind-compass { flex-shrink: 0; }
-.wind-speed { font-size: 54px; font-weight: 500; letter-spacing: -.04em; line-height: 1; display: flex; align-items: center; gap: 9px; }
-.wind-speed > span { font-size: 14px; font-weight: 500; letter-spacing: 0; line-height: 1.4; }
-.wind-speed small { display: block; color: var(--color-mist); font-size: 12px; }
-.wind-stats { display: flex; width: 100%; justify-content: space-between; border-top: 1px solid var(--instrument-rule); padding-top: 12px; font-variant-numeric: tabular-nums; }
-.wind-stats dt { font-size: 12px; color: var(--color-mist); }
+/* Only the masthead needs shade: a veil of sea air behind the tabs. */
+.wind-map-shade { pointer-events: none; position: absolute; inset: 0 0 auto; height: 150px; background: linear-gradient(180deg, rgb(12 34 44 / .58), rgb(12 34 44 / 0)); }
+
+/* Paper panels, lifted a little off the map. */
+.wind-readout, .wind-map-tools, .wind-console, .wind-probe, .wind-map-status {
+  background: var(--panel); color: var(--color-pine); border: 1px solid var(--panel-rule); box-shadow: var(--panel-shadow);
+}
+.wind-map-status { position: absolute; top: 43%; left: 50%; transform: translate(-50%, -50%); max-width: 26rem; padding: 12px 18px; font-size: 14px; text-align: center; }
+
+/* The readout: the wind at the resort for the chosen hour. */
+.wind-readout { position: absolute; top: 96px; left: 40px; width: 272px; padding: 16px 18px 14px; }
+.wind-readout-heading { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--color-moss); }
+.wind-readout-heading h2 { font-weight: 600; color: var(--color-pine); }
+.wind-main-reading { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 10px; }
+.wind-compass { flex-shrink: 0; color: var(--color-pine); }
+.wind-speed { font-size: 56px; font-weight: 500; letter-spacing: -.04em; line-height: 1; display: flex; align-items: center; gap: 9px; }
+.wind-speed > span { font-size: 14px; font-weight: 600; letter-spacing: 0; line-height: 1.35; }
+.wind-speed small { display: block; color: var(--color-moss); font-size: 12.5px; font-weight: 500; }
+.wind-stats { display: flex; width: 100%; justify-content: space-between; border-top: 1px solid var(--panel-rule); padding-top: 12px; font-variant-numeric: tabular-nums; }
+.wind-stats dt { font-size: 12px; color: var(--color-moss); }
 .wind-stats dd { font-size: 17px; font-weight: 600; margin-top: 2px; }
-.wind-context { display: flex; flex-direction: column; border-top: 1px solid var(--instrument-rule); padding-top: 12px; margin-top: 12px; gap: 3px; font-size: 14px; }
-.wind-context > span { color: var(--color-mist); font-size: 12px; }
-.wind-context strong { font-weight: 500; }
-.wind-daylight { font-size: 12px; color: var(--color-mist); margin-top: 7px; }
-.wind-daylight.is-dark { color: var(--color-copper-light); }
-.wind-map-tools { position: absolute; top: 96px; right: 40px; display: flex; flex-direction: column; background: var(--instrument-ground); border: 1px solid var(--instrument-rule); }
-.wind-map-tools button, .wind-north { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-bottom: 1px solid var(--instrument-rule); }
-.wind-map-tools button:last-child { border: 0; }
-.wind-map-tools button[aria-pressed=true] { color: var(--color-copper-light); }
-.wind-north { flex-direction: column; font-size: 10px; height: 50px; gap: 1px; color: var(--color-mist); }
-.wind-map-tools button:hover, .wind-transport button:hover, .wind-range-switch button:hover { background: var(--color-forest); }
+.wind-context { display: flex; flex-direction: column; border-top: 1px solid var(--panel-rule); padding-top: 12px; margin-top: 12px; gap: 1px; }
+.wind-context > span { color: var(--color-moss); font-size: 12px; }
+.wind-context strong { font-family: var(--font-serif); font-style: italic; font-weight: 400; font-size: 21px; line-height: 1.2; }
+.wind-daylight { font-size: 12px; color: var(--color-moss); margin-top: 6px; }
+.wind-daylight.is-dark { color: var(--color-copper); }
+.wind-daylight-compact { display: none; }
+
+/* Map controls: one slim column. North is always up, so it needs no indicator. */
+.wind-map-tools { position: absolute; top: 96px; right: 40px; display: flex; flex-direction: column; }
+.wind-map-tools button { display: grid; place-items: center; width: 34px; height: 34px; color: var(--color-pine); transition: background 160ms, color 160ms; }
+.wind-map-tools button + button { border-top: 1px solid var(--panel-rule); }
+.wind-map-tools button[aria-pressed=true] { color: var(--color-copper); }
+.wind-map-tools button:hover,
+.wind-transport button:not(.wind-play):hover:not(:disabled),
+.wind-range-switch button:hover,
+.wind-days button:hover { background: var(--panel-hover); }
 .wind-pin { min-height: 36px; }
 .wind-pin:focus-visible { outline: 2px solid var(--color-copper-light); outline-offset: 4px; }
-.wind-probe { position: absolute; z-index: 3; transform: translate(-50%, -100%); display: flex; align-items: center; gap: 12px; background: var(--instrument-ground); border: 1px solid var(--instrument-rule); padding: 9px 4px 9px 12px; font-size: 13px; box-shadow: 0 8px 24px rgb(0 0 0 / .2); }
-.wind-probe-label { display: block; font-size: 11px; color: var(--color-mist); }
+
+/* A reading at a touched point. */
+.wind-probe { position: absolute; z-index: 3; transform: translate(-50%, -100%); display: flex; align-items: center; gap: 10px; padding: 8px 4px 8px 12px; font-size: 13px; }
+.wind-probe-label { display: block; font-size: 11px; color: var(--color-moss); }
 .wind-probe p { white-space: nowrap; }
-.wind-probe button { width: 36px; height: 36px; display: grid; place-items: center; }
-.wind-probe-dot { position: absolute; left: calc(50% - 4px); bottom: -10px; width: 8px; height: 8px; background: var(--color-copper-light); border-radius: 50%; }
-.wind-console { position: absolute; bottom: 32px; left: 40px; right: 40px; max-width: 1152px; margin: auto; background: var(--instrument-ground); border: 1px solid var(--instrument-rule); padding: 0 18px; }
-.wind-timebar { display: flex; align-items: center; min-height: 58px; gap: 16px; border-bottom: 1px solid var(--instrument-rule); }
-.wind-transport { display: flex; gap: 2px; }
-.wind-transport button { width: 36px; min-height: 40px; display: grid; place-items: center; transition: background 160ms; }
-.wind-transport .wind-play { background: var(--color-limestone); color: var(--color-pine); width: 40px; }
-.wind-transport .wind-play:hover { background: var(--color-paper); }
-.wind-time { display: flex; align-items: baseline; gap: 12px; }
-.wind-time strong { font-size: 21px; font-weight: 500; min-width: 108px; }
-.wind-time > span { color: var(--color-mist); font-size: 13px; }
-.wind-range-switch { margin-left: auto; display: flex; border: 1px solid var(--instrument-rule); }
-.wind-range-switch button { min-height: 32px; padding: 0 14px; font-size: 12px; }
-.wind-range-switch button[aria-pressed=true] { color: var(--color-pine); background: var(--color-limestone); }
-.wind-days { display: flex; position: absolute; right: 160px; top: 7px; gap: 6px; }
-.wind-days button { display: flex; align-items: center; gap: 7px; padding: 0 12px; min-height: 44px; font-size: 13px; color: var(--color-mist); border-bottom: 2px solid transparent; }
-.wind-days button[aria-pressed=true] { color: var(--color-limestone); border-color: var(--color-copper-light); }
-.wind-days button:hover { background: var(--color-forest); }
-.wind-chart-key { display: flex; align-items: center; gap: 16px; padding-top: 10px; font-size: 12px; color: var(--color-mist); }
-.wind-chart-key > span { display: inline-flex; align-items: center; gap: 5px; }
-.wind-chart-key i { width: 14px; border-top: 2px solid var(--color-limestone); }
-.wind-chart-key .gust-key { border-top: 1px dashed var(--color-mist); }
-.wind-chart-key .night-key { border: 1px solid var(--instrument-rule); height: 9px; background: rgb(0 0 0 / .3); }
-.wind-chart-key .tee-key { border-color: var(--color-copper-light); }
-.wind-plot { display: flex; position: relative; height: 111px; padding-top: 7px; padding-bottom: 22px; gap: 8px; }
-.wind-plot-axis { display: flex; width: 20px; flex-shrink: 0; flex-direction: column; justify-content: space-between; padding-top: 12px; padding-bottom: 2px; font-size: 10px; font-variant-numeric: tabular-nums; color: var(--color-mist); }
-.wind-plot-field { position: relative; flex: 1; min-width: 0; margin-right: 10px; }
-.wind-plot-field > svg { width: 100%; height: 100%; overflow: hidden; }
-.wind-plot-field > input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; touch-action: pan-y; margin: 0; }
-.wind-plot-field:has(input:focus-visible) { outline: 2px solid var(--color-copper-light); outline-offset: 4px; }
-.wind-plot-point { pointer-events: none; position: absolute; width: 7px; height: 7px; border-radius: 50%; transform: translate(-50%, -50%); background: var(--color-copper-light); border: 1px solid var(--color-forest-deep); }
-.wind-plot-ticks { position: absolute; top: calc(100% + 3px); inset-inline: 0; font-size: 10px; color: var(--color-mist); }
+.wind-probe button { width: 36px; height: 36px; display: grid; place-items: center; color: var(--color-moss); }
+.wind-probe button:hover { color: var(--color-pine); }
+.wind-probe-dot { position: absolute; left: calc(50% - 5px); bottom: -14px; width: 10px; height: 10px; background: var(--color-copper); border: 2px solid var(--color-paper); border-radius: 50%; }
+
+/* The console: the hour, the days, and the forecast with the itinerary flagged on it. */
+.wind-console { position: absolute; bottom: 28px; left: 40px; right: 40px; max-width: 1080px; margin: auto; padding: 0 16px; }
+/* The particles' colour scale and the credits ride under the console, clear of the pins. */
+.wind-key { position: absolute; right: -1px; top: calc(100% + 6px); display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--color-limestone); }
+.wind-key > * { background: rgb(12 34 44 / .74); padding: 3px 7px; }
+.wind-speed-key { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.wind-speed-key i { display: block; width: 72px; height: 4px; }
+.wind-attribution a { text-decoration: underline; text-underline-offset: 2px; }
+
+.wind-timebar { display: flex; align-items: center; min-height: 52px; gap: 18px; border-bottom: 1px solid var(--panel-rule); }
+.wind-transport { display: flex; align-items: center; gap: 2px; }
+.wind-transport button { width: 34px; height: 36px; display: grid; place-items: center; transition: background 160ms; }
+.wind-transport .wind-play { width: 36px; background: var(--color-pine); color: var(--color-paper); }
+.wind-transport .wind-play:hover { background: var(--color-forest); }
+/* Proportional figures: this face widens the colon when figures are tabular. */
+.wind-time { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; font-variant-numeric: lining-nums; }
+.wind-time strong { display: inline-block; min-width: 92px; font-size: 22px; font-weight: 600; letter-spacing: -.015em; }
+.wind-time span { color: var(--color-moss); font-size: 13px; }
+.wind-days { display: flex; align-self: stretch; margin-left: auto; }
+.wind-days button { position: relative; display: flex; align-items: center; gap: 5px; padding: 0 12px; font-size: 13px; font-weight: 500; color: var(--color-moss); transition: color 160ms, background 160ms; }
+.wind-days button::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px; background: var(--color-copper); transform: scaleX(0); transition: transform 260ms var(--ease-settle); }
+.wind-days button[aria-pressed=true] { color: var(--color-pine); font-weight: 600; }
+.wind-days button[aria-pressed=true]::after { transform: scaleX(1); }
+.wind-range-switch { display: flex; padding: 2px; border: 1px solid var(--panel-rule); }
+.wind-range-switch button { min-height: 28px; padding: 0 12px; font-size: 12.5px; font-weight: 500; color: var(--color-moss); transition: background 160ms, color 160ms; }
+.wind-range-switch button[aria-pressed=true],
+.wind-range-switch button[aria-pressed=true]:hover { background: var(--color-pine); color: var(--color-paper); }
+
+.wind-plot { display: flex; gap: 8px; padding: 8px 0 24px; }
+.wind-plot-axis { position: relative; flex-shrink: 0; width: 38px; height: 90px; font-size: 10px; color: var(--color-moss); font-variant-numeric: tabular-nums; }
+.wind-plot-axis span { position: absolute; right: 0; transform: translateY(-50%); white-space: nowrap; }
+.wind-plot-field { position: relative; flex: 1; min-width: 0; height: 90px; }
+.wind-plot-field > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.wind-plot-night { fill: rgb(24 58 72 / .065); }
+.wind-plot-grid { stroke: var(--color-rule); }
+.wind-plot-gust-area { fill: rgb(20 38 31 / .035); }
+.wind-plot-gust { fill: none; stroke: var(--color-moss); stroke-opacity: .85; stroke-width: 1.25; stroke-dasharray: 3 3; }
+.wind-plot-wind-area { fill: rgb(20 38 31 / .085); }
+.wind-plot-wind { fill: none; stroke: var(--color-pine); stroke-width: 2; stroke-linejoin: round; }
+.wind-plot-span { fill: rgb(20 38 31 / .3); }
+.wind-plot-span.is-late { fill: var(--color-copper-light); }
+.wind-plot-span.is-on { fill: var(--color-copper); }
+.wind-plot-cursor { stroke: var(--color-copper); stroke-width: 1.5; }
+.wind-plot-point { pointer-events: none; position: absolute; width: 10px; height: 10px; border-radius: 50%; transform: translate(-50%, -50%); background: var(--color-copper); border: 2px solid var(--color-paper); }
+.wind-plot-name { pointer-events: none; position: absolute; left: 4px; font-size: 10px; font-weight: 600; letter-spacing: .02em; color: var(--color-moss); }
+.wind-plot-name.is-wind { color: var(--color-pine); }
+.wind-plot-name.is-above { transform: translateY(calc(-100% - 2px)); }
+.wind-plot-name.is-below { transform: translateY(3px); }
+.wind-plot-field > input { position: absolute; left: 0; top: 26px; width: 100%; height: calc(100% - 4px); opacity: 0; cursor: ew-resize; touch-action: pan-y; margin: 0; appearance: none; background: transparent; }
+.wind-plot-field > input::-webkit-slider-thumb { appearance: none; width: 1px; height: 44px; }
+.wind-plot-field > input::-moz-range-thumb { width: 1px; height: 44px; border: 0; }
+.wind-plot-field:has(input:focus-visible) { outline: 2px solid var(--color-copper); outline-offset: 4px; }
+.wind-plot-ticks { position: absolute; top: calc(100% + 5px); inset-inline: 0; font-size: 10px; color: var(--color-moss); }
 .wind-plot-ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .wind-plot-ticks span:first-child { transform: none; }
-.wind-events { display: flex; overflow-x: auto; gap: 0; border-top: 1px solid var(--instrument-rule); padding: 7px 0; scrollbar-width: thin; scrollbar-color: var(--color-moss) transparent; }
-.wind-events li { flex-shrink: 0; }
-.wind-events button { display: flex; flex-direction: column; padding: 7px 14px; min-height: 48px; text-align: left; border: 1px solid transparent; transition: background 160ms, border-color 160ms; }
-.wind-events button:hover { background: var(--color-forest); }
-.wind-events button[aria-pressed=true] { border-color: var(--color-copper-light); background: rgb(217 154 108 / .08); }
-.wind-events strong { font-weight: 500; font-size: 14px; }
-.wind-events button > span { font-size: 12px; color: var(--color-mist); font-variant-numeric: tabular-nums; }
-.wind-events em { font-style: normal; color: var(--color-copper-light); margin-left: 8px; }
-.wind-empty { padding: 10px 0; color: var(--color-mist); font-size: 13px; }
-.wind-console-footer { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--instrument-rule); padding: 7px 0; font-size: 11px; color: var(--color-mist); }
-.wind-speed-key { display: flex; align-items: center; gap: 6px; }
-.wind-speed-key i { display: block; width: 80px; height: 4px; }
-.wind-attribution { position: absolute; bottom: 8px; right: 40px; font-size: 10px; color: var(--color-mist); background: rgb(13 33 27 / .8); padding: 1px 4px; }
-.wind-attribution a { text-decoration: underline; text-underline-offset: 2px; }
+
+/* Itinerary flags: the map pins' badge and label, standing over their hours. */
+.wind-lane { position: absolute; inset: 0 0 auto; height: 24px; z-index: 2; pointer-events: none; }
+.wind-lane li { position: absolute; top: 0; height: 100%; display: flex; min-width: 22px; container-type: inline-size; translate: -9px 0; }
+.wind-lane li.is-flipped { justify-content: flex-end; translate: 9px 0; }
+.wind-lane button { pointer-events: auto; position: relative; display: flex; align-items: center; gap: 5px; max-width: 100%; height: 22px; padding-right: 7px; font-size: 12px; font-weight: 600; color: var(--color-pine); transition: background 200ms, color 200ms; }
+.wind-lane button::after { content: ""; position: absolute; inset: -8px -2px -6px; }
+.wind-lane li.is-flipped button { flex-direction: row-reverse; padding: 0 0 0 7px; }
+.wind-flag-mark { display: grid; place-items: center; flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%; background: var(--color-pine); color: var(--color-paper); transition: background 200ms, box-shadow 200ms; }
+.wind-flag-name { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: text-decoration-color 160ms; }
+.wind-lane button:hover .wind-flag-mark { background: var(--color-forest); }
+.wind-lane button:hover .wind-flag-name { text-decoration-color: var(--color-copper); }
+.wind-lane button[aria-pressed=true] { background: var(--color-copper); color: var(--color-paper); }
+.wind-lane button[aria-pressed=true] .wind-flag-mark { background: var(--color-copper); box-shadow: inset 0 0 0 1.5px var(--color-paper); }
+.wind-lane button[aria-pressed=true] .wind-flag-name { text-decoration-color: transparent; }
+@container (max-width: 64px) { .wind-flag-name { display: none; } .wind-lane button { padding: 0; } }
+
 @media (min-width: 768px) and (max-width: 1100px) {
-  .wind-time > span { display: none; }
-  .wind-days { gap: 0; right: 134px; }
+  .wind-time span { display: none; }
+  .wind-timebar { gap: 12px; }
   .wind-days button { padding: 0 8px; }
   .wind-range-switch button { padding: 0 10px; }
 }
 @media (max-width: 767px) {
-  .wind-instrument { min-height: 650px; }
-  .wind-readout { top: 0; left: 0; right: 0; width: auto; padding: calc(8px + env(safe-area-inset-top)) 14px 8px; border: 0; border-bottom: 1px solid var(--instrument-rule); }
-  .wind-readout-heading { font-size: 10px; }
-  .wind-main-reading { margin-top: 4px; gap: 8px; flex-wrap: nowrap; }
+  .wind-instrument { min-height: 600px; }
+  .wind-map-shade { display: none; }
+  .wind-readout { top: 0; left: 0; right: 0; width: auto; padding: calc(10px + env(safe-area-inset-top)) 14px 8px; border: 0; border-bottom: 1px solid var(--panel-rule); }
+  .wind-readout-heading { display: none; }
+  .wind-main-reading { margin-top: 0; gap: 8px; flex-wrap: nowrap; }
   .wind-compass { width: 36px; height: 36px; }
   .wind-speed { font-size: 34px; gap: 6px; }
   .wind-speed > span { font-size: 11px; }
@@ -276,32 +325,37 @@ details.event[open] .event-body {
   .wind-stats { width: auto; flex: 1; margin-left: 10px; border: 0; padding: 0; gap: 12px; justify-content: flex-end; }
   .wind-stats dt { font-size: 11px; }
   .wind-stats dd { font-size: 13px; }
-  .wind-context { flex-direction: row; margin-top: 6px; padding-top: 6px; font-size: 11px; gap: 6px; }
+  .wind-context { position: relative; flex-direction: row; align-items: baseline; gap: 8px; margin-top: 6px; padding-top: 6px; padding-right: 110px; }
   .wind-context > span { font-size: 11px; }
-  .wind-daylight { display: none; }
-  .wind-map-tools { top: calc(120px + env(safe-area-inset-top)); right: 12px; }
-  .wind-north { display: none; }
-  .wind-console { left: 0; right: 0; bottom: calc(67px + env(safe-area-inset-bottom)); padding: 0 12px; border-inline: 0; }
-  .wind-timebar { min-height: 49px; gap: 8px; border-bottom: 0; }
-  .wind-transport { gap: 0; }
-  .wind-transport button { width: 30px; min-height: 40px; }
-  .wind-transport .wind-play { width: 36px; height: 36px; min-height: 36px; margin-block: 2px; }
-  .wind-time { flex-direction: column; gap: 0; }
-  .wind-time strong { font-size: 18px; min-width: 97px; }
-  .wind-time > span { font-size: 10px; }
-  .wind-range-switch button { min-height: 36px; padding: 0 10px; }
-  .wind-days { position: static; justify-content: space-between; gap: 0; border-bottom: 1px solid var(--instrument-rule); }
-  .wind-days button { flex: 1; justify-content: center; min-height: 36px; padding: 0 7px; font-size: 12px; }
-  .wind-chart-key { padding-top: 6px; gap: 13px; font-size: 11px; }
-  .wind-plot { height: 81px; padding-bottom: 19px; padding-top: 2px; }
-  .wind-plot-axis { font-size: 9px; width: 15px; }
-  .wind-events { padding: 4px 0; }
-  .wind-events button { padding: 5px 10px; min-height: 44px; }
-  .wind-events strong { font-size: 13px; }
-  .wind-events button > span { font-size: 12px; }
-  .wind-console-footer { display: none; }
-  .wind-attribution { bottom: calc(315px + env(safe-area-inset-bottom)); right: 7px; font-size: 8px; max-width: calc(100% - 14px); }
+  .wind-context strong { font-size: 16px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .wind-daylight { position: absolute; right: 14px; bottom: 9px; margin: 0; font-size: 11px; }
+  .wind-daylight-full { display: none; }
+  .wind-daylight-compact { display: inline; }
+  /* Phones pinch to zoom, so only reset and the wind toggle stay. */
+  .wind-map-tools { top: calc(98px + env(safe-area-inset-top)); right: 10px; }
+  .wind-map-tools .wind-zoom { display: none; }
+  .wind-map-tools .wind-zoom + button:not(.wind-zoom) { border-top: 0; }
+  .wind-map-tools button { width: 36px; height: 36px; }
   .wind-probe { max-width: 220px; }
+
+  .wind-console { left: 0; right: 0; bottom: calc(66px + env(safe-area-inset-bottom)); max-width: none; padding: 0 12px; border-inline: 0; border-bottom: 0; box-shadow: 0 -12px 28px -18px rgb(12 34 44 / .6); }
+  .wind-key { top: auto; right: 8px; bottom: calc(100% + 6px); flex-direction: column; align-items: flex-end; gap: 4px; font-size: 8.5px; }
+  .wind-key > * { padding: 2px 5px; }
+  .wind-speed-key i { width: 48px; height: 3px; }
+  .wind-timebar { flex-wrap: wrap; gap: 0 8px; min-height: 0; border-bottom: 0; }
+  .wind-transport { gap: 0; height: 50px; }
+  .wind-transport button { width: 30px; height: 40px; }
+  .wind-transport .wind-play { width: 36px; height: 36px; }
+  .wind-time { flex-direction: column; gap: 0; }
+  .wind-time strong { font-size: 19px; min-width: 0; }
+  .wind-time span { font-size: 11px; }
+  .wind-range-switch { margin-left: auto; }
+  .wind-range-switch button { min-height: 32px; padding: 0 11px; }
+  .wind-days { order: 1; flex-basis: 100%; margin: 0; border-block: 1px solid var(--panel-rule); }
+  .wind-days button { flex: 1; justify-content: center; min-height: 36px; padding: 0 4px; font-size: 12.5px; }
+  .wind-plot { padding: 10px 0 22px; gap: 6px; }
+  .wind-plot-axis { width: 34px; font-size: 9.5px; }
+  .wind-lane button::after { inset: -10px -2px -8px; }
 }
 
 /* Shared interaction finish: stable figures, visible focus and a quiet press response. */
@@ -324,18 +378,6 @@ details.event[open] .event-body {
 .packing-row input:checked + span svg { animation: check-settle 180ms var(--ease-settle); }
 @keyframes check-settle { from { transform: scale(.65); opacity: .4; } }
 @media (prefers-reduced-motion: reduce) { .arrival-photo { animation: none; } }
-.wind-daylight-compact { display: none; }
-.wind-plot-field > input { appearance: none; background: transparent; }
-.wind-plot-field > input::-webkit-slider-thumb { appearance: none; width: 1px; height: 44px; }
-.wind-plot-field > input::-moz-range-thumb { width: 1px; height: 44px; border: 0; }
-@media (max-width: 767px) {
-  .wind-context { padding-right: 110px; }
-  .wind-context strong { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-  .wind-daylight { display: block; position: absolute; right: 14px; bottom: 8px; margin: 0; font-size: 10px; }
-  .wind-daylight-full { display: none; }
-  .wind-daylight-compact { display: inline; }
-}
-
 /* The field guide and its planning tools share one measured editorial rhythm. */
 .trip-heading { padding-bottom: 26px; border-bottom: 1px solid var(--color-pine); }
 .trip-heading-title { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; }
@@ -347,9 +389,6 @@ details.event[open] .event-body {
 .section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; margin-bottom: 32px; }
 .section-heading h2 { font-size: clamp(44px, 6vw, 72px); }
 .section-heading p { color: var(--color-moss); font-size: 15px; }
-.stay-section > a { transition: background 180ms; }
-.stay-section > a:hover { background: var(--color-paper); }
-.stay-action { margin-left: auto; display: flex; align-items: center; gap: 20px; font-size: 14px; font-weight: 600; }
 .course-explorer { max-width: 1152px; margin: 0 auto; padding: 88px 40px 0; }
 .course-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--color-rule); }
 .course-tabs button { display: flex; gap: 12px; align-items: center; text-align: left; padding: 18px 12px; border-bottom: 2px solid transparent; min-width: 0; transition: background 180ms, border-color 180ms; }
@@ -414,8 +453,6 @@ details.event[open] .event-body {
 .locate-event:hover { color: var(--color-copper); }
 .day-map-figure { border-top: 1px solid var(--color-pine); padding-top: 10px; }
 .day-map-figure ol button[aria-pressed=true] { background: var(--color-paper); }
-.pub table tr:has(td .font-semibold) { background: rgb(203 187 151 / .13); }
-.pub table th { padding-left: 8px; }
 
 /* Course pages: broad landscape, precise card, then a practical round briefing. */
 .course-back { position: absolute; top: 108px; left: max(40px, calc((100vw - 1072px) / 2)); display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; background: rgb(13 33 27 / .85); font-size: 14px; }
@@ -436,8 +473,6 @@ details.event[open] .event-body {
 #course-overview, #expect, #your-round { scroll-margin-top: 88px; }
 .course-intro { text-wrap: pretty; }
 .course-round { padding: 26px; background: var(--color-paper); border-top: 1px solid var(--color-copper); }
-.course-round table { font-size: 15px; }
-.course-round table th { width: 90px; }
 .course-round .action { font-size: 14px; }
 .course-clubhouse { padding: 24px; margin-top: 28px; background: rgb(203 187 151 / .18); }
 .course-related-photo { display: block; flex-shrink: 0; width: 54px; height: 54px; position: relative; overflow: hidden; }
@@ -486,8 +521,6 @@ details.event[open] .event-body {
   .trip-heading-description { margin-top: 16px; gap: 8px; }
   .trip-heading-description > p { font-size: 19px; }
   .trip-heading-description > span { font-size: 13px; }
-  .stay-action { font-size: 0; gap: 0; }
-  .stay-action svg { width: 20px; }
   .course-explorer { padding: 48px 20px 0; }
   .section-heading { align-items: flex-start; flex-direction: column; gap: 12px; margin-bottom: 24px; }
   .section-heading p { font-size: 13px; }
