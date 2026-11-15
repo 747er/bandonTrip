@@ -39,7 +39,7 @@ export type ScheduleProps = {
   homePlace: string | null;
   initialDay: string;
   today: string | null;
-  upNext: { title: string; date: string; target: string; now: string } | null;
+  upNext: { title: string; date: string; target: string; now: string; timeZone: string } | null;
 };
 
 export function ScheduleView(props: ScheduleProps) {
@@ -202,8 +202,8 @@ export function ScheduleView(props: ScheduleProps) {
           {upNext && (
             <div className="mb-4">
               <p className="text-meta text-moss">
-                Up next in{" "}
-                <Countdown className="font-semibold lowercase text-pine" target={upNext.target} initialNow={upNext.now} />
+                Up next{" "}
+                <Countdown className="font-semibold text-pine" target={upNext.target} initialNow={upNext.now} timeZone={upNext.timeZone} />
               </p>
               <p className="serif mt-1 text-[24px] leading-tight">{upNext.title}</p>
               {upNext.date !== day && (
