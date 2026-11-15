@@ -1,4 +1,3 @@
-import { clock } from "@/lib/time";
 import type { PublicEvent } from "@/lib/trip";
 
 const TYPE_LABEL: Record<PublicEvent["type"], string> = {
@@ -9,13 +8,11 @@ const TYPE_LABEL: Record<PublicEvent["type"], string> = {
   custom: "",
 };
 
-/** One plain line describing who and what: "Golf, tee times until 11:10 AM". */
+/** One plain line describing who and what: "Golf" or "Dining, party of 6". */
 export function eventSummary(e: PublicEvent): string {
   const bits: string[] = [];
   if (e.type === "golf") {
-    bits.push(
-      e.teeTimes.length === 0 && e.endTime && e.endTime !== e.startTime ? `Tee times until ${clock(e.endTime)}` : "Golf",
-    );
+    bits.push("Golf");
   } else if (TYPE_LABEL[e.type]) {
     bits.push(TYPE_LABEL[e.type]);
   }
