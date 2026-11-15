@@ -381,6 +381,34 @@ function OffCourse({ data, photos }: Ctx) {
   );
 }
 
+/** Before the trip only: a pointer to the packing checklist, with its headline items. */
+function PackingBand({ slug }: { slug: string }) {
+  const headline = ["Two pairs of golf shoes", "Rain jacket and pants", "Layers", "Spare socks"];
+  return (
+    <section aria-labelledby="packing" className={`${WIDE} ${SECTION}`}>
+      <Link
+        href={`/t/${slug}/packing`}
+        className="group grid gap-x-12 gap-y-5 border-y border-pine py-7 md:grid-cols-[auto_1fr_auto] md:items-center md:py-9"
+      >
+        <h2 id="packing" className="display text-[34px] md:text-[40px]">
+          What to pack
+        </h2>
+        <ul className="flex flex-wrap gap-x-6 gap-y-1 text-ui font-medium">
+          {headline.map((item) => (
+            <li key={item} className="flex items-center gap-2.5">
+              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-copper" />
+              {item}
+            </li>
+          ))}
+        </ul>
+        <span className="text-ui font-semibold underline decoration-copper decoration-1 underline-offset-[5px] group-hover:text-copper">
+          Open the checklist
+        </span>
+      </Link>
+    </section>
+  );
+}
+
 function ScheduleBand({ slug }: { slug: string }) {
   return (
     <section className="on-forest mt-16 md:mt-24 bg-forest text-limestone">
@@ -488,6 +516,7 @@ function Before(ctx: Ctx) {
       <Courses {...ctx} heading={golf.length === 1 ? "The course" : "The courses"} />
       <Forecast data={data} weather={weather} />
       <OffCourse {...ctx} />
+      <PackingBand slug={trip.slug} />
       <Updates data={data} />
       <ScheduleBand slug={trip.slug} />
     </>
