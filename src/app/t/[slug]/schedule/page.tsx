@@ -5,7 +5,7 @@ import { ScheduleView } from "@/components/public/ScheduleView";
 import { courseById } from "@/data/courses";
 import { photosForEvents, slotFor, slotName } from "@/lib/photos";
 import { placeFor } from "@/lib/resortMap";
-import { clock, dateRange, eachDay, zonedToUtc } from "@/lib/time";
+import { clock, dateRange, eachDay } from "@/lib/time";
 import { getTrip, getTripNow, isPast, isUnderway, roundNumbers } from "@/lib/trip";
 import { getForecast } from "@/lib/weather";
 import { getWind } from "@/lib/wind";
@@ -77,11 +77,6 @@ export default async function SchedulePage({
     }
   }
 
-  const next =
-    phase === "after"
-      ? null
-      : events.find((e) => e.startTime && !isPast(e, now) && !isUnderway(e, now));
-
   return (
     <ScheduleView
       trip={{
@@ -91,7 +86,6 @@ export default async function SchedulePage({
         dates: dateRange(trip.startDate, trip.endDate),
       }}
       days={days}
-      tripDays={tripDays}
       events={events}
       photos={photosForEvents(events)}
       slots={Object.fromEntries(events.map((e) => [e.id, slotFor(e)]))}
@@ -110,17 +104,6 @@ export default async function SchedulePage({
       homePlace={homePlace}
       initialDay={requested ?? today ?? days[0]}
       today={today}
-      upNext={
-        next?.startTime
-          ? {
-              title: next.title,
-              date: next.date,
-              target: zonedToUtc(next.date, next.startTime, trip.timezone).toISOString(),
-              now: now.instant.toISOString(),
-              timeZone: trip.timezone,
-            }
-          : null
-      }
     />
   );
 }
