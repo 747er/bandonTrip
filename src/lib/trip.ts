@@ -1,5 +1,5 @@
 import { EVENTS, PEOPLE, ROOMS, TEE_SHEET, TRIP, type EventType } from "@/data/trip";
-import { clock, clockList, clockRange, tripPhase, zonedNow, type Phase, type ZonedNow } from "./time";
+import { clock, clockList, tripPhase, zonedNow, type Phase, type ZonedNow } from "./time";
 
 // The trip as one person sees it. The trip itself is src/data/trip.ts; who is looking
 // is decided in src/lib/viewer.ts. Everything here is safe to use in the browser.
@@ -132,11 +132,11 @@ export function roundNumbers(all: PublicEvent[]): Record<string, { number: numbe
 
 // ---- Small helpers shared by the pages ----
 
-/** When an event is, as text: the viewer's own tee time for a round, otherwise its start and end. */
-export function eventTimes(e: Pick<PublicEvent, "startTime" | "endTime" | "teeTime" | "teeTimes">): string {
+/** When an event is, as text: the viewer's own tee time for a round, otherwise when it starts. End times are never shown. */
+export function eventTimes(e: Pick<PublicEvent, "startTime" | "teeTime" | "teeTimes">): string {
   if (e.teeTime) return clock(e.teeTime);
   if (e.teeTimes.length > 0) return clockList(e.teeTimes.map((t) => t.time));
-  return e.startTime ? clockRange(e.startTime, e.endTime) : "";
+  return e.startTime ? clock(e.startTime) : "";
 }
 
 /** "Tee time" for a round the viewer has a time in, "Tee times" for a window. */
