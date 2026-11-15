@@ -10,7 +10,6 @@ import {
   ForecastStrip,
   type RoundInfo,
 } from "@/components/public/features";
-import { Leaderboard } from "@/components/public/Leaderboard";
 import { Photo, PhotoCredit, type PhotoData } from "@/components/public/Photo";
 import { courseFacts } from "@/lib/catalog";
 import { HERO_SLOT, photoFor, photosForEvents, slotFor } from "@/lib/photos";
@@ -30,6 +29,7 @@ import {
   directionsUrl,
   getTrip,
   getTripNow,
+  roundNumbers,
   isPast,
   isUnderway,
   type PublicEvent,
@@ -52,24 +52,17 @@ export default async function TripHome({ params }: PageProps<"/t/[slug]">) {
   const { slug } = await params;
   const data = await getTrip(slug);
   if (!data) notFound();
-  const { trip, events, rounds } = data;
+  const { trip, events } = data;
   const [{ now, phase }, weather] = await Promise.all([getTripNow(trip), getForecast(trip)]);
 
-  const counting = rounds.filter((r) => r.countsTowardTotal && r.eventId);
+  const rounds = roundNumbers(events);
   const ctx: Ctx = {
     data,
     now,
     weather,
-    hero: trip.heroImageUrl
-      ? { src: trip.heroImageUrl, credit: trip.heroImageCredit }
-      : photoFor(HERO_SLOT),
+    hero: photoFor(HERO_SLOT),
     photos: photosForEvents(events),
-    roundOf: (eventId) => {
-      const index = counting.findIndex((r) => r.eventId === eventId);
-      return index < 0
-        ? null
-        : { number: index + 1, total: counting.length, par: counting[index].par };
-    },
+    roundOf: (eventId) => rounds[eventId] ?? null,
   };
 
   if (phase === "during") return <During {...ctx} />;
@@ -202,35 +195,6 @@ function NextPanel({
   );
 }
 
-function Updates({ data }: { data: PublicTrip }) {
-  const { updates, trip } = data;
-  if (updates.length === 0) return null;
-  const when = (d: Date) =>
-    new Intl.DateTimeFormat("en-US", {
-      timeZone: trip.timezone,
-      weekday: "short",
-      hour: "numeric",
-      minute: "2-digit",
-    }).format(d);
-  return (
-    <section aria-labelledby="updates" className={`${WIDE} ${SECTION}`}>
-      <div className="grid gap-x-12 border-l-2 border-copper pl-5 md:grid-cols-[14rem_1fr] md:pl-8">
-        <h2 id="updates" className="display text-[30px] md:text-[36px]">
-          From the organizer
-        </h2>
-        <ul className="mt-4 space-y-5 md:mt-1">
-          {updates.slice(0, 3).map((u) => (
-            <li key={u.id}>
-              <p className="serif max-w-prose whitespace-pre-line text-[18px] leading-relaxed">{u.body}</p>
-              <p className="mt-1 text-label text-moss">{when(u.createdAt)}</p>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </section>
-  );
-}
-
 function Forecast({
   data,
   weather,
@@ -349,7 +313,7 @@ function OffCourse({ data, photos }: Ctx) {
       showDay
       summary={
         e.type === "dining"
-          ? [e.partySize && `Party of ${e.partySize}`, e.audience.kind === "group" && e.audience.name]
+          ? [e.partySize && `Party of ${e.partySize}`, e.group]
               .filter(Boolean)
               .join(", ")
           : eventSummary(e)
@@ -435,7 +399,7 @@ function ScheduleBand({ slug }: { slug: string }) {
 
 function Before(ctx: Ctx) {
   const { data, now, hero, photos, weather, roundOf } = ctx;
-  const { trip, events, people } = data;
+  const { trip, events } = data;
   const golf = events.filter((e) => e.type === "golf");
   const tables = events.filter((e) => e.type === "dining");
   const first = events.find((e) => e.startTime) ?? events[0];
@@ -445,9 +409,7 @@ function Before(ctx: Ctx) {
     { value: days, label: days === 1 ? "day" : "days" },
     { value: golf.length, label: golf.length === 1 ? "round" : "rounds" },
     { value: tables.length, label: tables.length === 1 ? "table booked" : "tables booked" },
-    people.length > 0
-      ? { value: people.length, label: people.length === 1 ? "golfer" : "golfers" }
-      : { value: events.length, label: "events in all" },
+    { value: events.length, label: "events in all" },
   ].filter((m) => m.value > 0);
 
   return (
@@ -519,7 +481,6 @@ function Before(ctx: Ctx) {
       <Forecast data={data} weather={weather} />
       <OffCourse {...ctx} />
       <PackingBand slug={trip.slug} />
-      <Updates data={data} />
       <ScheduleBand slug={trip.slug} />
     </>
   );
@@ -529,7 +490,7 @@ function Before(ctx: Ctx) {
 
 function During(ctx: Ctx) {
   const { data, now, hero, photos, weather, roundOf } = ctx;
-  const { trip, events, rounds, scores, people } = data;
+  const { trip, events } = data;
   const today = events.filter((e) => e.date === now.date);
   const current = today.find((e) => isUnderway(e, now));
   const next = events.find((e) => !isPast(e, now) && !isUnderway(e, now));
@@ -589,43 +550,25 @@ function During(ctx: Ctx) {
         }
       />
 
-      <div className={`${WIDE} grid gap-x-12 gap-y-12 pt-12 md:grid-cols-[1.25fr_1fr] md:pt-16`}>
-        <section aria-labelledby="later">
+      <section aria-labelledby="later" className={`${WIDE} pt-12 md:pt-16`}>
+        <div className="grid gap-x-12 md:grid-cols-[14rem_1fr]">
           <h2 id="later" className="display text-[34px] md:text-[40px]">
             {restOfToday.length > 0 ? "Later today" : "Today"}
           </h2>
-          {restOfToday.length > 0 ? (
-            <ul className="mt-4 divide-y divide-rule border-y border-rule">{restOfToday.map(row)}</ul>
-          ) : (
-            <p className="serif mt-3 text-[18px] italic text-moss">
-              Nothing else on the schedule today.
-            </p>
-          )}
-          <Link className="action mt-2" href={scheduleHref(trip.slug, now.date)}>
-            See today&rsquo;s schedule
-          </Link>
-        </section>
-
-        <section aria-labelledby="board" className="bg-forest-deep p-5 md:p-7">
-          <h2 id="board" className="display text-[30px] text-limestone">
-            The board
-          </h2>
-          {scores.length > 0 ? (
-            <div className="mt-1">
-              <Leaderboard rounds={rounds} scores={scores} people={people} limit={5} />
-            </div>
-          ) : (
-            <p className="serif mt-3 text-[17px] italic text-mist">
-              No scores posted yet. They go up after the first round.
-            </p>
-          )}
-          <div className="on-forest mt-2 text-limestone">
-            <Link className="action" href={`/t/${trip.slug}/scores`}>
-              See all scores
+          <div>
+            {restOfToday.length > 0 ? (
+              <ul className="mt-4 divide-y divide-rule border-y border-rule md:mt-0">{restOfToday.map(row)}</ul>
+            ) : (
+              <p className="serif mt-3 text-[18px] italic text-moss md:mt-2">
+                Nothing else on the schedule today.
+              </p>
+            )}
+            <Link className="action mt-2" href={scheduleHref(trip.slug, now.date)}>
+              See today&rsquo;s schedule
             </Link>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
       <Forecast data={data} weather={weather} today={now.date} />
 
@@ -655,7 +598,6 @@ function During(ctx: Ctx) {
         </section>
       )}
 
-      <Updates data={data} />
       <ScheduleBand slug={trip.slug} />
     </>
   );
@@ -665,7 +607,7 @@ function During(ctx: Ctx) {
 
 function After(ctx: Ctx) {
   const { data, hero } = ctx;
-  const { trip, rounds, scores, people } = data;
+  const { trip } = data;
   return (
     <>
       <Cover
@@ -678,28 +620,6 @@ function After(ctx: Ctx) {
           </>
         }
       />
-
-      <div className={`${WIDE} relative z-10 -mt-10 lg:mt-12`}>
-        <section aria-labelledby="final" className="bg-forest-deep p-5 md:p-10">
-          <h2 id="final" className="display text-[34px] text-limestone md:text-[44px]">
-            Final standings
-          </h2>
-          {scores.length > 0 ? (
-            <div className="mt-3">
-              <Leaderboard rounds={rounds} scores={scores} people={people} />
-            </div>
-          ) : (
-            <p className="serif mt-3 text-[18px] italic text-mist">
-              No scores were posted for this trip.
-            </p>
-          )}
-          <div className="on-forest mt-3 text-limestone">
-            <Link className="action" href={`/t/${trip.slug}/scores`}>
-              Round by round
-            </Link>
-          </div>
-        </section>
-      </div>
 
       <Courses {...ctx} weather={{}} heading="Where we played" />
       <ScheduleBand slug={trip.slug} />
