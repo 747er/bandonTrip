@@ -72,6 +72,16 @@ html {
   text-wrap: balance;
 }
 
+/* The cover title: the text serif's true italic, set large and tight. */
+.title {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 0.92;
+  text-wrap: balance;
+}
+
 .serif {
   font-family: var(--font-serif);
 }
