@@ -232,9 +232,6 @@ function Courses({ data, photos, weather, roundOf, heading }: Ctx & { heading: s
         <h2 id="courses" className="display text-[44px] md:text-[72px]">
           {heading}
         </h2>
-        <p className="hidden max-w-[17rem] pb-3 text-right text-meta text-moss md:block">
-          Choose a course to see its day on the schedule.
-        </p>
       </div>
 
       <div className={`${WIDE} mt-10 hidden lg:block`}>
