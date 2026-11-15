@@ -14,10 +14,10 @@ export default async function WeatherPage({ params }: PageProps<"/t/[slug]/weath
   const { slug } = await params;
   const data = await getTrip(slug);
   if (!data) notFound();
-  const { trip, events, lodgings } = data;
+  const { trip, events, lodging } = data;
   const [wind, { now, phase }] = await Promise.all([getWind(trip), getTripNow(trip)]);
 
-  if (!wind || trip.latitude === null || trip.longitude === null) {
+  if (!wind) {
     return (
       <div className="mx-auto max-w-2xl px-5 pb-16 pt-24 md:px-8 md:pt-36">
         <h1 className="display text-[clamp(2.75rem,11vw,4.5rem)]">Wind and weather</h1>
@@ -59,7 +59,7 @@ export default async function WeatherPage({ params }: PageProps<"/t/[slug]/weath
     ];
   });
 
-  const homeId = lodgings.map((l) => placeFor(l.name)).find(Boolean) ?? null;
+  const homeId = placeFor(lodging);
   const placeIds = [...new Set([...events.map((e) => placeFor(e.title, e.venue)), homeId])].filter(
     (id): id is string => !!id && !!GEO[id],
   );
