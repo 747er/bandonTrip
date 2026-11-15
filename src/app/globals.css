@@ -15,7 +15,7 @@
   --color-copper: #a65f36;
   --color-copper-light: #d99a6c;
   /* The Pacific off the resort: the wind map's open sea */
-  --color-ocean: #183a48;
+  --color-ocean: #122e36;
   --color-rule: rgb(20 38 31 / 0.16);
   --color-rule-light: rgb(233 231 224 / 0.18);
 
@@ -171,15 +171,15 @@ details.event[open] .event-body {
 }
 }
 
-/* Wind: the resort on a clear day. Daylight imagery over deep Pacific, the wind drawn on
-   it, and the readouts set on paper like the rest of the publication. */
+/* Wind: the resort under a dimmed sky, the wind drawn on it in warm light, and the
+   readouts on dark forest glass like the site's green panels. */
 .wind-instrument {
   position: relative; isolation: isolate; height: 100svh; min-height: 640px; overflow: hidden;
   background: var(--color-ocean); color: var(--color-pine);
-  --panel: var(--color-paper);
-  --panel-rule: var(--color-rule);
-  --panel-hover: var(--color-limestone);
-  --panel-shadow: 0 1px 2px rgb(12 34 44 / .16), 0 16px 34px -16px rgb(12 34 44 / .6);
+  --panel: rgb(13 33 27 / .88);
+  --panel-rule: rgb(233 231 224 / .16);
+  --panel-hover: rgb(233 231 224 / .1);
+  --panel-shadow: 0 1px 2px rgb(0 0 0 / .3), 0 18px 36px -16px rgb(0 0 0 / .7);
 }
 .wind-instrument button { cursor: pointer; }
 .wind-instrument button:disabled { opacity: .3; cursor: default; }
@@ -187,11 +187,19 @@ details.event[open] .event-body {
 .wind-canvas { pointer-events: none; position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 350ms; }
 .wind-canvas.is-ready { opacity: 1; }
 /* Only the masthead needs shade: a veil of sea air behind the tabs. */
-.wind-map-shade { pointer-events: none; position: absolute; inset: 0 0 auto; height: 150px; background: linear-gradient(180deg, rgb(12 34 44 / .58), rgb(12 34 44 / 0)); }
+.wind-map-shade { pointer-events: none; position: absolute; inset: 0 0 auto; height: 150px; background: linear-gradient(180deg, rgb(8 24 22 / .62), rgb(8 24 22 / 0)); }
 
-/* Paper panels, lifted a little off the map. */
+/* Dark panels. Inside them the ink tokens swap ends, so every rule written for paper
+   (ink, quiet ink, hairlines, the knockout colour) reads correctly on forest. */
 .wind-readout, .wind-map-tools, .wind-console, .wind-probe, .wind-map-status {
+  --color-pine: #e9e7e0;
+  --color-moss: #a7b6b1;
+  --color-paper: #0d211b;
+  --color-forest: #ffffff;
+  --color-rule: rgb(233 231 224 / .14);
+  --color-copper: #d99a6c;
   background: var(--panel); color: var(--color-pine); border: 1px solid var(--panel-rule); box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(10px) saturate(1.1); -webkit-backdrop-filter: blur(10px) saturate(1.1);
 }
 .wind-map-status { position: absolute; top: 43%; left: 50%; transform: translate(-50%, -50%); max-width: 26rem; padding: 12px 18px; font-size: 14px; text-align: center; }
 
@@ -238,7 +246,7 @@ details.event[open] .event-body {
 .wind-console { position: absolute; bottom: 28px; left: 40px; right: 40px; max-width: 1080px; margin: auto; padding: 0 16px; }
 /* The particles' colour scale and the credits ride under the console, clear of the pins. */
 .wind-key { position: absolute; right: -1px; top: calc(100% + 6px); display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--color-limestone); }
-.wind-key > * { background: rgb(12 34 44 / .74); padding: 3px 7px; }
+.wind-key > * { background: rgb(13 33 27 / .8); padding: 3px 7px; }
 .wind-speed-key { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
 .wind-speed-key i { display: block; width: 72px; height: 4px; }
 .wind-attribution a { text-decoration: underline; text-underline-offset: 2px; }
@@ -267,13 +275,13 @@ details.event[open] .event-body {
 .wind-plot-axis span { position: absolute; right: 0; transform: translateY(-50%); white-space: nowrap; }
 .wind-plot-field { position: relative; flex: 1; min-width: 0; height: 90px; }
 .wind-plot-field > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.wind-plot-night { fill: rgb(24 58 72 / .065); }
+.wind-plot-night { fill: rgb(0 0 0 / .3); }
 .wind-plot-grid { stroke: var(--color-rule); }
-.wind-plot-gust-area { fill: rgb(20 38 31 / .035); }
+.wind-plot-gust-area { fill: rgb(233 231 224 / .05); }
 .wind-plot-gust { fill: none; stroke: var(--color-moss); stroke-opacity: .85; stroke-width: 1.25; stroke-dasharray: 3 3; }
-.wind-plot-wind-area { fill: rgb(20 38 31 / .085); }
+.wind-plot-wind-area { fill: rgb(233 231 224 / .13); }
 .wind-plot-wind { fill: none; stroke: var(--color-pine); stroke-width: 2; stroke-linejoin: round; }
-.wind-plot-span { fill: rgb(20 38 31 / .3); }
+.wind-plot-span { fill: rgb(233 231 224 / .35); }
 .wind-plot-span.is-late { fill: var(--color-copper-light); }
 .wind-plot-span.is-on { fill: var(--color-copper); }
 .wind-plot-cursor { stroke: var(--color-copper); stroke-width: 1.5; }
