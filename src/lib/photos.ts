@@ -27,6 +27,7 @@ const DEFAULT_POSITION: Record<string, string> = {
   courses: "50% 62%", // favour the ground over the sky
   dining: "50% 50%",
   activities: "50% 50%",
+  lodging: "50% 50%",
 };
 
 function manifest(): Manifest {
