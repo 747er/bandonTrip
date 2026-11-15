@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { contours } from "./contours";
+import { OPEN_WHO } from "./WhoSheet";
 
 // One drawing for a tall, narrow footer (phones) and one for a wide, shallow one.
 const TALL = [...contours(330, 90, 9, 36, 0.9), ...contours(40, 560, 8, 40, 2.6)];
@@ -13,7 +14,7 @@ const WIDE = [...contours(1160, 150, 10, 46, 0.9), ...contours(170, 600, 9, 50, 
  * the links to the trip's pages and the site's note, with contour lines running through
  * the whole of it.
  */
-export function SiteFooter({ slug }: { slug: string }) {
+export function SiteFooter({ slug, viewer }: { slug: string; viewer: string | null }) {
   // The wind map is a full-screen tool: it ends where the map ends.
   const pathname = usePathname();
   if (pathname === `/t/${slug}/weather`) return null;
@@ -70,6 +71,18 @@ export function SiteFooter({ slug }: { slug: string }) {
           </ul>
         </nav>
         <div className="mt-12 text-[13px] leading-relaxed text-mist md:mt-16">
+          {viewer && (
+            <p className="mb-6 text-meta text-limestone">
+              Viewing as <span className="font-semibold">{viewer}</span>
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new Event(OPEN_WHO))}
+                className="ml-3 font-semibold underline decoration-copper-light decoration-1 underline-offset-[5px] hover:text-copper-light"
+              >
+                Switch
+              </button>
+            </p>
+          )}
           <p className="serif text-[15px] italic text-limestone">BandonTrip</p>
           <p className="mt-2 max-w-md">
             Made by golfers for their own trip. An independent site, not affiliated with or
