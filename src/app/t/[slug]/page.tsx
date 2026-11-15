@@ -426,9 +426,6 @@ function ScheduleBand({ slug }: { slug: string }) {
         >
           The full schedule
         </Link>
-        <a className="action" href={`/t/${slug}/calendar.ics`}>
-          Add every event to your calendar
-        </a>
       </div>
     </section>
   );
