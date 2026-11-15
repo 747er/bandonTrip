@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { directionsUrl } from "@/lib/links";
-import { clockRange, monthDay, weekday } from "@/lib/time";
-import type { PublicEvent } from "@/lib/trip";
+import { monthDay, weekday } from "@/lib/time";
+import { eventTimes, type PublicEvent } from "@/lib/trip";
 import type { DayWeather } from "@/lib/weather";
 import { Countdown } from "./Countdown";
 import { eventSummary } from "./EventList";
@@ -134,7 +134,7 @@ export function NextUp({
                 {event.startTime && (
                   <p className="figures mt-1 text-fact font-semibold">
                     {golf && <span className="mr-2 text-ui font-medium text-mist">Tee times</span>}
-                    {clockRange(event.startTime, event.endTime)}
+                    {eventTimes(event)}
                   </p>
                 )}
                 <p className="figures mt-1 text-meta text-mist">
