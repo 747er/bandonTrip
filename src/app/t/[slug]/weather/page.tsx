@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { WindExplorer, type WindEvent, type WindPlace } from "@/components/public/wind/WindExplorer";
 import { GEO, PLACES, placeFor } from "@/lib/resortMap";
-import { clock, clockRange, weekdayShort } from "@/lib/time";
-import { getTrip, getTripNow } from "@/lib/trip";
+import { clock, weekdayShort } from "@/lib/time";
+import { eventTimes, getTrip, getTripNow } from "@/lib/trip";
 import { getWind } from "@/lib/wind";
 import { hourIndex, minutesFromStart } from "@/lib/windMath";
 
@@ -52,7 +52,7 @@ export default async function WeatherPage({ params, searchParams }: PageProps<"/
         type: e.type,
         start,
         end: Math.max(start, end),
-        label: `${weekdayShort(e.date)} ${clockRange(e.startTime, e.endTime)}`,
+        label: `${weekdayShort(e.date)} ${eventTimes(e)}`,
         place: placeId && GEO[placeId] ? GEO[placeId] : null,
         placeId: placeId && GEO[placeId] ? placeId : null,
         sunsetNote: late > 0 && day ? `Sunset ${clock(day.sunset.slice(11))}` : null,
