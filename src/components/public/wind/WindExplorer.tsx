@@ -686,13 +686,6 @@ export function WindExplorer({
           </div>
         </div>
       </section>
-
-      {/* Phones: the key and credits sit under the map, out of its way. */}
-      <div className="space-y-2 bg-forest-deep px-5 py-5 text-fine text-mist md:hidden">
-        <p className="flex items-center gap-2">{legend}</p>
-        <p>White bars: wind each hour. Faint bars behind: gusts. Shaded: night. Marks along the top: tee times. Tap a place name to zoom to it.</p>
-        <p>{credits}</p>
-      </div>
     </>
   );
 }
