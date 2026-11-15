@@ -60,7 +60,11 @@ export function WhoSheet({
   useEffect(() => {
     const sheet = dialog.current;
     if (!sheet) return;
-    if (open && !sheet.open) sheet.showModal();
+    if (open && !sheet.open) {
+      sheet.showModal();
+      // Opening would otherwise focus the first name and ring it as if it were chosen.
+      sheet.focus();
+    }
     else if (!open && sheet.open) sheet.close();
   }, [open]);
 
@@ -100,8 +104,9 @@ export function WhoSheet({
       <dialog
         ref={dialog}
         aria-label="Who's playing?"
+        tabIndex={-1}
         onCancel={event => { event.preventDefault(); if (viewer) setOpen(false); }}
-        className="on-forest fixed inset-0 z-50 m-0 h-full max-h-none w-full max-w-none overflow-y-auto overscroll-contain border-0 p-0 text-limestone"
+        className="on-forest fixed inset-0 z-50 m-0 h-full max-h-none w-full max-w-none overflow-y-auto overscroll-contain border-0 p-0 text-limestone outline-none focus-visible:outline-none"
         style={{ background: "linear-gradient(to bottom, #1b3d31 0%, #17332b 40%, #10261f 100%)" }}
       >
         <svg aria-hidden="true" className="pointer-events-none absolute inset-0 hidden h-full w-full opacity-[0.15] md:block" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" fill="none" stroke="#cbbb97" strokeWidth="1">
