@@ -398,18 +398,32 @@ details.event[open] .event-body {
 .section-heading h2 { font-size: clamp(44px, 6vw, 72px); }
 .section-heading p { color: var(--color-moss); font-size: 15px; }
 .course-explorer { max-width: 1152px; margin: 0 auto; padding: 88px 40px 0; }
-.course-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--color-rule); }
-.course-tabs button { display: flex; gap: 12px; align-items: center; text-align: left; padding: 18px 12px; border-bottom: 2px solid transparent; min-width: 0; transition: background 180ms, border-color 180ms; }
+/* The rounds as tabs joined to the card: the chosen one takes the card's green. */
+.course-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--color-rule); border-bottom: 0; }
+.course-tabs button { position: relative; display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 18px 20px 20px; min-width: 0; color: var(--color-pine); transition: background 320ms var(--ease-settle), color 320ms var(--ease-settle); }
+.course-tabs button + button { border-left: 1px solid var(--color-rule); }
+.course-tabs button::before { content: ""; position: absolute; inset: -1px 0 auto; height: 2px; background: var(--color-copper-light); transform: scaleX(0); transform-origin: left; transition: transform 520ms var(--ease-settle); }
 .course-tabs button:hover { background: var(--color-paper); }
-.course-tabs button[aria-selected=true] { background: var(--color-paper); border-bottom-color: var(--color-copper); }
-.course-tab-photo { position: relative; overflow: hidden; height: 52px; width: 52px; flex-shrink: 0; }
-.course-tab-date { display: block; font-size: 12px; color: var(--color-moss); margin-bottom: 3px; }
-.course-tab-date > span { margin-left: 8px; }
-.course-tabs strong { display: block; font-size: 15px; font-weight: 500; }
+.course-tabs button[aria-selected=true] { background: var(--color-forest); color: var(--color-limestone); border-left-color: transparent; }
+.course-tabs button[aria-selected=true] + button { border-left-color: transparent; }
+.course-tabs button[aria-selected=true]::before { transform: scaleX(1); }
+.course-tab-date { display: flex; align-items: baseline; gap: 10px; font-size: 13px; font-weight: 500; color: var(--color-moss); transition: color 320ms var(--ease-settle); }
+.course-tab-date > span { color: var(--color-copper); font-weight: 600; }
+.course-tabs button[aria-selected=true] .course-tab-date { color: var(--color-mist); }
+.course-tabs button[aria-selected=true] .course-tab-date > span { color: var(--color-copper-light); }
+.course-tabs strong { display: block; font-family: var(--font-serif); font-size: clamp(19px, 1.9vw, 24px); font-weight: 400; line-height: 1.15; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .course-explorer-panel { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr); min-height: 560px; background: var(--color-forest); color: var(--color-limestone); }
 .course-explorer-photo { position: relative; overflow: hidden; min-height: 400px; }
-.course-photo-layer { position: absolute; inset: 0; opacity: 0; transition: opacity 420ms var(--ease-settle); }
-.course-photo-layer[data-active=true] { opacity: 1; }
+/* Each course's photo is a pane that slides across, while the picture inside it travels
+   the other way more slowly and settles from a slight zoom. --p is the pane's side
+   (-1 before, 0 showing, 1 after); --drag follows a finger mid-swipe. */
+.course-explorer-panel { --drag: 0px; --turn: 900ms cubic-bezier(.7, 0, .16, 1); touch-action: pan-y; }
+.course-photo-layer { position: absolute; inset: 0; overflow: hidden; transform: translate3d(calc(var(--p) * 100% + var(--drag)), 0, 0); transition: transform var(--turn); will-change: transform; }
+.course-photo-inner { position: absolute; inset: 0; transform: translate3d(calc(var(--p) * -64% + var(--drag) * -.64), 0, 0); transition: transform var(--turn); will-change: transform; }
+.course-photo-inner > * { transform: scale(1.14); transition: transform 1400ms cubic-bezier(.2, .7, .2, 1); }
+.course-photo-layer[data-active=true] .course-photo-inner > * { transform: scale(1); }
+.course-explorer-panel[data-dragging] .course-photo-layer,
+.course-explorer-panel[data-dragging] .course-photo-inner { transition: none; }
 .course-photo-count { position: absolute; left: 20px; top: 20px; padding: 7px 12px; background: var(--color-forest-deep); font-size: 13px; }
 .course-explorer-detail { display: flex; flex-direction: column; padding: 32px; }
 .course-explorer-detail h3 { font-size: clamp(38px, 4.1vw, 56px); }
@@ -515,7 +529,6 @@ details.event[open] .event-body {
 .packing-mobile-outlook dd { font-size: 14px; margin-top: 5px; font-variant-numeric: tabular-nums; }
 
 @media (min-width: 768px) and (max-width: 1050px) {
-  .course-tab-photo { display: none; }
   .course-explorer-panel { grid-template-columns: 1fr 1fr; }
   .forecast-day { padding: 18px; }
   .course-card-strip dl { grid-template-columns: 2fr repeat(5, 1fr); }
@@ -532,11 +545,11 @@ details.event[open] .event-body {
   .course-explorer { padding: 48px 20px 0; }
   .section-heading { align-items: flex-start; flex-direction: column; gap: 12px; margin-bottom: 24px; }
   .section-heading p { font-size: 13px; }
-  .course-tabs { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: thin; }
-  .course-tabs button { min-width: 192px; padding: 12px 10px; scroll-snap-align: start; gap: 9px; }
-  .course-tab-photo { width: 44px; height: 44px; }
-  .course-tabs strong { font-size: 14px; }
-  .course-tab-date { font-size: 11px; }
+  .course-tabs { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .course-tabs::-webkit-scrollbar { display: none; }
+  .course-tabs button { flex: 0 0 auto; min-width: 150px; padding: 14px 16px 16px; scroll-snap-align: start; gap: 4px; }
+  .course-tabs strong { font-size: 19px; }
+  .course-tab-date { font-size: 12px; gap: 8px; }
   .course-explorer-panel { display: flex; flex-direction: column; }
   .course-explorer-photo { min-height: 0; height: 280px; }
   .course-explorer-detail { padding: 24px; }
@@ -612,7 +625,19 @@ details.event[open] .event-body {
 @media (max-width: 359px) { .packing-save-state { display: none; } }
 
 .course-explorer-details { display: grid; min-width: 0; }
-.course-explorer-detail { grid-area: 1 / 1; visibility: hidden; }
-.course-explorer-detail[data-active=true] { visibility: visible; }
+/* The outgoing course's text fades as the incoming one rises in, line by line. */
+.course-explorer-detail { grid-area: 1 / 1; visibility: hidden; opacity: 0; transition: opacity 240ms ease, visibility 0s 240ms; }
+.course-explorer-detail[data-active=true] { visibility: visible; opacity: 1; transition: none; }
+.course-explorer-detail[data-active=true] > * { animation: course-rise 760ms cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(240ms + var(--n, 0) * 60ms); }
+.course-explorer-detail > :nth-child(2) { --n: 1; }
+.course-explorer-detail > :nth-child(3) { --n: 2; }
+.course-explorer-detail > :nth-child(4) { --n: 3; }
+.course-explorer-detail > :nth-child(5) { --n: 4; }
+.course-explorer-detail > :nth-child(6) { --n: 5; }
+@keyframes course-rise { from { opacity: 0; transform: translateY(18px); } }
+@media (prefers-reduced-motion: reduce) {
+  .course-photo-layer, .course-photo-inner, .course-photo-inner > * { transition: none; }
+  .course-explorer-detail[data-active=true] > * { animation: none; }
+}
 #courses, #forecast { scroll-margin-top: 24px; }
 .forecast-board { color: var(--color-limestone); }
