@@ -4,6 +4,7 @@ import type { RoundInfo } from "@/components/public/features";
 import { ScheduleView } from "@/components/public/ScheduleView";
 import { courseFacts, type CourseFacts } from "@/lib/catalog";
 import { photosForEvents, slotFor } from "@/lib/photos";
+import { placeFor } from "@/lib/resortMap";
 import { dateRange, eachDay, zonedToUtc } from "@/lib/time";
 import { getTrip, getTripNow, isPast, isUnderway } from "@/lib/trip";
 import { getForecast } from "@/lib/weather";
@@ -19,7 +20,7 @@ export default async function SchedulePage({
   const { day } = await searchParams;
   const data = await getTrip(slug);
   if (!data) notFound();
-  const { trip, events, people, rounds } = data;
+  const { trip, events, people, rounds, lodgings } = data;
   const [{ now, phase }, weather] = await Promise.all([getTripNow(trip), getForecast(trip)]);
 
   // Every trip day gets a tab, plus any day outside the trip that has an event.
@@ -45,6 +46,14 @@ export default async function SchedulePage({
     }
   }
 
+  // Where each event sits on the resort map, and where the group is staying.
+  const places: Record<string, string> = {};
+  for (const e of events) {
+    const id = placeFor(e.title, e.venue);
+    if (id) places[e.id] = id;
+  }
+  const homePlace = lodgings.map((l) => placeFor(l.name)).find(Boolean) ?? null;
+
   const next =
     phase === "after"
       ? null
@@ -68,6 +77,8 @@ export default async function SchedulePage({
       rounds={roundInfo}
       facts={facts}
       states={states}
+      places={places}
+      homePlace={homePlace}
       initialDay={requested ?? today ?? days[0]}
       today={today}
       upNext={
