@@ -60,6 +60,9 @@ export function ForecastTimeline({ data, events, time, from, to, nights, selecte
   const windY = y(speed[from]);
   const windBelow = windY < FLOOR - 14;
   const gustY = Math.min(y(gust[from]), windBelow ? windY - 2 : windY - 13);
+  // "9:10 AM", on the marker's tab.
+  const minutes = Math.round((time % 24) * 60) % 1440;
+  const clockAt = `${Math.floor(minutes / 60) % 12 || 12}:${String(minutes % 60).padStart(2, "0")} ${minutes < 720 ? "AM" : "PM"}`;
   return (
     <div className="wind-plot">
       <div className="wind-plot-axis" aria-hidden="true">
@@ -84,12 +87,19 @@ export function ForecastTimeline({ data, events, time, from, to, nights, selecte
               <rect key={e.id} className={`wind-plot-span ${selected(e) ? "is-on" : ""} ${e.sunsetNote ? "is-late" : ""}`}
                 x={x(e.start)} y={LANE - 3} width={Math.max(3, x(e.end) - x(e.start))} height="2" />
             ))}
-            <line className="wind-plot-cursor" x1={cursor * 10} x2={cursor * 10} y1={LANE - 6} y2={H} vectorEffect="non-scaling-stroke" />
           </g>
         </svg>
         {/* The two curves name themselves at the start of the span, in place of a key. */}
         <span className="wind-plot-name is-above" style={{ top: `${(gustY / H) * 100}%` }} aria-hidden="true">Gusts</span>
         <span className={`wind-plot-name is-wind ${windBelow ? "is-below" : "is-above"}`} style={{ top: `${(windY / H) * 100}%` }} aria-hidden="true">Wind</span>
+        {/* The time marker: a line from the lane to the axis, ending in a tab that carries
+            the hour between two arrows, in the manner of the flags above it. */}
+        <span className="wind-plot-cursor" style={{ left: `${cursor}%`, top: `${((LANE - 6) / H) * 100}%` }} aria-hidden="true" />
+        <span className="wind-plot-handle" style={{ "--at": `${cursor}%` } as React.CSSProperties} aria-hidden="true">
+          <svg width="5" height="8" viewBox="0 0 5 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 1 1 4l3 3" /></svg>
+          {clockAt}
+          <svg width="5" height="8" viewBox="0 0 5 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m1 1 3 3-3 3" /></svg>
+        </span>
         <span className="wind-plot-point" style={{ left: `${cursor}%`, top: `${(y(interpolate(speed, time)) / H) * 100}%` }} />
         <input type="range" min={from} max={to - 1} step={1 / 60} value={Math.min(to - 1, Math.max(from, time))}
           onChange={e => onChange(Number(e.target.value))} aria-label="Forecast time" aria-valuetext={timelineLabel(data.times, time)} />
@@ -113,7 +123,8 @@ export function ForecastTimeline({ data, events, time, from, to, nights, selecte
           {Array.from({length: Math.floor(span / ticks) + 1}, (_, i) => {
             const hour = from + i * ticks;
             const local = data.times[hour];
-            return <span key={hour} style={{left: `${(hour - from) / span * 100}%`}}>{span > 24 ? new Intl.DateTimeFormat("en-US", {weekday: "short", timeZone: "UTC"}).format(new Date(`${local}Z`)) : i === 0 ? "12 AM" : i === 2 ? "Noon" : `${i * 6 % 12 || 12} ${i < 2 ? "AM" : "PM"}`}</span>;
+            // A label the marker's tab is sitting on steps aside.
+            return <span key={hour} style={{left: `${(hour - from) / span * 100}%`, opacity: Math.abs((hour - from) / span * 100 - cursor) < 17 ? 0 : 1}}>{span > 24 ? new Intl.DateTimeFormat("en-US", {weekday: "short", timeZone: "UTC"}).format(new Date(`${local}Z`)) : i === 0 ? "12 AM" : i === 2 ? "Noon" : `${i * 6 % 12 || 12} ${i < 2 ? "AM" : "PM"}`}</span>;
           })}
         </div>
       </div>
