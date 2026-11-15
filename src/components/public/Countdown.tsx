@@ -9,7 +9,7 @@ const WORDS = [
 const word = (n: number) => WORDS[n] ?? String(n);
 const plural = (n: number, unit: string) => `${word(n)} ${unit}${n === 1 ? "" : "s"}`;
 
-/** The wait, written as a sentence fragment: "Five days", "Nine hours", "Twenty minutes". */
+/** The wait in words: "Five days", "Nine hours", "20 minutes". */
 export function waitLabel(msLeft: number): string {
   const minutes = Math.max(0, Math.floor(msLeft / 60_000));
   const days = Math.floor(minutes / 1440);
@@ -19,16 +19,17 @@ export function waitLabel(msLeft: number): string {
   return plural(Math.max(1, minutes), "minute");
 }
 
+/** Live text for the time left until `target`. Renders nothing once it has passed. */
 export function Countdown({
   target,
   initialNow,
-  suffix,
+  className,
 }: {
-  /** ISO instant of the first tee time */
+  /** ISO instant being counted down to */
   target: string;
   /** ISO instant the server rendered at, so the first paint matches */
   initialNow: string;
-  suffix: string;
+  className?: string;
 }) {
   const end = new Date(target).getTime();
   const [now, setNow] = useState(() => new Date(initialNow).getTime());
@@ -44,9 +45,5 @@ export function Countdown({
   }, []);
 
   if (end <= now) return null;
-  return (
-    <p className="serif text-[19px] italic leading-snug md:text-[22px]">
-      {waitLabel(end - now)} {suffix}
-    </p>
-  );
+  return <span className={className}>{waitLabel(end - now)}</span>;
 }
