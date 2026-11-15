@@ -19,7 +19,7 @@ export function minutesFromStart(times: string[], local: string): number {
 /** Colour for a wind speed in mph, as [r, g, b] 0-255: calm sea-mist through sand and copper to red. */
 export const SPEED_STOPS: [number, [number, number, number]][] = [
   [0, [150, 205, 200]],
-  [6, [233, 231, 224]],
+  [6, [238, 226, 196]],
   [12, [242, 205, 130]],
   [18, [226, 140, 78]],
   [25, [214, 78, 60]],
