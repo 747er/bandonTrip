@@ -16,6 +16,8 @@ folder and file name decide where a photo shows. `.jpg`, `.jpeg`, `.png`, `.webp
 | `dining/ghost-tree.jpg` | Dining rows, Schedule | Small square thumbnail | 800 px |
 | `activities/shortys.jpg` | Between-rounds row, Schedule | Small square thumbnail | 800 px |
 | `activities/punchbowl.jpg` | Between-rounds row, Schedule | Small square thumbnail | 800 px |
+| `lodging/grove-cottages.jpg` (also `chrome-lake`, `the-inn`) | Home, "Your stay" | Landscape | 1400 px |
+| `lodging/grove-cottages-living.jpg`, `-bedroom.jpg` | Home, "Your stay", two small photos under the main one (optional) | Landscape 16:10 | 1000 px |
 
 Events added later follow the same rule: golf goes in `courses/`, meals in `dining/`,
 everything else in `activities/`, named after the event title in lowercase with dashes
