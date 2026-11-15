@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { monthDay, weekday } from "@/lib/time";
 import { eventTimes, teeLabel, type PublicEvent } from "@/lib/trip";
 import type { DayWeather } from "@/lib/weather";
@@ -62,6 +62,7 @@ export function MobileDay({
   start: string | null;
 }) {
   const [index, setIndex] = useState(initial);
+  const touch = useRef<{x: number; y: number} | null>(null);
   const { event, weather } = stops[index];
   const isNext = live && index === initial;
   const button =
@@ -71,6 +72,14 @@ export function MobileDay({
     <section
       aria-roledescription="carousel"
       aria-label="Trip events, in order"
+      onTouchStart={e => { touch.current = {x: e.touches[0].clientX, y: e.touches[0].clientY}; }}
+      onTouchEnd={e => {
+        if (!touch.current) return;
+        const dx = e.changedTouches[0].clientX - touch.current.x;
+        const dy = e.changedTouches[0].clientY - touch.current.y;
+        touch.current = null;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) setIndex(i => Math.max(0, Math.min(stops.length - 1, i + (dx < 0 ? 1 : -1))));
+      }}
       className="on-forest relative z-10 -mt-px text-limestone md:hidden"
       style={{ background: "linear-gradient(to bottom, #1b3d31 0%, #17332b 40%, #10261f 100%)" }}
     >
