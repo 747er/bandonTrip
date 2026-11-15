@@ -42,9 +42,27 @@ export const TRIP = {
   lodging: "Grove Cottages",
 };
 
+/** Our six. Their names are set in bold in the pairings. */
+export const GROUP = ["Cody Wilson", "Cam Woolsey", "Justin Pennington", "Erich Krueck", "Jason Koerner", "JD Kritser"];
+
+// Golf start and end times are our own group's first and last tee times, not the whole
+// club's window, and teeTimes lists only the times one of us is in.
 export const EVENTS: TripEvent[] = [
   // ---- Thursday ----
-  { type: "golf", date: "2026-11-19", startTime: "10:10", endTime: "11:10", title: "Old Macdonald", venue: "Old Macdonald", address: RESORT, par: 71 },
+  {
+    type: "golf",
+    date: "2026-11-19",
+    startTime: "10:20",
+    endTime: "10:40",
+    title: "Old Macdonald",
+    venue: "Old Macdonald",
+    address: RESORT,
+    par: 71,
+    teeTimes: [
+      { time: "10:20", players: ["Erich Krueck", "Jason Koerner", "Cody Wilson", "Cam Woolsey"] },
+      { time: "10:40", players: ["Brian Hansen", "Alex Thompson", "JD Kritser", "Justin Pennington"] },
+    ],
+  },
   {
     type: "activity",
     date: "2026-11-19",
@@ -58,14 +76,53 @@ export const EVENTS: TripEvent[] = [
   { type: "dining", date: "2026-11-19", startTime: "17:30", title: "Trails End", venue: "Trails End Restaurant", address: RESORT, partySize: 6 },
 
   // ---- Friday ----
-  { type: "golf", date: "2026-11-20", startTime: "08:20", endTime: "09:30", title: "Pacific Dunes", venue: "Pacific Dunes", address: RESORT, par: 71 },
+  {
+    type: "golf",
+    date: "2026-11-20",
+    startTime: "08:30",
+    endTime: "08:40",
+    title: "Pacific Dunes",
+    venue: "Pacific Dunes",
+    address: RESORT,
+    par: 71,
+    teeTimes: [
+      { time: "08:30", players: ["Cam Woolsey", "Cody Wilson", "Justin Pennington", "JD Kritser"] },
+      { time: "08:40", players: ["Erich Krueck", "Jason Koerner", "Aaron Wagner", "Brian Campagna"] },
+    ],
+  },
   { type: "activity", date: "2026-11-20", startTime: "15:00", title: "Shorty's", venue: "Shorty's", address: RESORT },
   { type: "dining", date: "2026-11-20", startTime: "19:30", title: "Pacific Grill", venue: "Pacific Grill", address: RESORT, partySize: 6 },
 
   // ---- Saturday ----
-  { type: "golf", date: "2026-11-21", startTime: "08:00", endTime: "08:50", title: "Bandon Trails", venue: "Bandon Trails", address: RESORT, par: 71 },
+  {
+    type: "golf",
+    date: "2026-11-21",
+    startTime: "08:10",
+    endTime: "08:20",
+    title: "Bandon Trails",
+    venue: "Bandon Trails",
+    address: RESORT,
+    par: 71,
+    teeTimes: [
+      { time: "08:10", players: ["JD Kritser", "Justin Pennington", "Erich Krueck", "Jason Koerner"] },
+      { time: "08:20", players: ["Cam Woolsey", "Cody Wilson", "Aaron Wagner", "Brian Campagna"] },
+    ],
+  },
   { type: "dining", date: "2026-11-21", startTime: "17:00", title: "Ghost Tree", venue: "Ghost Tree", address: RESORT, partySize: 6 },
 
   // ---- Sunday ----
-  { type: "golf", date: "2026-11-22", startTime: "08:10", endTime: "09:30", title: "Bandon Dunes", venue: "Bandon Dunes", address: RESORT, par: 72 },
+  {
+    type: "golf",
+    date: "2026-11-22",
+    startTime: "08:20",
+    endTime: "09:20",
+    title: "Bandon Dunes",
+    venue: "Bandon Dunes",
+    address: RESORT,
+    par: 72,
+    teeTimes: [
+      { time: "08:20", players: ["Erich Krueck", "Jason Koerner", "Cody Wilson", "Cam Woolsey"] },
+      { time: "09:20", players: ["Trent Bach", "Andrew Mertz", "JD Kritser", "Justin Pennington"] },
+    ],
+  },
 ];
