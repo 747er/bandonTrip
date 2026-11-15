@@ -4,6 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { Map as MapLibre, Marker, setWorkerUrl } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { WindData } from "@/lib/wind";
+import coast from "@/lib/coast.json";
 import { compass, minutesFromStart, SPEED_STOPS } from "@/lib/windMath";
 import { WindParticles } from "./particles";
 
@@ -34,13 +35,55 @@ export type WindPlace = {
   side: "left" | "right";
 };
 
+/** The shoreline as [latitude, longitude], south to north (scripts/trace-coast.mjs) */
+const COAST = coast as [number, number][];
+
 // The aerial tiles we host cover these z15 tiles (see scripts/build-tiles.mjs).
 const Z15 = { x0: 5059, x1: 5063, y0: 12012, y1: 12019 };
 const lonOf = (x: number) => (x / 2 ** 15) * 360 - 180;
 const latOf = (y: number) => (Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / 2 ** 15))) * 180) / Math.PI;
 const NAIP_BOUNDS: [number, number, number, number] = [lonOf(Z15.x0), latOf(Z15.y1 + 1), lonOf(Z15.x1 + 1), latOf(Z15.y0)];
 
-const DIM = { "raster-brightness-max": 0.7, "raster-saturation": -0.25, "raster-fade-duration": 200 };
+// Our aerial tiles are darker and flatter than the wide-area imagery around them (about
+// 0.62 of its brightness, measured on matching tiles), so each is set to meet the other.
+const NAIP_PAINT = { "raster-brightness-max": 0.84, "raster-saturation": -0.2, "raster-fade-duration": 200 };
+const WIDE_PAINT = { "raster-brightness-max": 0.52, "raster-saturation": -0.42, "raster-fade-duration": 200 };
+
+/**
+ * A picture of "open ocean": transparent over land and the surf, fading to the map's
+ * background colour a little way offshore. Laid over the imagery, it hides the ragged
+ * line out at sea where the aerial coverage stops.
+ */
+const SEA = { west: -125.3, east: -124.0, south: COAST[0][0], north: COAST[COAST.length - 1][0] };
+function seaFade(): string {
+  const size = 1024;
+  const cv = document.createElement("canvas");
+  cv.width = cv.height = size;
+  const ctx = cv.getContext("2d")!;
+  const img = ctx.createImageData(size, size);
+  const mercY = (lat: number) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
+  const top = mercY(SEA.north);
+  const bottom = mercY(SEA.south);
+  for (let y = 0; y < size; y++) {
+    // Rows are evenly spaced on the map, not in latitude.
+    const lat = (Math.atan(Math.exp(top + ((bottom - top) * y) / (size - 1))) * 360) / Math.PI - 90;
+    const at = Math.min(COAST.length - 2, Math.max(0, Math.floor((lat - SEA.south) / (COAST[1][0] - COAST[0][0]))));
+    const f = (lat - COAST[at][0]) / (COAST[at + 1][0] - COAST[at][0]);
+    const shore = COAST[at][1] + (COAST[at + 1][1] - COAST[at][1]) * f;
+    for (let x = 0; x < size; x++) {
+      const lon = SEA.west + ((SEA.east - SEA.west) * x) / (size - 1);
+      // Clear until ~500 m off the shore, solid by ~1.4 km.
+      const t = Math.min(1, Math.max(0, (shore - 0.006 - lon) / 0.011));
+      const i = (y * size + x) * 4;
+      img.data[i] = 13;
+      img.data[i + 1] = 33;
+      img.data[i + 2] = 27;
+      img.data[i + 3] = Math.round(255 * t * t * (3 - 2 * t));
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return cv.toDataURL("image/png");
+}
 const CELL = 18; // spacing of the on-screen wind grid, px
 
 const hourLabel = (local: string) => {
@@ -72,6 +115,7 @@ export function WindExplorer({
   const map = useRef<MapLibre | null>(null);
   const live = useRef({ t: initialHour, dirty: true });
   const pins = useRef(new Map<string, HTMLElement>());
+  const home = useRef<() => void>(() => {});
 
   // Where the group is at the chosen hour: wherever the day's most recent event began,
   // and home before the day's first one.
@@ -93,6 +137,29 @@ export function WindExplorer({
   // ---- The map, the wind grid and the particle loop ----
   useEffect(() => {
     if (!mapBox.current || !canvas.current) return;
+    // Open with every pin in view, clear of whatever sits over the map at this width.
+    const phone = window.innerWidth < 768;
+    const pinLons = places.map((p) => p.lon);
+    const pinLats = places.map((p) => p.lat);
+    const frame = {
+      bounds: (places.length
+        ? [
+            [Math.min(...pinLons), Math.min(...pinLats)],
+            [Math.max(...pinLons), Math.max(...pinLats)],
+          ]
+        : [
+            [center[0] - 0.02, center[1] - 0.02],
+            [center[0] + 0.02, center[1] + 0.02],
+          ]) as [[number, number], [number, number]],
+      options: {
+        // Labels run to the right of their pins, so that side needs the most room.
+        padding: phone
+          ? { top: 84, bottom: 235, left: 36, right: 150 }
+          : { top: 130, bottom: 340, left: 420, right: 220 },
+        maxZoom: 14.4,
+      },
+    };
+    home.current = () => m.fitBounds(frame.bounds, { ...frame.options, duration: 1200 });
     // The library's worker script is copied into public/ at build time (scripts/photos.mjs).
     setWorkerUrl("/maplibre-worker.mjs");
     const m = new MapLibre({
@@ -106,6 +173,16 @@ export function WindExplorer({
             tileSize: 256,
             maxzoom: 16,
           },
+          sea: {
+            type: "image",
+            url: seaFade(),
+            coordinates: [
+              [SEA.west, SEA.north],
+              [SEA.east, SEA.north],
+              [SEA.east, SEA.south],
+              [SEA.west, SEA.south],
+            ],
+          },
           naip: {
             type: "raster",
             tiles: [`${window.location.origin}/tiles/naip/{z}/{x}/{y}.webp`],
@@ -117,13 +194,13 @@ export function WindExplorer({
         },
         layers: [
           { id: "ground", type: "background", paint: { "background-color": "#0d211b" } },
-          // The wide-area imagery is brighter than ours: dim it further so the join is quiet.
-          { id: "wide", type: "raster", source: "wide", paint: { ...DIM, "raster-brightness-max": 0.56 } },
-          { id: "naip", type: "raster", source: "naip", paint: DIM },
+          { id: "wide", type: "raster", source: "wide", paint: WIDE_PAINT },
+          { id: "naip", type: "raster", source: "naip", paint: NAIP_PAINT },
+          { id: "sea", type: "raster", source: "sea", paint: { "raster-fade-duration": 0 } },
         ],
       },
-      center,
-      zoom: 13.4,
+      bounds: frame.bounds,
+      fitBoundsOptions: frame.options,
       minZoom: 9.6,
       maxZoom: 19.5,
       maxBounds: [
@@ -178,7 +255,9 @@ export function WindExplorer({
     let windY = new Float32Array(0);
 
     const locate = () => {
-      const box = mapBox.current!;
+      // The map can report a move or resize just after the page has been left.
+      const box = mapBox.current;
+      if (!box) return;
       gw = Math.ceil(box.clientWidth / CELL) + 2;
       gh = Math.ceil(box.clientHeight / CELL) + 2;
       cellCol = new Float32Array(gw * gh);
@@ -231,7 +310,8 @@ export function WindExplorer({
     });
 
     const size = () => {
-      particles.resize(mapBox.current!.clientWidth, mapBox.current!.clientHeight);
+      if (!mapBox.current) return;
+      particles.resize(mapBox.current.clientWidth, mapBox.current.clientHeight);
       locate();
     };
 
@@ -337,7 +417,7 @@ export function WindExplorer({
     setT(value);
   };
   const zoom = (by: number) => map.current?.easeTo({ zoom: map.current.getZoom() + by, duration: 300 });
-  const reset = () => map.current?.flyTo({ center, zoom: 13.4, duration: 1200 });
+  const reset = () => home.current();
   const control =
     "flex h-11 w-11 items-center justify-center bg-forest-deep/85 text-limestone backdrop-blur-md transition-colors hover:bg-forest";
 
@@ -474,8 +554,12 @@ export function WindExplorer({
         {/* Type sits over the top and bottom of the picture: shade only those. */}
         <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to bottom, rgb(13 33 27 / 0.75) 0%, rgb(13 33 27 / 0) 20%, rgb(13 33 27 / 0) 62%, rgb(13 33 27 / 0.8) 100%)" }} />
 
-        {/* ---------- Phones: one line of readout, one strip of timeline, and the map ---------- */}
-        <p className="figures absolute inset-x-0 top-14 flex items-center gap-2.5 bg-forest-deep/80 px-4 py-1.5 text-label backdrop-blur-md md:hidden">
+        {/* ---------- Phones: one line of readout across the top (the site header steps aside
+            on this page), one strip of timeline, and the map ---------- */}
+        <p
+          className="figures absolute inset-x-0 top-0 flex items-center gap-2.5 bg-forest-deep/85 px-4 pb-1.5 text-label backdrop-blur-md md:hidden"
+          style={{ paddingTop: "calc(0.375rem + env(safe-area-inset-top))" }}
+        >
           {arrow(30)}
           <span className="display text-[30px] leading-none">{speed[h]}</span>
           <span className="font-semibold leading-tight">
@@ -498,15 +582,6 @@ export function WindExplorer({
             )}
           </span>
         </p>
-
-        <button
-          type="button"
-          className="absolute right-3 top-[6.75rem] flex h-10 w-10 items-center justify-center bg-forest-deep/80 text-limestone backdrop-blur-md md:hidden"
-          aria-label="Back to the whole resort"
-          onClick={reset}
-        >
-          <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V3h4M15 7V3h-4M3 11v4h4M15 11v4h-4" /></svg>
-        </button>
 
         <div className="absolute inset-x-0 bottom-[calc(65px+env(safe-area-inset-bottom))] bg-forest-deep/88 px-4 pb-2 backdrop-blur-md md:hidden">
           <div role="group" aria-label="Day" className="figures flex items-center text-label">
