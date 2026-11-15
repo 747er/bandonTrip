@@ -43,12 +43,21 @@ export function Carousel({
     setIndex(Math.max(0, shown.indexOf(el.children[best])));
   };
 
+  const go = (by: number) => {
+    const el = track.current;
+    if (!el) return;
+    const shown = Array.from(el.children).filter(c => (c as HTMLElement).offsetWidth > 0) as HTMLElement[];
+    const next = shown[Math.max(0, Math.min(shown.length - 1, index + by))];
+    if (next) el.scrollTo({left: next.offsetLeft - el.offsetLeft - (el.clientWidth - next.offsetWidth) / 2,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth"});
+  };
+
   return (
     <div>
       <div ref={track} onScroll={onScroll} role="group" aria-label={label} className={className}>
         {children}
       </div>
-      <div className="mt-3 flex items-center gap-4 px-5 md:hidden" aria-hidden="true">
+      <div className="mt-3 flex items-center gap-4 px-5 md:hidden">
         <p className="figures text-label font-semibold">
           {two(index + 1)} <span className="font-normal text-moss">/ {two(count)}</span>
         </p>
@@ -58,7 +67,13 @@ export function Carousel({
             style={{ width: `${((index + 1) / count) * 100}%` }}
           />
         </div>
-        <p className="text-label text-moss">Swipe</p>
+        <div className="flex gap-1">
+          {[-1, 1].map(by => <button key={by} type="button" aria-label={by < 0 ? "Previous course" : "Next course"}
+            disabled={by < 0 ? index === 0 : index >= count - 1} onClick={() => go(by)}
+            className="flex h-11 w-11 items-center justify-center border border-rule transition-colors enabled:hover:bg-paper disabled:opacity-30">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d={by < 0 ? "M10 3L5 8l5 5" : "M6 3l5 5-5 5"} /></svg>
+          </button>)}
+        </div>
       </div>
     </div>
   );
