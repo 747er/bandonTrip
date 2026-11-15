@@ -55,16 +55,16 @@ export const EVENTS: TripEvent[] = [
     address: RESORT,
     description: "The putting course beside the Pacific Dunes clubhouse.",
   },
-  { type: "dining", date: "2026-11-19", startTime: "17:30", title: "Trails End", venue: "Trails End Restaurant", address: RESORT, partySize: 5, group: "The Five" },
+  { type: "dining", date: "2026-11-19", startTime: "17:30", title: "Trails End", venue: "Trails End Restaurant", address: RESORT, partySize: 6 },
 
   // ---- Friday ----
   { type: "golf", date: "2026-11-20", startTime: "08:20", endTime: "09:30", title: "Pacific Dunes", venue: "Pacific Dunes", address: RESORT, par: 71 },
   { type: "activity", date: "2026-11-20", startTime: "15:00", title: "Shorty's", venue: "Shorty's", address: RESORT },
-  { type: "dining", date: "2026-11-20", startTime: "19:30", title: "Pacific Grill", venue: "Pacific Grill", address: RESORT, partySize: 5, group: "The Five" },
+  { type: "dining", date: "2026-11-20", startTime: "19:30", title: "Pacific Grill", venue: "Pacific Grill", address: RESORT, partySize: 6 },
 
   // ---- Saturday ----
   { type: "golf", date: "2026-11-21", startTime: "08:00", endTime: "08:50", title: "Bandon Trails", venue: "Bandon Trails", address: RESORT, par: 71 },
-  { type: "dining", date: "2026-11-21", startTime: "17:00", title: "Ghost Tree", venue: "Ghost Tree", address: RESORT, partySize: 5, group: "The Five" },
+  { type: "dining", date: "2026-11-21", startTime: "17:00", title: "Ghost Tree", venue: "Ghost Tree", address: RESORT, partySize: 6 },
 
   // ---- Sunday ----
   { type: "golf", date: "2026-11-22", startTime: "08:10", endTime: "09:30", title: "Bandon Dunes", venue: "Bandon Dunes", address: RESORT, par: 72 },
