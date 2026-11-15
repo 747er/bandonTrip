@@ -11,7 +11,6 @@ import {
 } from "@/components/public/features";
 import { NextUp, type NextUpSlide } from "@/components/public/NextUp";
 import { Photo, PhotoCredit, type PhotoData } from "@/components/public/Photo";
-import { courseFacts } from "@/lib/catalog";
 import { HERO_SLOT, photoFor, photosForEvents, slotFor } from "@/lib/photos";
 import {
   addDays,
@@ -215,7 +214,6 @@ function Courses({ data, photos, weather, roundOf, heading }: Ctx & { heading: s
     photo: photos[e.id],
     slot: slotFor(e),
     round: roundOf(e.id),
-    facts: courseFacts(e.venue || e.title),
     weather: weather[e.date],
     href: scheduleHref(data.trip.slug, e.date),
   });
@@ -449,7 +447,6 @@ function During(ctx: Ctx) {
                 photo={photos[tomorrowGolf.id]}
                 slot={slotFor(tomorrowGolf)}
                 round={roundOf(tomorrowGolf.id)}
-                facts={courseFacts(tomorrowGolf.venue || tomorrowGolf.title)}
                 weather={weather[tomorrowGolf.date]}
                 href={scheduleHref(trip.slug, tomorrowGolf.date)}
                 sizes="(min-width: 768px) 55vw, 100vw"
