@@ -47,12 +47,12 @@ const NAIP_BOUNDS: [number, number, number, number] = [lonOf(Z15.x0), latOf(Z15.
 
 // Our aerial tiles are darker and flatter than the wide-area imagery around them (about
 // 0.62 of its brightness, measured on matching tiles), so each is set to meet the other.
-// Both keep their daylight colour: dune grass, sand and surf, under the wind.
-const NAIP_PAINT = { "raster-brightness-max": 0.9, "raster-saturation": 0.04, "raster-contrast": 0.04, "raster-fade-duration": 200 };
-const WIDE_PAINT = { "raster-brightness-max": 0.58, "raster-saturation": -0.05, "raster-fade-duration": 200 };
+// Both are dimmed a little, so the wind and the dark panels read over the ground.
+const NAIP_PAINT = { "raster-brightness-max": 0.72, "raster-saturation": 0.04, "raster-contrast": 0.04, "raster-fade-duration": 200 };
+const WIDE_PAINT = { "raster-brightness-max": 0.46, "raster-saturation": -0.05, "raster-fade-duration": 200 };
 
 /** Deep Pacific: the open sea past the imagery, and the ground under the map. */
-const OCEAN: [number, number, number] = [24, 58, 72];
+const OCEAN: [number, number, number] = [18, 46, 54];
 const OCEAN_HEX = `#${OCEAN.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 
 /** Room the map leaves for the panels over it when it frames places. */
@@ -544,7 +544,7 @@ export function WindExplorer({
       <circle cx="26" cy="26" r="24" fill="none" stroke="currentColor" strokeOpacity=".22" />
       <path d="M26 3v3M49 26h-3M26 49v-3M3 26h3" stroke="currentColor" strokeOpacity=".5" />
       <text x="26" y="13" textAnchor="middle" fontSize="8" fontWeight="600" fill="currentColor" fillOpacity=".7">N</text>
-      <g className="wind-compass-needle" transform={`rotate(${windDirection + 180} 26 26)`}><path d="M26 16L32 34L26 30L20 34Z" fill="#a65f36" /></g>
+      <g className="wind-compass-needle" transform={`rotate(${windDirection + 180} 26 26)`}><path d="M26 16L32 34L26 30L20 34Z" fill="var(--color-copper)" /></g>
     </svg>
   );
   const icon = (path: string, size = 18) => <svg width={size} height={size} viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={path} /></svg>;
