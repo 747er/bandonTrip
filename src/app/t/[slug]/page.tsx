@@ -25,15 +25,8 @@ import {
   zonedToUtc,
   type ZonedNow,
 } from "@/lib/time";
-import {
-  getTrip,
-  getTripNow,
-  roundNumbers,
-  isPast,
-  isUnderway,
-  type PublicEvent,
-  type PublicTrip,
-} from "@/lib/trip";
+import { getTripNow, roundNumbers, isPast, isUnderway, type PublicEvent, type PublicTrip } from "@/lib/trip";
+import { getTrip } from "@/lib/viewer";
 import { getForecast, type DayWeather } from "@/lib/weather";
 
 export const dynamic = "force-dynamic";
@@ -206,6 +199,7 @@ function phoneDays({ data, now, weather }: Ctx) {
   const first = events[initial];
   return (
     <MobileDay
+      key={data.viewer?.id ?? "nobody"}
       stops={events.map((e): MobileStop => ({ event: e, weather: weather[e.date] }))}
       initial={initial}
       live={upcoming >= 0 || current >= 0}
@@ -215,6 +209,30 @@ function phoneDays({ data, now, weather }: Ctx) {
       now={now.instant.toISOString()}
       timeZone={trip.timezone}
     />
+  );
+}
+
+/** Where the viewer is staying and with whom: one quiet line under the cover. */
+function Stay({ data }: Ctx) {
+  const { viewer, trip } = data;
+  if (!viewer) return null;
+  const mates = viewer.roommates;
+  const list = mates.length > 1 ? `${mates.slice(0, -1).join(", ")} and ${mates[mates.length - 1]}` : mates[0];
+  return (
+    <section aria-label="Where you're staying" className={`${WIDE} pt-8 md:pt-12`}>
+      <Link href={scheduleHref(trip.slug)} className="group flex items-center gap-4 border-y border-rule py-4">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest text-limestone">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true">
+            <path d="M2.5 7.5L8 3l5.5 4.5V13h-11z" />
+          </svg>
+        </span>
+        <span className="min-w-0">
+          <span className="block text-label text-moss">{viewer.firstName}, you&rsquo;re staying in</span>
+          <span className="serif block text-[22px] leading-tight group-hover:text-forest">{viewer.room}</span>
+          {list && <span className="mt-0.5 block text-meta text-moss">with {list}</span>}
+        </span>
+      </Link>
+    </section>
   );
 }
 
@@ -273,6 +291,8 @@ function nextUp({ data, now, weather, roundOf }: Ctx) {
   if (initial < 0) return null;
   return (
     <NextUp
+      // Keyed by who is looking, so it reopens on that person's next event.
+      key={data.viewer?.id ?? "nobody"}
       slides={slides}
       initial={initial}
       slug={trip.slug}
@@ -453,7 +473,7 @@ function Before(ctx: Ctx) {
               {trip.location && <span className="ml-3 font-medium text-paper/85">{trip.location}</span>}
             </p>
             <h1
-              className="title text-[2.875rem] md:mt-2 md:text-[clamp(4rem,9vw,8.5rem)]"
+              className="title text-[2.5rem] md:mt-2 md:text-[clamp(4rem,9vw,8.5rem)]"
               style={{ "--i": 1 } as React.CSSProperties}
             >
               {trip.title}
@@ -465,6 +485,7 @@ function Before(ctx: Ctx) {
         phone={phoneDays(ctx)}
       />
 
+      <Stay {...ctx} />
       <Courses {...ctx} heading={golf.length === 1 ? "The course" : "The courses"} />
       <Forecast data={data} weather={weather} />
       <ComingUp {...ctx} list={events.filter((e) => e.id !== first?.id).slice(0, 3)} heading="Coming up" />
