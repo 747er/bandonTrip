@@ -255,9 +255,6 @@ export function DayMap({
           );
         })}
       </ol>
-      <figcaption className="mt-2 text-fine text-moss">
-        Map by Bandon Dunes Golf Resort. The dotted line shows the order of the day, not a route.
-      </figcaption>
     </figure>
   );
 }
