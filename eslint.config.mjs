@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendor worker copied unchanged by scripts/photos.mjs.
+    "public/maplibre-worker.mjs",
   ]),
 ]);
 
