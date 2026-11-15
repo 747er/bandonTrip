@@ -257,7 +257,12 @@ function Forecast({
         <div className="mt-7 md:mt-10">
           <ForecastStrip days={days} weather={weather} today={today} playing={playing} />
         </div>
-        <p className="mt-6 text-fine text-mist">
+        <div className="on-forest mt-4 text-limestone">
+          <Link className="action" href={`/t/${data.trip.slug}/weather`}>
+            Hour by hour on the live wind map
+          </Link>
+        </div>
+        <p className="mt-2 text-fine text-mist">
           Forecast by{" "}
           <a
             className="underline underline-offset-2"
