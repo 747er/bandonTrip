@@ -28,6 +28,12 @@ export type ScheduleProps = {
   facts: Record<string, CourseFacts>;
   /** "past" | "now" per event id, only set while the trip is under way */
   states: Record<string, "past" | "now">;
+  /** Forecast at each event's start hour, as a short line of text */
+  atStart: Record<string, string>;
+  /** A note for outdoor events that run past sunset */
+  lateNote: Record<string, string>;
+  /** Sunrise and sunset per date, already formatted */
+  daylight: Record<string, { sunrise: string; sunset: string }>;
   /** Resort-map place id per event id, for events the map can show */
   places: Record<string, string>;
   /** Place id of where the group is staying, if it is on the map */
@@ -139,6 +145,17 @@ export function ScheduleView(props: ScheduleProps) {
             {dayWeather ? (
               <>
                 <Conditions weather={dayWeather} tone="light" className="sm:justify-start sm:gap-x-12" />
+                {props.daylight[day] && (
+                  <p className="figures mt-3 text-meta font-medium">
+                    Sunrise {props.daylight[day].sunrise}, sunset {props.daylight[day].sunset}
+                    <Link
+                      className="ml-4 font-semibold underline decoration-copper decoration-1 underline-offset-[5px] hover:text-copper"
+                      href={`/t/${trip.slug}/weather`}
+                    >
+                      Hour by hour on the wind map
+                    </Link>
+                  </p>
+                )}
                 <p className="mt-3 text-fine text-moss">
                   Forecast for {trip.location || "the trip"} by{" "}
                   <a className="underline underline-offset-2" href="https://open-meteo.com/" target="_blank" rel="noreferrer">
@@ -291,7 +308,7 @@ const Toggle = () => (
 );
 
 /** Golf leads the day: the course's photograph, round and tee times up front. */
-function GolfEvent({ event: e, photos, slots, rounds, facts, states, names, trip }: EventProps) {
+function GolfEvent({ event: e, photos, slots, rounds, facts, states, names, trip, atStart }: EventProps) {
   const round = rounds[e.id];
   const fact = facts[e.id];
   const state = states[e.id];
@@ -309,6 +326,9 @@ function GolfEvent({ event: e, photos, slots, rounds, facts, states, names, trip
           <p className="figures mt-3 text-fact font-semibold">
             {e.startTime ? `Tee times ${clockRange(e.startTime, e.endTime)}` : "Tee times to come"}
           </p>
+          {atStart[e.id] && (
+            <p className="figures mt-1 text-meta font-semibold text-paper">At the first tee time: {atStart[e.id]}</p>
+          )}
           <p className="figures mt-1 text-meta font-medium text-paper/90">
             {[round && `Par ${round.par}`, fact && `${fact.designer}, ${fact.opened}`]
               .filter(Boolean)
@@ -338,7 +358,7 @@ function GolfEvent({ event: e, photos, slots, rounds, facts, states, names, trip
 }
 
 /** Meals and everything else: a compact row that opens for details. */
-function PlainEvent({ event: e, photos, slots, states, names, trip }: EventProps) {
+function PlainEvent({ event: e, photos, slots, states, names, trip, atStart, lateNote }: EventProps) {
   const state = states[e.id];
   const photo = photos[e.id];
   return (
@@ -361,6 +381,9 @@ function PlainEvent({ event: e, photos, slots, states, names, trip }: EventProps
               {state === "now" && <span className="mr-2 font-semibold text-copper">Now</span>}
               {eventSummary(e)}
             </span>
+            {lateNote[e.id] && (
+              <span className="mt-0.5 block text-meta font-semibold text-copper">{lateNote[e.id]}</span>
+            )}
           </span>
           <span className="figures hidden shrink-0 text-right text-ui font-semibold sm:block">
             {e.startTime ? clockRange(e.startTime, e.endTime) : "All day"}
@@ -371,6 +394,12 @@ function PlainEvent({ event: e, photos, slots, states, names, trip }: EventProps
         </summary>
         <div className="event-body grid gap-5 border-t border-rule p-4 md:grid-cols-[1fr_auto] md:p-5">
           <div>
+            {atStart[e.id] && (
+              <p className="figures mb-4 text-ui font-medium">
+                <span className="text-label text-moss">Forecast at the start </span>
+                <span className="block">{atStart[e.id]}</span>
+              </p>
+            )}
             <Details event={e} names={names} />
             <div className="mt-2">
               <Actions event={e} slug={trip.slug} />
