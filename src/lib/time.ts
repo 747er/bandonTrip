@@ -103,6 +103,14 @@ export function clock(time: string): string {
   return `${hour}:${String(m).padStart(2, "0")} ${meridiem}`;
 }
 
+/** "10:20 and 10:40 AM", "8:20 and 9:20 AM", "11:50 AM and 12:10 PM": separate times, not a span. */
+export function clockList(times: string[]): string {
+  const all = times.map(clock);
+  const same = all.every((t) => t.slice(-2) === all[0].slice(-2));
+  const shown = all.map((t, i) => (same && i < all.length - 1 ? t.slice(0, -3) : t));
+  return shown.length <= 2 ? shown.join(" and ") : `${shown.slice(0, -1).join(", ")} and ${shown[shown.length - 1]}`;
+}
+
 /** "10:10–11:10 AM", "11:30 AM – 12:40 PM", or a single time. */
 export function clockRange(start: string, end?: string | null): string {
   if (!end || end === start) return clock(start);
