@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { TripHeading } from "@/components/public/TripHeading";
 import { PackingList } from "@/components/public/PackingList";
 import { CLUB_NOTES, LEAVE_IN_ROOM, PACKING, SOURCES } from "@/lib/packing";
 import { dateRange, eachDay } from "@/lib/time";
@@ -26,7 +27,7 @@ export default async function PackingPage({ params }: PageProps<"/t/[slug]/packi
       ? [
           ["Highs", range(days.map((d) => d.high), "°")],
           ["Lows", range(days.map((d) => d.low), "°")],
-          ["Wind", `up to ${Math.max(...days.map((d) => d.gust ?? d.wind))} mph`],
+          ["Peak wind", `up to ${Math.max(...days.map((d) => d.gust ?? d.wind))} mph`],
           ...(days.some((d) => d.rainChance !== null)
             ? [["Rain", `up to ${Math.max(...days.map((d) => d.rainChance ?? 0))}%`]]
             : []),
@@ -35,26 +36,20 @@ export default async function PackingPage({ params }: PageProps<"/t/[slug]/packi
 
   return (
     <div className="mx-auto max-w-6xl px-5 pb-16 pt-20 md:px-10 md:pt-32">
-      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
-        <h1 className="display text-[clamp(2.75rem,11vw,4.5rem)]">Packing list</h1>
-        <p className="pb-1.5 text-meta text-moss">
-          {dateRange(trip.startDate, trip.endDate)}
-          {trip.location && `, ${trip.location}`}
-        </p>
-      </div>
-      <p className="serif mt-4 max-w-2xl text-[19px] italic leading-relaxed md:text-[21px]">
-        No such thing as bad weather, only bad gear. This is the resort&rsquo;s own advice, turned into a
-        checklist. Your ticks stay on this device.
-      </p>
+      <TripHeading title="Packing list" dates={dateRange(trip.startDate, trip.endDate)}>
+        <p className="serif">No such thing as bad weather, only bad gear.</p>
+        <span>Based on the resort’s packing advice. Your ticks stay on this device.</span>
+      </TripHeading>
+      {outlook && <dl className="packing-mobile-outlook lg:hidden" aria-label="Trip forecast">{outlook.map(([name, value]) => <div key={name}><dt>{name === "Rain" ? "Rain, max" : name}</dt><dd>{value.replace("up to ", "").replace(" to ", "–")}</dd></div>)}</dl>}
 
-      <div className="mt-8 grid gap-x-14 gap-y-12 lg:grid-cols-[minmax(0,1fr)_19rem]">
+      <div className="mt-4 grid gap-x-14 md:mt-8 gap-y-12 lg:grid-cols-[minmax(0,1fr)_19rem]">
         <div className="min-w-0">
           <PackingList sections={PACKING} storageKey={`bt-packed-${trip.slug}`} />
         </div>
 
         <aside className="space-y-8 lg:sticky lg:top-8 lg:self-start">
           {outlook && (
-            <section aria-labelledby="outlook" className="bg-forest-deep p-6 text-limestone">
+            <section aria-labelledby="outlook" className="packing-outlook hidden bg-forest-deep p-6 text-limestone lg:block">
               <h2 id="outlook" className="display text-[28px]">
                 Forecast for our days
               </h2>
@@ -67,8 +62,8 @@ export default async function PackingPage({ params }: PageProps<"/t/[slug]/packi
                 ))}
               </dl>
               <div className="on-forest">
-                <Link className="action" href={`/t/${trip.slug}/schedule`}>
-                  Day by day on the schedule
+                <Link className="action" href={`/t/${trip.slug}/weather`}>
+                  Explore the wind forecast
                 </Link>
               </div>
               <p className="text-fine text-mist">
@@ -102,7 +97,7 @@ export default async function PackingPage({ params }: PageProps<"/t/[slug]/packi
             </h2>
             <ul className="mt-3 space-y-3 text-meta">
               {CLUB_NOTES.map((note) => (
-                <li key={note} className="border-l-2 border-copper pl-4">
+                <li key={note} className="border-t border-rule pt-3">
                   {note}
                 </li>
               ))}
