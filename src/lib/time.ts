@@ -111,15 +111,6 @@ export function clockList(times: string[]): string {
   return shown.length <= 2 ? shown.join(" and ") : `${shown.slice(0, -1).join(", ")} and ${shown[shown.length - 1]}`;
 }
 
-/** "10:10–11:10 AM", "11:30 AM – 12:40 PM", or a single time. */
-export function clockRange(start: string, end?: string | null): string {
-  if (!end || end === start) return clock(start);
-  const a = clock(start);
-  const b = clock(end);
-  if (a.slice(-2) === b.slice(-2)) return `${a.slice(0, -3)}–${b}`;
-  return `${a} – ${b}`;
-}
-
 export function addMinutes(time: string, minutes: number): string {
   const [h, m] = time.split(":").map(Number);
   const total = Math.min(23 * 60 + 59, h * 60 + m + minutes);
