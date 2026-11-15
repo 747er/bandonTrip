@@ -38,8 +38,8 @@ export function Conditions({
   grid = false,
   className = "",
 }: {
-  /** Two columns instead of one row, for narrow panels */
-  grid?: boolean;
+  /** Two columns instead of one row, for narrow panels: always, or only on phones */
+  grid?: boolean | "phone";
   weather: DayWeather;
   /** "dark" sits on forest green, "light" on limestone */
   tone?: "dark" | "light";
@@ -59,7 +59,15 @@ export function Conditions({
   if (weather.gust !== null) cells.push(["Gusts", `${weather.gust} mph`]);
   if (weather.rainChance !== null) cells.push(["Rain", `${weather.rainChance}%`]);
   return (
-    <dl className={`${grid ? "grid grid-cols-2" : "flex flex-wrap justify-between"} gap-x-5 gap-y-3 ${className}`}>
+    <dl
+      className={`${
+        grid === "phone"
+          ? "grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-between"
+          : grid
+            ? "grid grid-cols-2"
+            : "flex flex-wrap justify-between"
+      } gap-x-5 gap-y-3 ${className}`}
+    >
       {cells.map(([name, value]) => (
         <div key={name} className="flex flex-col-reverse">
           <dt className={`text-label ${label}`}>{name}</dt>
@@ -113,7 +121,7 @@ export function CourseCard({ event, photo, slot, round, weather, href, className
       </div>
       <div className="absolute inset-x-0 bottom-0 p-5 md:p-7">
         <h3 className="display text-[clamp(2.25rem,9vw,3.5rem)]">{event.title}</h3>
-        <p className="figures mt-3 flex flex-wrap gap-x-4 text-ui font-semibold">
+        <p className="figures mt-3 flex flex-col gap-x-4 text-ui font-semibold sm:flex-row sm:flex-wrap">
           <span>
             {weekday(event.date)}, {monthDay(event.date)}
           </span>
@@ -320,10 +328,14 @@ export function EventRow({
       )}
       <span className="min-w-0 flex-1">
         <span className="serif block text-[22px] leading-tight">{event.title}</span>
-        {summary && <span className="mt-1 block text-meta text-moss">{summary}</span>}
+        <span className="figures mt-1 block text-ui font-semibold sm:hidden">
+          {showDay && <span className="mr-1.5 text-copper">{weekdayShort(event.date)}</span>}
+          {event.startTime ? clockRange(event.startTime, event.endTime) : "All day"}
+        </span>
+        {summary && <span className="mt-0.5 block text-meta text-moss sm:mt-1">{summary}</span>}
         {note && <span className="block text-meta text-moss">{note}</span>}
       </span>
-      <span className="figures shrink-0 text-right text-ui font-semibold">
+      <span className="figures hidden shrink-0 text-right text-ui font-semibold sm:block">
         {showDay && <span className="block text-meta font-medium text-copper">{weekdayShort(event.date)}</span>}
         {event.startTime ? clockRange(event.startTime, event.endTime) : "All day"}
       </span>
