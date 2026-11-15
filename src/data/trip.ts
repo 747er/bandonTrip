@@ -143,7 +143,7 @@ export const EVENTS: TripEvent[] = [
     type: "activity",
     date: "2026-11-19",
     startTime: "16:00",
-    endTime: "17:30",
+    endTime: "17:00",
     title: "Punchbowl",
     venue: "The Punchbowl",
     address: RESORT,
