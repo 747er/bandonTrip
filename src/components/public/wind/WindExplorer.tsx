@@ -508,7 +508,7 @@ export function WindExplorer({
           <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V3h4M15 7V3h-4M3 11v4h4M15 11v4h-4" /></svg>
         </button>
 
-        <div className="absolute inset-x-0 bottom-[calc(61px+env(safe-area-inset-bottom))] bg-forest-deep/88 px-4 pb-2 backdrop-blur-md md:hidden">
+        <div className="absolute inset-x-0 bottom-[calc(65px+env(safe-area-inset-bottom))] bg-forest-deep/88 px-4 pb-2 backdrop-blur-md md:hidden">
           <div role="group" aria-label="Day" className="figures flex items-center text-label">
             {dates.map((d, i) => (
               <button
