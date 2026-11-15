@@ -95,19 +95,19 @@ export function TabNav({
                 <Link
                   href={tab.href}
                   aria-current={active ? "page" : undefined}
-                  className={`relative flex h-[60px] flex-col items-center justify-center gap-1 text-[11.5px] font-medium tracking-[0.01em] transition-colors ${
-                    active ? "text-forest" : "text-moss"
+                  className={`relative flex h-16 flex-col items-center justify-center gap-1 text-[13px] transition-colors ${
+                    active ? "font-semibold text-forest-deep" : "font-medium text-moss"
                   }`}
                 >
                   <span
                     aria-hidden="true"
-                    className={`absolute top-0 h-[2px] w-8 bg-copper transition-transform duration-300 ${
+                    className={`absolute top-0 h-[3px] w-10 bg-copper transition-transform duration-300 ${
                       active ? "scale-x-100" : "scale-x-0"
                     }`}
                   />
                   <svg
-                    width="22"
-                    height="22"
+                    width="24"
+                    height="24"
                     viewBox="0 0 22 22"
                     fill="none"
                     stroke="currentColor"
