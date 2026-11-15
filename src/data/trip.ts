@@ -55,6 +55,20 @@ export const ROOMS: Record<string, { name: string; /** Which pin on the maps */ 
   forest: { name: "Forest King", place: "the-inn" },
 };
 
+/** Resort-wide times, from the resort's FAQ. */
+export const STAY = { checkIn: "16:00", checkOut: "11:00", shuttle: "(541) 347-5894" };
+
+/** A line about each place people are staying, from the resort's own lodging page. */
+export const LODGING: Record<string, { name: string; about?: string; url: string }> = {
+  "grove-cottages": {
+    name: "Grove Cottages",
+    url: "https://bandondunesgolf.com/lodging/grove-cottage/",
+    about: "Four bedrooms, each with a California king and its own bath, around a shared living room with a fireplace.",
+  },
+  "chrome-lake": { name: "Chrome Lake", url: "https://bandondunesgolf.com/lodging/chrome-lake/" },
+  "the-inn": { name: "The Inn", url: "https://bandondunesgolf.com/lodging/the-inn/" },
+};
+
 export const PEOPLE: Person[] = [
   { key: "Kritser", name: "JD Kritser", room: "grove1", core: true },
   { key: "Elms", name: "Cristian Elms", room: "grove1" },
