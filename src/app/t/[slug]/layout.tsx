@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TabNav } from "@/components/public/TabNav";
-import { getOrganizer } from "@/lib/auth";
-import { clock, dateRange, monthDay, weekday } from "@/lib/time";
-import { getTrip, getTripNow } from "@/lib/trip";
-import { exitPreview } from "./preview-actions";
+import { dateRange } from "@/lib/time";
+import { getTrip } from "@/lib/trip";
 
 export async function generateMetadata({ params }: LayoutProps<"/t/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -14,7 +12,6 @@ export async function generateMetadata({ params }: LayoutProps<"/t/[slug]">): Pr
   return {
     title: { default: trip.title, template: `%s | ${trip.title}` },
     description: `${trip.title}, ${dateRange(trip.startDate, trip.endDate)}. ${trip.tagline}`,
-    robots: trip.visibility === "unlisted" ? { index: false, follow: false } : undefined,
   };
 }
 
@@ -23,28 +20,12 @@ export default async function TripLayout({ children, params }: LayoutProps<"/t/[
   const data = await getTrip(slug);
   if (!data) notFound();
   const { trip } = data;
-  const [{ now, preview }, organizer] = await Promise.all([getTripNow(trip), getOrganizer()]);
-  const owns = organizer !== null;
 
   return (
     <div className="pub relative">
-      {preview && (
-        <form
-          action={exitPreview}
-          className="relative z-40 flex items-center justify-center gap-3 bg-copper px-4 py-2 text-[13px] text-paper"
-        >
-          <span>
-            Previewing {weekday(now.date)}, {monthDay(now.date)} at {clock(now.time)}
-          </span>
-          <button type="submit" className="font-semibold underline underline-offset-4">
-            Back to live
-          </button>
-        </form>
-      )}
-
       <header className="absolute inset-x-0 z-20">
         <div className="mx-auto max-w-[90rem]">
-          <TabNav slug={trip.slug} title={trip.title} canEdit={owns} />
+          <TabNav slug={trip.slug} title={trip.title} />
         </div>
       </header>
 
