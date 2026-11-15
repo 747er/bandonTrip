@@ -116,6 +116,7 @@ export default async function SchedulePage({
               date: next.date,
               target: zonedToUtc(next.date, next.startTime, trip.timezone).toISOString(),
               now: now.instant.toISOString(),
+              timeZone: trip.timezone,
             }
           : null
       }
