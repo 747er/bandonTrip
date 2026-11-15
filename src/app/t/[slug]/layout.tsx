@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { SiteFooter } from "@/components/public/SiteFooter";
 import { TabNav } from "@/components/public/TabNav";
 import { dateRange } from "@/lib/time";
 import { getTrip } from "@/lib/trip";
@@ -31,15 +32,7 @@ export default async function TripLayout({ children, params }: LayoutProps<"/t/[
 
       <main>{children}</main>
 
-      <footer className="border-t border-rule px-5 pb-28 pt-10 md:px-8 md:pb-14">
-        <div className="mx-auto max-w-6xl text-[13px] leading-relaxed text-moss md:px-2">
-          <p className="serif text-[15px] italic text-pine">BandonTrip</p>
-          <p className="mt-2 max-w-md">
-            Made by golfers for their own trip. An independent site, not affiliated with or
-            endorsed by Bandon Dunes Golf Resort.
-          </p>
-        </div>
-      </footer>
+      <SiteFooter slug={trip.slug} />
     </div>
   );
 }
