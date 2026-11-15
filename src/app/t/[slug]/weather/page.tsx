@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { WindExplorer, type WindEvent, type WindPlace } from "@/components/public/wind/WindExplorer";
 import { GEO, PLACES, placeFor } from "@/lib/resortMap";
 import { clock, weekdayShort } from "@/lib/time";
-import { eventTimes, getTrip, getTripNow } from "@/lib/trip";
+import { eventTimes, getTripNow } from "@/lib/trip";
+import { getTrip } from "@/lib/viewer";
 import { getWind } from "@/lib/wind";
 import { hourIndex, minutesFromStart } from "@/lib/windMath";
 
@@ -15,7 +16,7 @@ export default async function WeatherPage({ params, searchParams }: PageProps<"/
   const { day } = await searchParams;
   const data = await getTrip(slug);
   if (!data) notFound();
-  const { trip, events, lodging } = data;
+  const { trip, events, viewer } = data;
   const [wind, { now, phase }] = await Promise.all([getWind(trip), getTripNow(trip)]);
 
   if (!wind) {
@@ -60,7 +61,7 @@ export default async function WeatherPage({ params, searchParams }: PageProps<"/
     ];
   });
 
-  const homeId = placeFor(lodging);
+  const homeId = viewer?.roomPlace ?? null;
   const placeIds = [...new Set([...events.map((e) => placeFor(e.title, e.venue)), homeId])].filter(
     (id): id is string => !!id && !!GEO[id],
   );
@@ -103,7 +104,9 @@ export default async function WeatherPage({ params, searchParams }: PageProps<"/
   return (
     <>
       <h1 className="sr-only">Wind and weather</h1>
+      {/* Keyed by who is looking: the map is built once, so a new person gets a new map. */}
       <WindExplorer
+        key={viewer?.id ?? "nobody"}
         data={wind}
         events={windEvents}
         places={places}
