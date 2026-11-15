@@ -54,6 +54,9 @@ export async function seed(db: Db) {
     })
     .returning();
 
+  // Where the group is staying. It also sets the home pin on the schedule map.
+  await db.insert(s.lodgings).values({ tripId: trip.id, name: "Grove Cottages" });
+
   const [five] = await db
     .insert(s.groups)
     .values([
