@@ -23,12 +23,10 @@ function remember(cookie: string, id: string) {
 export function WhoSheet({
   roster,
   viewer,
-  slug,
   cookie,
 }: {
   roster: { id: string; name: string }[];
   viewer: { id: string; firstName: string } | null;
-  slug: string;
   /** Name of the cookie the server reads the choice from */
   cookie: string;
 }) {
@@ -76,8 +74,7 @@ export function WhoSheet({
     setTimeout(() => setOpen(false), 380);
   };
 
-  const base = `/t/${slug}`;
-  const onPhoto = pathname === base || pathname === `${base}/weather` || pathname.startsWith(`${base}/courses/`);
+  const onPhoto = pathname === "/" || pathname === "/wind" || pathname.startsWith("/courses/");
 
   return (
     <>
@@ -91,7 +88,7 @@ export function WhoSheet({
             onPhoto
               ? "border-paper/45 bg-forest-deep/35 text-paper hover:bg-forest-deep/60"
               : "border-pine/30 text-pine hover:bg-pine/8"
-          } ${pathname === `${base}/weather` ? "max-md:hidden" : ""}`}
+          } ${pathname === "/wind" ? "max-md:hidden" : ""}`}
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
             <circle cx="8" cy="5.5" r="2.75" />

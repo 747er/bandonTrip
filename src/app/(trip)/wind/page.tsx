@@ -12,10 +12,9 @@ import { hourIndex, minutesFromStart } from "@/lib/windMath";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Wind and weather" };
 
-export default async function WeatherPage({ params, searchParams }: PageProps<"/t/[slug]/weather">) {
-  const { slug } = await params;
+export default async function WeatherPage({ searchParams }: PageProps<"/wind">) {
   const { day } = await searchParams;
-  const data = await getTrip(slug);
+  const data = await getTrip();
   if (!data) notFound();
   const { trip, events, viewer } = data;
   const [wind, { now, phase }] = await Promise.all([getWind(trip), getTripNow(trip)]);

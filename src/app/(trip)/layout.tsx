@@ -7,9 +7,8 @@ import { ROSTER } from "@/lib/trip";
 import { dateRange } from "@/lib/time";
 import { getTrip, VIEWER_COOKIE } from "@/lib/viewer";
 
-export async function generateMetadata({ params }: LayoutProps<"/t/[slug]">): Promise<Metadata> {
-  const { slug } = await params;
-  const data = await getTrip(slug);
+export async function generateMetadata(): Promise<Metadata> {
+  const data = await getTrip();
   if (!data) return {};
   const { trip } = data;
   return {
@@ -18,9 +17,8 @@ export async function generateMetadata({ params }: LayoutProps<"/t/[slug]">): Pr
   };
 }
 
-export default async function TripLayout({ children, params }: LayoutProps<"/t/[slug]">) {
-  const { slug } = await params;
-  const data = await getTrip(slug);
+export default async function TripLayout({ children }: LayoutProps<"/">) {
+  const data = await getTrip();
   if (!data) notFound();
   const { trip, viewer } = data;
 
@@ -28,20 +26,19 @@ export default async function TripLayout({ children, params }: LayoutProps<"/t/[
     <div className="pub relative">
       <header className="absolute inset-x-0 z-20">
         <div className="mx-auto max-w-[90rem]">
-          <TabNav slug={trip.slug} title={trip.title} />
+          <TabNav title={trip.title} />
         </div>
       </header>
       {/* Outside the header, so the sheet can cover everything, the tab bar included. */}
       <WhoSheet
         roster={ROSTER.map(({ id, name }) => ({ id, name }))}
         viewer={viewer ? { id: viewer.id, firstName: viewer.firstName } : null}
-        slug={trip.slug}
         cookie={VIEWER_COOKIE}
       />
 
       <main>{children}</main>
 
-      <SiteFooter slug={trip.slug} viewer={viewer?.name ?? null} />
+      <SiteFooter viewer={viewer?.name ?? null} />
     </div>
   );
 }

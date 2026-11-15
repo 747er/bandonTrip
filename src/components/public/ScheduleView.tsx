@@ -13,7 +13,7 @@ import { Photo, PhotoCredit, type PhotoData } from "./Photo";
 import { TripHeading } from "./TripHeading";
 
 export type ScheduleProps = {
-  trip: { slug: string; title: string; location: string; dates: string };
+  trip: { title: string; location: string; dates: string };
   days: string[];
   events: PublicEvent[];
   photos: Record<string, PhotoData>;
@@ -171,7 +171,7 @@ export function ScheduleView(props: ScheduleProps) {
                     </p>
                   )}
                   <Link
-                    href={`/t/${trip.slug}/weather?day=${day}`}
+                    href={`/wind?day=${day}`}
                     className="inline-flex min-h-11 items-center gap-2 bg-forest px-4 text-meta font-semibold text-limestone transition-colors hover:bg-forest-deep"
                   >
                     <WindGlyph size={17} />

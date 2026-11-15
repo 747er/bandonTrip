@@ -43,7 +43,6 @@ export function MobileDay({
   initial,
   live,
   underway,
-  slug,
   now,
   timeZone,
   start,
@@ -55,7 +54,6 @@ export function MobileDay({
   live: boolean;
   /** Whether the event it opens on has already begun */
   underway: boolean;
-  slug: string;
   now: string;
   timeZone: string;
   /** ISO instant the opening event starts, for the countdown */
@@ -157,7 +155,7 @@ export function MobileDay({
             )}
           </ul>
           {weather && <Conditions weather={weather} className="mt-5 border-y border-rule-light py-4" />}
-          <Link className="action mt-1" href={`/t/${slug}/schedule?day=${event.date}`}>
+          <Link className="action mt-1" href={`/schedule?day=${event.date}`}>
             Schedule
           </Link>
         </div>

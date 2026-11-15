@@ -149,14 +149,12 @@ const Arrow = ({ back = false }: { back?: boolean }) => (
 export function NextUp({
   slides,
   initial,
-  slug,
   now,
   timeZone,
 }: {
   slides: NextUpSlide[];
   /** Index of the slide to open on */
   initial: number;
-  slug: string;
   /** ISO instant the page was rendered at */
   now: string;
   timeZone: string;
@@ -294,7 +292,7 @@ export function NextUp({
                 {weather && <Conditions weather={weather} grid="phone" className="mt-4 border-t border-rule-light pt-4" />}
               </div>
               <div className="flex flex-wrap items-center gap-x-8 border-t border-rule-light px-5 @md:px-7">
-                <Link className="action" href={`/t/${slug}/schedule?day=${event.date}`}>
+                <Link className="action" href={`/schedule?day=${event.date}`}>
                   {weekday(event.date)}&rsquo;s schedule
                 </Link>
               </div>

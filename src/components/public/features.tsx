@@ -174,9 +174,9 @@ export function CourseFeature({ event, photo, slot, round, weather, href, classN
 }
 
 /** Daily temperature ranges share a scale; the forecast remains readable without the graphic. */
-export function ForecastStrip({ days, weather, today, playing = {}, slug }: {
+export function ForecastStrip({ days, weather, today, playing = {} }: {
   days: string[]; weather: Record<string, DayWeather>; today?: string;
-  playing?: Record<string, string>; slug: string;
+  playing?: Record<string, string>;
 }) {
   const available = days.map(date => weather[date]).filter(Boolean);
   const low = Math.min(...available.map(w => w.low)) - 2;
@@ -186,7 +186,7 @@ export function ForecastStrip({ days, weather, today, playing = {}, slug }: {
     {days.map(date => {
       const w = weather[date];
       return <li key={date}>
-        <Link className="forecast-day" href={`/t/${slug}/weather?day=${date}`}>
+        <Link className="forecast-day" href={`/wind?day=${date}`}>
           <span className="sr-only">Explore hourly wind for </span><div className="forecast-day-heading"><strong className={date === today ? "text-copper-light" : ""}>{date === today ? "Today" : weekdayShort(date)}, {monthDayShort(date)}</strong><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14" /></svg></div>
           <p className="forecast-course">{playing[date]}</p>
           {w ? <>

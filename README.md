@@ -24,7 +24,7 @@ teeTimes: [
 
 | Page | What it is |
 | --- | --- |
-| Home (`/t/bandon-2026`) | Cover, next round, the courses, the four-day forecast. Changes before, during and after the trip |
+| Home (`/`) | Cover, next round, the courses, the four-day forecast. Changes before, during and after the trip |
 | Schedule | Day by day, with the forecast at each start time and the resort map |
 | Wind | Live wind particles over aerial imagery, hour by hour, with daylight |
 | Packing | The resort's packing advice as a checklist that remembers ticks on each device |

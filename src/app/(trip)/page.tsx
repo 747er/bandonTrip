@@ -42,9 +42,8 @@ type Ctx = {
   roundOf: (eventId: string) => RoundInfo | null;
 };
 
-export default async function TripHome({ params }: PageProps<"/t/[slug]">) {
-  const { slug } = await params;
-  const data = await getTrip(slug);
+export default async function TripHome() {
+  const data = await getTrip();
   if (!data) notFound();
   const { trip, events } = data;
   const [{ now, phase }, weather] = await Promise.all([getTripNow(trip), getForecast(trip)]);
@@ -66,8 +65,8 @@ export default async function TripHome({ params }: PageProps<"/t/[slug]">) {
 
 const WIDE = "mx-auto w-full max-w-6xl px-5 md:px-10";
 const SECTION = "pt-16 md:pt-24";
-const scheduleHref = (slug: string, date?: string) =>
-  `/t/${slug}/schedule${date ? `?day=${date}` : ""}`;
+const scheduleHref = (date?: string) =>
+  `/schedule${date ? `?day=${date}` : ""}`;
 
 // ---------- Shared sections ----------
 
@@ -206,7 +205,6 @@ function phoneDays({ data, now, weather }: Ctx) {
       live={upcoming >= 0 || current >= 0}
       underway={upcoming < 0 && current >= 0}
       start={first.startTime ? zonedToUtc(first.date, first.startTime, trip.timezone).toISOString() : null}
-      slug={trip.slug}
       now={now.instant.toISOString()}
       timeZone={trip.timezone}
     />
@@ -226,7 +224,7 @@ function Stay({ data }: Ctx) {
   const slot = `lodging/${viewer.roomPlace}`;
   const photo = photoFor(slot);
   const inside = [`${slot}-living`, `${slot}-bedroom`].map((s) => [s, photoFor(s)] as const).filter(([, p]) => p);
-  const mapHref = `${scheduleHref(trip.slug, trip.startDate)}#map`;
+  const mapHref = `${scheduleHref(trip.startDate)}#map`;
 
   const rows: { name: string; value: React.ReactNode }[] = [
     ...(mates.length > 0
@@ -351,7 +349,6 @@ function nextUp(ctx: Ctx) {
       key={data.viewer?.id ?? "nobody"}
       slides={slides}
       initial={initial}
-      slug={trip.slug}
       now={now.instant.toISOString()}
       timeZone={trip.timezone}
     />
@@ -383,10 +380,10 @@ function Forecast({
           <p className="text-meta text-mist">{data.trip.location}</p>
         </div>
         <div className="mt-7 md:mt-10">
-          <ForecastStrip days={days} weather={weather} today={today} playing={playing} slug={data.trip.slug} />
+          <ForecastStrip days={days} weather={weather} today={today} playing={playing} />
         </div>
         <Link
-          href={`/t/${data.trip.slug}/weather`}
+          href={`/wind`}
           className="mt-6 inline-flex min-h-11 items-center gap-2 bg-limestone px-4 text-meta font-semibold text-pine transition-colors hover:bg-paper"
         >
           <WindGlyph size={17} />
@@ -416,14 +413,13 @@ function Courses({ data, photos, weather, heading }: Ctx & { heading: string }) 
   return <CourseExplorer heading={heading} courses={golf.map(e => ({
     id: e.id, title: e.title, date: e.date, time: e.startTime,
     photo: photos[e.id], slot: slotFor(e), weather: weather[e.date],
-    course: courseById(slotName(e.title)), href: `/t/${data.trip.slug}/courses/${slotName(e.title)}`,
+    course: courseById(slotName(e.title)), href: `/courses/${slotName(e.title)}`,
   }))} />;
 }
 
 /** The next few things on the schedule, in order and grouped by day, each leading to its day. */
-function ComingUp({ data, photos, list, heading }: Ctx & { list: PublicEvent[]; heading: string }) {
+function ComingUp({ photos, list, heading }: Ctx & { list: PublicEvent[]; heading: string }) {
   if (list.length === 0) return null;
-  const { trip } = data;
   const dates = [...new Set(list.map((e) => e.date))];
   return (
     <section aria-labelledby="coming-up" className={`${WIDE} pt-12 md:pt-20`}>
@@ -450,13 +446,13 @@ function ComingUp({ data, photos, list, heading }: Ctx & { list: PublicEvent[]; 
                           : eventSummary(e)
                       }
                       note={e.reservationNote}
-                      href={scheduleHref(trip.slug, e.date)}
+                      href={scheduleHref(e.date)}
                     />
                   ))}
               </ul>
             </div>
           ))}
-          <Link className="action mt-1" href={scheduleHref(trip.slug)}>
+          <Link className="action mt-1" href={scheduleHref()}>
             The full schedule
           </Link>
         </div>
@@ -510,7 +506,7 @@ function Before(ctx: Ctx) {
 
 function During(ctx: Ctx) {
   const { data, now, hero, photos, weather, roundOf } = ctx;
-  const { trip, events } = data;
+  const { events } = data;
   const today = events.filter((e) => e.date === now.date);
   const current = today.find((e) => isUnderway(e, now));
   const next = events.find((e) => !isPast(e, now) && !isUnderway(e, now));
@@ -566,7 +562,7 @@ function During(ctx: Ctx) {
                 Nothing else on the schedule today.
               </p>
             )}
-            <Link className="action mt-2" href={scheduleHref(trip.slug, now.date)}>
+            <Link className="action mt-2" href={scheduleHref(now.date)}>
               See today&rsquo;s schedule
             </Link>
           </div>
@@ -588,7 +584,7 @@ function During(ctx: Ctx) {
                 slot={slotFor(tomorrowGolf)}
                 round={roundOf(tomorrowGolf.id)}
                 weather={weather[tomorrowGolf.date]}
-                href={`/t/${trip.slug}/courses/${slotName(tomorrowGolf.title)}`}
+                href={`/courses/${slotName(tomorrowGolf.title)}`}
                 sizes="(min-width: 768px) 55vw, 100vw"
                 className="aspect-[4/3] md:aspect-auto md:h-[400px]"
               />

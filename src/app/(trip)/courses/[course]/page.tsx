@@ -12,14 +12,14 @@ import { forecastSummary, minutesFromStart } from "@/lib/windMath";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: PageProps<"/t/[slug]/courses/[course]">): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps<"/courses/[course]">): Promise<Metadata> {
   const { course } = await params;
   return { title: courseById(course)?.name ?? "Course" };
 }
 
-export default async function CoursePage({ params }: PageProps<"/t/[slug]/courses/[course]">) {
-  const { slug, course: id } = await params;
-  const data = await getTrip(slug);
+export default async function CoursePage({ params }: PageProps<"/courses/[course]">) {
+  const { course: id } = await params;
+  const data = await getTrip();
   const course = courseById(id);
   if (!data || !course) notFound();
   const { trip, events } = data;
@@ -56,7 +56,7 @@ export default async function CoursePage({ params }: PageProps<"/t/[slug]/course
               "linear-gradient(to top, rgb(13 33 27 / 0.92) 0%, rgb(13 33 27 / 0.62) 30%, rgb(13 33 27 / 0) 66%), linear-gradient(to bottom, rgb(13 33 27 / 0.82) 0%, rgb(13 33 27 / 0) 38%)",
           }}
         />
-        <Link className="course-back" href={`/t/${trip.slug}#courses`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m12 5-7 7 7 7M5 12h15" /></svg>All courses</Link>
+        <Link className="course-back" href={`/#courses`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m12 5-7 7 7 7M5 12h15" /></svg>All courses</Link>
         <div className="absolute inset-x-0 bottom-0">
           <div className="mx-auto max-w-6xl px-5 pb-7 md:px-10 md:pb-12">
             <p className="course-cover-meta text-ui font-semibold">
@@ -76,7 +76,7 @@ export default async function CoursePage({ params }: PageProps<"/t/[slug]/course
       <div className="course-card-strip"><dl>{facts.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl></div>
       <nav className="course-chapters" aria-label="On this course page"><div>
         <a href="#course-overview">The course</a><a href="#expect">What to expect</a>{round && <a href="#your-round">Your round</a>}
-        <Link href={`/t/${trip.slug}/weather${round ? `?day=${round.date}` : ""}`}>Wind map <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14" /></svg></Link>
+        <Link href={`/wind${round ? `?day=${round.date}` : ""}`}>Wind map <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14" /></svg></Link>
       </div></nav>
 
       <div className="mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 pb-16 pt-10 md:px-10 md:pt-16 lg:grid-cols-[minmax(0,1fr)_22rem]">
@@ -135,10 +135,10 @@ export default async function CoursePage({ params }: PageProps<"/t/[slug]/course
                 </ol>
               )}
               <div className="mt-2 flex flex-wrap gap-x-8">
-                <Link className="action" href={`/t/${trip.slug}/schedule?day=${round.date}`}>
+                <Link className="action" href={`/schedule?day=${round.date}`}>
                   {weekday(round.date)}&rsquo;s schedule
                 </Link>
-                <Link className="action" href={`/t/${trip.slug}/weather?day=${round.date}`}>
+                <Link className="action" href={`/wind?day=${round.date}`}>
                   Wind that day
                 </Link>
               </div>
@@ -153,7 +153,7 @@ export default async function CoursePage({ params }: PageProps<"/t/[slug]/course
               {others.map((c) => (
                 <li key={c.id}>
                   <Link
-                    href={`/t/${trip.slug}/courses/${c.id}`}
+                    href={`/courses/${c.id}`}
                     aria-current={c.id === course.id ? "page" : undefined}
                     className={`course-related flex min-h-12 items-center justify-between gap-4 py-3 text-ui ${
                       c.id === course.id ? "font-semibold" : "font-medium text-moss hover:text-pine"

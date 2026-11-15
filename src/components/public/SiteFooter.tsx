@@ -14,14 +14,14 @@ const WIDE = [...contours(1160, 150, 10, 46, 0.9), ...contours(170, 600, 9, 50, 
  * the links to the trip's pages and the site's note, with contour lines running through
  * the whole of it.
  */
-export function SiteFooter({ slug, viewer }: { slug: string; viewer: string | null }) {
+export function SiteFooter({ viewer }: { viewer: string | null }) {
   // The wind map is a full-screen tool: it ends where the map ends.
   const pathname = usePathname();
-  if (pathname === `/t/${slug}/weather`) return null;
+  if (pathname === `/wind`) return null;
   const links = [
-    { href: `/t/${slug}/schedule`, name: "Schedule", detail: "Day by day, with the resort map" },
-    { href: `/t/${slug}/weather`, name: "Wind map", detail: "Hour by hour, with daylight" },
-    { href: `/t/${slug}/packing`, name: "Packing list", detail: "The resort's advice as a checklist" },
+    { href: `/schedule`, name: "Schedule", detail: "Day by day, with the resort map" },
+    { href: `/wind`, name: "Wind map", detail: "Hour by hour, with daylight" },
+    { href: `/packing`, name: "Packing list", detail: "The resort's advice as a checklist" },
   ];
   return (
     <footer

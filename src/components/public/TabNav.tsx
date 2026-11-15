@@ -28,23 +28,21 @@ const icons = {
 };
 
 export function TabNav({
-  slug,
   title,
 }: {
-  slug: string;
   title: string;
 }) {
   const pathname = usePathname();
-  const base = `/t/${slug}`;
+  const base = "/";
   const tabs = [
     { href: base, label: "Home", icon: icons.home },
-    { href: `${base}/schedule`, label: "Schedule", icon: icons.schedule },
-    { href: `${base}/weather`, label: "Wind", icon: icons.weather },
-    { href: `${base}/packing`, label: "Packing", icon: icons.packing },
+    { href: "/schedule", label: "Schedule", icon: icons.schedule },
+    { href: "/wind", label: "Wind", icon: icons.weather },
+    { href: "/packing", label: "Packing", icon: icons.packing },
   ];
   const isActive = (href: string) => (href === base ? pathname === base : pathname.startsWith(href));
   // The home page opens on a photograph, so its masthead is set in light type.
-  const onCover = pathname === base || pathname === `${base}/weather` || pathname.startsWith(`${base}/courses/`);
+  const onCover = pathname === base || pathname === "/wind" || pathname.startsWith("/courses/");
   const ink = onCover ? "text-paper" : "text-forest-deep";
 
   return (
@@ -54,7 +52,7 @@ export function TabNav({
         className={`trip-masthead h-14 items-center justify-between gap-8 px-5 md:flex md:h-20 md:justify-start md:px-10 ${
           // On phones the wind map wants the whole screen, and Home sets the trip's
           // name at the top of its photograph instead.
-          pathname === `${base}/weather` || pathname === base ? "hidden" : "flex"
+          pathname === "/wind" || pathname === base ? "hidden" : "flex"
         }`}
       >
         <Link href={base} className={`serif text-[17px] italic ${ink}`}>

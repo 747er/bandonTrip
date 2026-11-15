@@ -11,9 +11,8 @@ import { getForecast } from "@/lib/weather";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Packing list" };
 
-export default async function PackingPage({ params }: PageProps<"/t/[slug]/packing">) {
-  const { slug } = await params;
-  const data = await getTrip(slug);
+export default async function PackingPage() {
+  const data = await getTrip();
   if (!data) notFound();
   const { trip } = data;
   const weather = await getForecast(trip);
@@ -62,7 +61,7 @@ export default async function PackingPage({ params }: PageProps<"/t/[slug]/packi
                 ))}
               </dl>
               <div className="on-forest">
-                <Link className="action" href={`/t/${trip.slug}/weather`}>
+                <Link className="action" href={`/wind`}>
                   Explore the wind forecast
                 </Link>
               </div>

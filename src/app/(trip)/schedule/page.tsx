@@ -16,12 +16,10 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Schedule" };
 
 export default async function SchedulePage({
-  params,
   searchParams,
-}: PageProps<"/t/[slug]/schedule">) {
-  const { slug } = await params;
+}: PageProps<"/schedule">) {
   const { day } = await searchParams;
-  const data = await getTrip(slug);
+  const data = await getTrip();
   if (!data) notFound();
   const { trip, events, viewer } = data;
   const [{ now, phase }, weather, wind] = await Promise.all([
@@ -78,7 +76,6 @@ export default async function SchedulePage({
   return (
     <ScheduleView
       trip={{
-        slug: trip.slug,
         title: trip.title,
         location: trip.location,
         dates: dateRange(trip.startDate, trip.endDate),
@@ -93,7 +90,7 @@ export default async function SchedulePage({
       courses={Object.fromEntries(
         events
           .filter((e) => e.type === "golf" && courseById(slotName(e.title)))
-          .map((e) => [e.id, `/t/${trip.slug}/courses/${slotName(e.title)}`]),
+          .map((e) => [e.id, `/courses/${slotName(e.title)}`]),
       )}
       atStart={atStart}
       lateNote={lateNote}
