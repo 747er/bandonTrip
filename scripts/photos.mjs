@@ -1,7 +1,7 @@
 // Lists the files under public/images so the app knows which photo slots are filled.
 // Runs before dev and build; in development the folders are also read live.
 import { createHash } from "node:crypto";
-import { readdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
+import { copyFileSync, readdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 
 const dir = "public/images";
 const files = existsSync(dir)
@@ -18,3 +18,7 @@ try {
 } catch {}
 writeFileSync("src/lib/photos.generated.json", JSON.stringify({ files, meta }, null, 2) + "\n");
 console.log(`[images] ${files.length} photo(s) found in ${dir}`);
+
+// The map library runs part of itself in a web worker, which has to be served as a file.
+const worker = "node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs";
+if (existsSync(worker)) copyFileSync(worker, "public/maplibre-worker.mjs");
