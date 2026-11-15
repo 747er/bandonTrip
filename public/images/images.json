@@ -1,3 +1,8 @@
 {
-  "courses/bandon-dunes": { "position": "50% 38%" }
+  "courses/bandon-dunes": {
+    "position": "50% 38%"
+  },
+  "hero/bandon-coast": {
+    "position": "70% 60%"
+  }
 }
