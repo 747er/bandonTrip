@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { directionsUrl } from "@/lib/links";
 import { clock, monthDay, weekday, weekdayShort } from "@/lib/time";
-import { eventTimes, type PublicEvent } from "@/lib/trip";
+import { eventTimes, teeLabel, type PublicEvent } from "@/lib/trip";
 import type { DayWeather } from "@/lib/weather";
 import { DayMap, type MapStop } from "./DayMap";
 import { eventSummary } from "./EventList";
@@ -34,6 +33,8 @@ export type ScheduleProps = {
   places: Record<string, string>;
   /** Place id of where the group is staying, if it is on the map */
   homePlace: string | null;
+  /** The viewer's room, by name */
+  homeLabel: string | null;
   initialDay: string;
   today: string | null;
 };
@@ -189,6 +190,7 @@ export function ScheduleView(props: ScheduleProps) {
               <DayMap
                 stops={stops}
                 homeId={props.homePlace}
+                homeLabel={props.homeLabel}
                 otherPlaceIds={otherPlaces}
                 dayName={weekday(day)}
                 activeEventId={activeStop}
@@ -204,20 +206,13 @@ export function ScheduleView(props: ScheduleProps) {
 
 type EventProps = ScheduleProps & { event: PublicEvent };
 
-function Actions({ event, course }: { event: PublicEvent; course?: string }) {
-  if (!event.venue && !event.address && !course) return null;
+function Actions({ course }: { course?: string }) {
+  if (!course) return null;
   return (
     <div className="flex flex-wrap gap-x-7">
-      {(event.venue || event.address) && (
-        <a className="action" href={directionsUrl(event)} target="_blank" rel="noreferrer">
-          Get directions
-        </a>
-      )}
-      {course && (
-        <Link className="action" href={course}>
-          About the course
-        </Link>
-      )}
+      <Link className="action" href={course}>
+        About the course
+      </Link>
     </div>
   );
 }
@@ -226,7 +221,6 @@ function Details({ event: e }: { event: PublicEvent }) {
   const teeTimes = e.teeTimes.filter((t) => t.players.length > 0 || t.note);
   const rows: [string, string][] = [];
   if (e.venue && e.venue !== e.title) rows.push(["Where", e.venue]);
-  if (e.address) rows.push(["Address", e.address]);
   if (e.partySize) rows.push(["Party", `${e.partySize}`]);
   if (e.reservationNote) rows.push(["Reservation", e.reservationNote]);
   if (e.group) rows.push(["Who", e.group]);
@@ -319,7 +313,7 @@ function GolfEvent({ event: e, photos, slots, rounds, states, atStart, courses }
           <p className="figures text-fact font-semibold">
             {e.startTime ? (
               <>
-                <span className="mr-2 text-ui font-medium text-moss">Tee times</span>
+                <span className="mr-2 text-ui font-medium text-moss">{teeLabel(e)}</span>
                 {eventTimes(e)}
               </>
             ) : (
@@ -334,7 +328,7 @@ function GolfEvent({ event: e, photos, slots, rounds, states, atStart, courses }
           )}
         </div>
         <div className="px-5 md:px-7">
-          <Actions event={e} course={courses[e.id]} />
+          <Actions course={courses[e.id]} />
         </div>
         <details className="event border-t border-rule" open={e.teeTimes.length > 0}>
           <summary className="flex min-h-14 items-center justify-between gap-4 px-5 text-ui font-semibold md:px-7">
@@ -396,9 +390,6 @@ function PlainEvent({ event: e, photos, slots, states, atStart, lateNote }: Even
               </p>
             )}
             <Details event={e} />
-            <div className="mt-2">
-              <Actions event={e} />
-            </div>
           </div>
           {photo && (
             <div className="relative aspect-[4/3] w-full overflow-hidden md:w-56">
