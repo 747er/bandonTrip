@@ -10,8 +10,9 @@ import { hourIndex, minutesFromStart } from "@/lib/windMath";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Wind and weather" };
 
-export default async function WeatherPage({ params }: PageProps<"/t/[slug]/weather">) {
+export default async function WeatherPage({ params, searchParams }: PageProps<"/t/[slug]/weather">) {
   const { slug } = await params;
+  const { day } = await searchParams;
   const data = await getTrip(slug);
   if (!data) notFound();
   const { trip, events, lodging } = data;
@@ -89,7 +90,15 @@ export default async function WeatherPage({ params }: PageProps<"/t/[slug]/weath
 
   // Open on the present hour during the trip, otherwise on the first thing scheduled.
   const current = phase === "during" ? hourOf(now.date, now.time) : -1;
-  const initialHour = current >= 0 ? Math.floor(current) : Math.floor(windEvents[0]?.start ?? 10);
+  // A link from a day's forecast opens on that day: at its first event, or mid-morning.
+  const asked = typeof day === "string" ? wind.days.findIndex((d) => d.date === day) : -1;
+  const firstThatDay = windEvents.find((e) => Math.floor(e.start / 24) === asked);
+  const initialHour =
+    asked >= 0
+      ? Math.floor(firstThatDay?.start ?? asked * 24 + 10)
+      : current >= 0
+        ? Math.floor(current)
+        : Math.floor(windEvents[0]?.start ?? 10);
 
   return (
     <>
