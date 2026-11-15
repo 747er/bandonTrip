@@ -119,26 +119,20 @@ export default async function CoursePage({ params }: PageProps<"/t/[slug]/course
                 </p>
               )}
               {round.teeTimes.length > 0 && (
-                <table className="mt-4 w-full max-w-lg text-ui">
-                  <caption className="sr-only">Tee times</caption>
-                  <tbody className="divide-y divide-rule border-y border-rule">
-                    {round.teeTimes.map((t) => (
-                      <tr key={t.time}>
-                        <th scope="row" className="figures w-24 py-2.5 text-left align-top font-semibold">
-                          {clock(t.time)}
-                        </th>
-                        <td className="py-2.5">
-                          {t.players.map((p, i) => (
-                            <span key={p.name} className={p.ours ? "font-semibold" : "text-moss"}>
-                              {p.name}
-                              {i < t.players.length - 1 && ", "}
-                            </span>
-                          ))}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <ol aria-label="Tee times" className="mt-4 divide-y divide-rule border-y border-rule text-meta">
+                  {round.teeTimes.map((t) => (
+                    <li key={t.time} className="grid grid-cols-[6.25rem_minmax(0,1fr)] items-baseline gap-x-4 py-3">
+                      <p className="figures whitespace-nowrap font-semibold">{clock(t.time)}</p>
+                      <ul className="space-y-1">
+                        {t.players.map((p) => (
+                          <li key={p.name} className={p.ours ? "font-semibold" : "text-moss"}>
+                            {p.name}
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                  ))}
+                </ol>
               )}
               <div className="mt-2 flex flex-wrap gap-x-8">
                 <Link className="action" href={`/t/${trip.slug}/schedule?day=${round.date}`}>
