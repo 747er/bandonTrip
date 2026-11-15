@@ -53,7 +53,7 @@ export function TabNav({
 
         <nav aria-label="Trip" className="hidden md:block">
           <ul className="flex gap-8">
-            {tabs.map((tab) => {
+            {[...tabs, { href: `${base}/packing`, label: "Packing", icon: null }].map((tab) => {
               const active = isActive(tab.href);
               return (
                 <li key={tab.href}>
