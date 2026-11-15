@@ -206,7 +206,7 @@ export function ScheduleView(props: ScheduleProps) {
         </section>
 
         {/* A slim rail on wide screens; on phones it closes the day as a short footer. */}
-        <aside className="lg:sticky lg:top-24 lg:self-start">
+        <aside id="map" className="scroll-mt-28 lg:sticky lg:top-24 lg:self-start">
           {stops.length > 0 && (
             <section id="schedule-map" aria-labelledby="day-map" className="schedule-map mb-8">
               <h2 id="day-map" className="display mb-3 text-[30px]">
@@ -270,27 +270,23 @@ function Details({ event: e }: { event: PublicEvent }) {
         </dl>
       )}
       {teeTimes.length > 0 && (
-        <table className="order-first w-full max-w-lg">
-          <caption className="sr-only">Tee times</caption>
-          <tbody className="divide-y divide-rule border-y border-rule">
-            {teeTimes.map((t) => (
-              <tr key={t.time}>
-                <th scope="row" className="figures w-24 py-2.5 text-left align-top font-semibold">
-                  {clock(t.time)}
-                </th>
-                <td className="py-2.5">
-                  {t.players.map((p, i) => (
-                    <span key={p.name} className={p.ours ? "font-semibold" : "text-moss"}>
+        <ol aria-label="Tee times" className="order-first divide-y divide-rule border-y border-rule">
+          {teeTimes.map((t) => (
+            <li key={t.time} className="grid grid-cols-[6.75rem_minmax(0,1fr)] items-baseline gap-x-4 py-3.5 md:grid-cols-[7.5rem_minmax(0,1fr)]">
+              <p className="figures whitespace-nowrap font-semibold">{clock(t.time)}</p>
+              <div>
+                <ul className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
+                  {t.players.map((p) => (
+                    <li key={p.name} className={p.ours ? "font-semibold" : "text-moss"}>
                       {p.name}
-                      {i < t.players.length - 1 && ", "}
-                    </span>
+                    </li>
                   ))}
-                  {t.note && <span className="block text-moss">{t.note}</span>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </ul>
+                {t.note && <p className="mt-1 text-meta text-moss">{t.note}</p>}
+              </div>
+            </li>
+          ))}
+        </ol>
       )}
     </div>
   );
