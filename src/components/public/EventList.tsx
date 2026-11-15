@@ -18,10 +18,7 @@ export function eventSummary(e: PublicEvent): string {
     bits.push(TYPE_LABEL[e.type]);
   }
   if (e.partySize) bits.push(`party of ${e.partySize}`);
-  if (e.audience.kind === "group") bits.push(e.audience.name);
-  if (e.audience.kind === "people") {
-    bits.push(`${e.audience.ids.length} ${e.audience.ids.length === 1 ? "golfer" : "golfers"}`);
-  }
+  if (e.group) bits.push(e.group);
   const line = bits.join(", ");
   return line.charAt(0).toUpperCase() + line.slice(1);
 }
