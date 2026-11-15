@@ -49,7 +49,12 @@ export function TabNav({
 
   return (
     <>
-      <div className="flex h-14 items-center justify-between gap-8 px-5 md:h-20 md:justify-start md:px-10">
+      {/* The wind map wants the whole phone screen: there the bottom bar is the only navigation. */}
+      <div
+        className={`h-14 items-center justify-between gap-8 px-5 md:flex md:h-20 md:justify-start md:px-10 ${
+          pathname === `${base}/weather` ? "hidden" : "flex"
+        }`}
+      >
         <Link href={base} className={`serif text-[17px] italic ${ink}`}>
           {onCover ? "BandonTrip" : title}
         </Link>
