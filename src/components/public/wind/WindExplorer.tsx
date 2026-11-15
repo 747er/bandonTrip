@@ -47,8 +47,19 @@ const NAIP_BOUNDS: [number, number, number, number] = [lonOf(Z15.x0), latOf(Z15.
 
 // Our aerial tiles are darker and flatter than the wide-area imagery around them (about
 // 0.62 of its brightness, measured on matching tiles), so each is set to meet the other.
-const NAIP_PAINT = { "raster-brightness-max": 0.84, "raster-saturation": -0.2, "raster-fade-duration": 200 };
-const WIDE_PAINT = { "raster-brightness-max": 0.52, "raster-saturation": -0.42, "raster-fade-duration": 200 };
+// Both keep their daylight colour: dune grass, sand and surf, under the wind.
+const NAIP_PAINT = { "raster-brightness-max": 0.9, "raster-saturation": 0.04, "raster-contrast": 0.04, "raster-fade-duration": 200 };
+const WIDE_PAINT = { "raster-brightness-max": 0.58, "raster-saturation": -0.05, "raster-fade-duration": 200 };
+
+/** Deep Pacific: the open sea past the imagery, and the ground under the map. */
+const OCEAN: [number, number, number] = [24, 58, 72];
+const OCEAN_HEX = `#${OCEAN.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+
+/** Room the map leaves for the panels over it when it frames places. */
+const framePadding = (phone: boolean) =>
+  phone ? { top: 100, bottom: 320, left: 38, right: 150 } : { top: 110, bottom: 230, left: 340, right: 170 };
+const flyPadding = (phone: boolean) =>
+  phone ? { top: 96, bottom: 300, left: 36, right: 36 } : { top: 100, bottom: 220, left: 340, right: 80 };
 
 /**
  * A picture of "open ocean": transparent over land and the surf, fading to the map's
@@ -76,9 +87,9 @@ function seaFade(): string {
       // Clear until ~500 m off the shore, solid by ~1.4 km.
       const t = Math.min(1, Math.max(0, (shore - 0.006 - lon) / 0.011));
       const i = (y * size + x) * 4;
-      img.data[i] = 13;
-      img.data[i + 1] = 33;
-      img.data[i + 2] = 27;
+      img.data[i] = OCEAN[0];
+      img.data[i + 1] = OCEAN[1];
+      img.data[i + 2] = OCEAN[2];
       img.data[i + 3] = Math.round(255 * t * t * (3 - 2 * t));
     }
   }
@@ -140,16 +151,20 @@ export function WindExplorer({
   // and home before the day's first one.
   const today = Math.floor(t / 24);
   const lastStarted = events.filter((e) => e.placeId && Math.floor(e.start / 24) === today && e.start <= t).at(-1);
-  const activePlace = selectedPlace ?? lastStarted?.placeId ?? places.find((p) => p.home)?.id ?? null;
-  const active = useRef(activePlace);
+  // Copper marks only where the group is at the chosen hour. A pin someone clicks to look
+  // at is flown to, but stays as it is.
+  const groupPlace = lastStarted?.placeId ?? places.find((p) => p.home)?.id ?? null;
+  const activePlace = selectedPlace ?? groupPlace;
+  const active = useRef(groupPlace);
   const mark = () => pins.current.forEach((el, id) => {
     el.setAttribute("data-active", String(id === active.current));
-    el.setAttribute("aria-pressed", String(id === active.current));
+    if (id === active.current) el.setAttribute("aria-current", "location");
+    else el.removeAttribute("aria-current");
   });
   useEffect(() => {
-    active.current = activePlace;
+    active.current = groupPlace;
     mark();
-  }, [activePlace]);
+  }, [groupPlace]);
 
   useEffect(() => {
     live.current.t = t;
@@ -177,17 +192,13 @@ export function WindExplorer({
           ]) as [[number, number], [number, number]],
       options: {
         // Labels run to the right of their pins, so that side needs the most room.
-        padding: phone
-          ? { top: 122, bottom: 360, left: 38, right: 155 }
-          : { top: 120, bottom: 350, left: 350, right: 180 },
+        padding: framePadding(phone),
         maxZoom: 14.4,
       },
     };
     home.current = () => {
       const phoneNow = (mapBox.current?.clientWidth ?? 0) < 768;
-      m.stop().fitBounds(frame.bounds, { ...frame.options, padding: phoneNow
-        ? { top: 122, bottom: 360, left: 38, right: 155 }
-        : { top: 120, bottom: 350, left: 350, right: 180 }, duration: reduce.matches ? 0 : 750 });
+      m.stop().fitBounds(frame.bounds, { ...frame.options, padding: framePadding(phoneNow), duration: reduce.matches ? 0 : 750 });
     };
     // The library's worker script is copied into public/ at build time (scripts/photos.mjs).
     setWorkerUrl("/maplibre-worker.mjs");
@@ -223,7 +234,7 @@ export function WindExplorer({
           },
         },
         layers: [
-          { id: "ground", type: "background", paint: { "background-color": "#0d211b" } },
+          { id: "ground", type: "background", paint: { "background-color": OCEAN_HEX } },
           { id: "wide", type: "raster", source: "wide", paint: WIDE_PAINT },
           { id: "naip", type: "raster", source: "naip", paint: NAIP_PAINT },
           { id: "sea", type: "raster", source: "sea", paint: { "raster-fade-duration": 0 } },
@@ -266,10 +277,11 @@ export function WindExplorer({
       el.setAttribute("aria-label", `Zoom to ${p.name}`);
       el.addEventListener("click", (event) => {
         event.stopPropagation();
+        // The pin names the place already, so no reading box opens over it.
         setSelectedPlace(p.id);
         setSelectedEvent(null);
-        setProbe({ lng: p.lon, lat: p.lat });
-        m.stop().flyTo({ center: [p.lon, p.lat], zoom: 15.6, padding: {top: 100, bottom: 290, left: 36, right: 36}, duration: reduce.matches ? 0 : 850 });
+        setProbe(null);
+        m.stop().flyTo({ center: [p.lon, p.lat], zoom: 15.6, padding: flyPadding((mapBox.current?.clientWidth ?? 0) < 768), duration: reduce.matches ? 0 : 850 });
       });
       el.innerHTML = `<span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-paper bg-forest-deep text-paper shadow-md transition-colors duration-300 group-data-[active=true]:bg-copper"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${
         ICONS[p.kind]
@@ -506,12 +518,12 @@ export function WindExplorer({
     setSelectedEvent(e.id);
     setSelectedPlace(e.placeId);
     setT(Math.min(hours - 1, e.start));
+    setProbe(null);
     if (e.place) {
-      setProbe({lng: e.place[1], lat: e.place[0]});
       map.current?.stop().flyTo({ center: [e.place[1], e.place[0]], zoom: 15.6,
-        padding: {top: 100, bottom: 290, left: 36, right: 36},
+        padding: flyPadding((mapBox.current?.clientWidth ?? 0) < 768),
         duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 850 });
-    } else setProbe(null);
+    }
   };
   const scrub = (value: number) => {
     setPlaying(false);
@@ -526,17 +538,16 @@ export function WindExplorer({
   const reset = () => { setProbe(null); home.current(); };
   const dayIndex = Math.max(0, dates.indexOf(date));
   const activeName = places.find(p => p.id === activePlace)?.name;
-  const dayEvents = events.filter(e => Math.floor(e.start / 24) === dayIndex);
   const stats = [["Gusts", `${windGust} mph`], ["Temp", `${temperature}°F`], ["Rain", chance === null ? "n/a" : `${chance}%`]];
   const arrow = (
     <svg width="52" height="52" viewBox="0 0 52 52" className="wind-compass" role="img" aria-label={`Wind from the ${compass(windDirection)}`}>
-      <circle cx="26" cy="26" r="24" fill="none" stroke="rgb(233 231 224 / .3)" />
-      <path d="M26 3v3M49 26h-3M26 49v-3M3 26h3" stroke="rgb(233 231 224 / .6)" />
-      <text x="26" y="13" textAnchor="middle" fontSize="8" fill="#c3d0cd">N</text>
-      <g transform={`rotate(${windDirection + 180} 26 26)`}><path d="M26 16L32 34L26 30L20 34Z" fill="#d99a6c" /></g>
+      <circle cx="26" cy="26" r="24" fill="none" stroke="currentColor" strokeOpacity=".22" />
+      <path d="M26 3v3M49 26h-3M26 49v-3M3 26h3" stroke="currentColor" strokeOpacity=".5" />
+      <text x="26" y="13" textAnchor="middle" fontSize="8" fontWeight="600" fill="currentColor" fillOpacity=".7">N</text>
+      <g className="wind-compass-needle" transform={`rotate(${windDirection + 180} 26 26)`}><path d="M26 16L32 34L26 30L20 34Z" fill="#a65f36" /></g>
     </svg>
   );
-  const icon = (path: string) => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={path} /></svg>;
+  const icon = (path: string, size = 18) => <svg width={size} height={size} viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={path} /></svg>;
   return (
     <section aria-label="Wind map" className="wind-instrument">
       <div className="absolute inset-0"><div ref={mapBox} className="h-full w-full" /></div>
@@ -555,11 +566,10 @@ export function WindExplorer({
       </aside>
 
       <div className="wind-map-tools" role="group" aria-label="Map controls">
-        <span className="wind-north" aria-label="North is up">N{icon("M9 15V3M5 7l4-4 4 4")}</span>
-        <button type="button" title="Zoom in" aria-label="Zoom in" onClick={() => zoom(1)}>{icon("M9 3v12M3 9h12")}</button>
-        <button type="button" title="Zoom out" aria-label="Zoom out" onClick={() => zoom(-1)}>{icon("M3 9h12")}</button>
-        <button type="button" title="Reset to resort overview" aria-label="Reset to resort overview" onClick={reset}>{icon("M3 7V3h4M15 7V3h-4M3 11v4h4M15 11v4h-4")}</button>
-        <button type="button" title={flowing ? "Freeze wind particles" : "Animate wind particles"} aria-label={flowing ? "Freeze wind particles" : "Animate wind particles"} aria-pressed={flowing} onClick={() => setFlowing(!flowing)}>{icon("M2 6h9a2 2 0 1 0-2-2M2 10h12a2 2 0 1 1-2 2M2 14h4")}</button>
+        <button type="button" className="wind-zoom" title="Zoom in" aria-label="Zoom in" onClick={() => zoom(1)}>{icon("M9 3v12M3 9h12", 16)}</button>
+        <button type="button" className="wind-zoom" title="Zoom out" aria-label="Zoom out" onClick={() => zoom(-1)}>{icon("M3 9h12", 16)}</button>
+        <button type="button" title="Reset to resort overview" aria-label="Reset to resort overview" onClick={reset}>{icon("M3 7V3h4M15 7V3h-4M3 11v4h4M15 11v4h-4", 16)}</button>
+        <button type="button" title={flowing ? "Freeze wind particles" : "Animate wind particles"} aria-label={flowing ? "Freeze wind particles" : "Animate wind particles"} aria-pressed={flowing} onClick={() => setFlowing(!flowing)}>{icon("M2 6h9a2 2 0 1 0-2-2M2 10h12a2 2 0 1 1-2 2M2 14h4", 16)}</button>
       </div>
 
       {probe && probeAt && reading && <div className="wind-probe" style={{left: probeAt.x, top: probeAt.y}}>
@@ -569,6 +579,10 @@ export function WindExplorer({
       </div>}
 
       <div className="wind-console">
+        <div className="wind-key" aria-label="Map key">
+          <span className="wind-speed-key"><span>0</span><i style={{background: `linear-gradient(to right, ${SPEED_STOPS.map(([sp,c]) => `rgb(${c.join(" ")}) ${sp / 35 * 100}%`).join(",")})`}} /><span>35+ mph</span></span>
+          <span className="wind-attribution">Imagery USDA NAIP / USGS · Wind <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a> · Places © OpenStreetMap</span>
+        </div>
         <div className="wind-timebar">
           <div className="wind-transport">
             <button type="button" aria-label="Previous hour" disabled={t <= 0} onClick={() => scrub(t - 1)}>{icon("M11 4L6 9l5 5")}</button>
@@ -579,19 +593,14 @@ export function WindExplorer({
             }}>{icon(playing ? "M6 4v10M12 4v10" : "M6 3l9 6-9 6V3")}</button>
             <button type="button" aria-label="Next hour" disabled={t >= hours - 1} onClick={() => scrub(t + 1)}>{icon("M7 4l5 5-5 5")}</button>
           </div>
-          <div className="wind-time tabular"><strong>{hourLabel(local)}</strong><span>{dayLabel(date, "short")}, {new Intl.DateTimeFormat("en-US", {month: "short", day: "numeric", timeZone: "UTC"}).format(new Date(`${date}T12:00:00Z`))}</span></div>
+          <p className="wind-time"><strong>{hourLabel(local)}</strong><span>{dayLabel(date, "short")}, {new Intl.DateTimeFormat("en-US", {month: "short", day: "numeric", timeZone: "UTC"}).format(new Date(`${date}T12:00:00Z`))}</span></p>
+          <div className="wind-days" role="group" aria-label="Forecast day">{dates.map((d, i) => <button key={d} type="button" aria-pressed={i === dayIndex} onClick={() => scrub(i * 24 + t % 24)}>{dayLabel(d, "short")} <span>{Number(d.slice(8))}</span></button>)}</div>
           <div className="wind-range-switch" role="group" aria-label="Timeline range"><button type="button" aria-pressed={!wholeTrip} onClick={() => setWholeTrip(false)}>Day</button><button type="button" aria-pressed={wholeTrip} onClick={() => setWholeTrip(true)}>Trip</button></div>
         </div>
-        <div className="wind-days" role="group" aria-label="Forecast day">{dates.map((d, i) => <button key={d} type="button" aria-pressed={i === dayIndex} onClick={() => scrub(i * 24 + t % 24)}><span>{dayLabel(d, "short")}</span><span className="tabular">{Number(d.slice(8))}</span></button>)}</div>
-        <div className="wind-chart-key"><span><i />Wind</span><span><i className="gust-key" />Gusts</span><span><i className="night-key" />Night</span><span><i className="tee-key" />Tee times</span><span className="ml-auto">mph</span></div>
-        <ForecastTimeline data={data} events={events} time={t} from={wholeTrip ? 0 : dayIndex * 24} to={wholeTrip ? hours : Math.min(hours, dayIndex * 24 + 24)} nights={nights} onChange={scrub} />
-        <ul className="wind-events" aria-label="Itinerary destinations">{(wholeTrip ? events : dayEvents).map(e => {
-          const on = selectedEvent ? selectedEvent === e.id : t >= e.start && t < Math.max(e.end, e.start + 1);
-          return <li key={e.id}><button type="button" aria-pressed={on} onClick={() => jump(e)}><strong>{e.title}</strong><span>{wholeTrip ? e.label : e.label.replace(/^\S+ /, "")}{e.sunsetNote && <em>{e.sunsetNote}</em>}</span></button></li>;
-        })}{!wholeTrip && dayEvents.length === 0 && <li className="wind-empty">No events scheduled this day</li>}</ul>
-        <div className="wind-console-footer"><span>Scrub to explore · Select a destination to fly</span><div className="wind-speed-key"><span>0</span><i style={{background: `linear-gradient(to right, ${SPEED_STOPS.map(([sp,c]) => `rgb(${c.join(" ")}) ${sp / 35 * 100}%`).join(",")})`}} /><span>35+ mph</span></div></div>
+        <ForecastTimeline data={data} events={events} time={t} from={wholeTrip ? 0 : dayIndex * 24} to={wholeTrip ? hours : Math.min(hours, dayIndex * 24 + 24)} nights={nights}
+          selected={(e) => selectedEvent ? selectedEvent === e.id : t >= e.start && t < Math.max(e.end, e.start + 1)}
+          onChange={scrub} onEvent={jump} />
       </div>
-      <p className="wind-attribution">Imagery USDA NAIP / USGS · Wind <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a> · Places © OpenStreetMap</p>
     </section>
   );
 }
