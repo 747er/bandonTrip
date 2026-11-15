@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CourseExplorer } from "@/components/public/CourseExplorer";
 import { courseById } from "@/data/courses";
+import { LODGING, STAY } from "@/data/trip";
 import { contours } from "@/components/public/contours";
 import { eventSummary } from "@/components/public/EventList";
 import {
@@ -12,11 +13,12 @@ import {
 } from "@/components/public/features";
 import { WindGlyph } from "@/components/public/Glyphs";
 import { MobileDay, type MobileStop } from "@/components/public/MobileDay";
-import { NextUp, type NextUpSlide } from "@/components/public/NextUp";
+import { CardDay, NextUp, StripMarker, type NextUpSlide } from "@/components/public/NextUp";
 import { Photo, PhotoCredit, type PhotoData } from "@/components/public/Photo";
 import { HERO_SLOT, photoFor, photosForEvents, slotFor, slotName } from "@/lib/photos";
 import {
   addDays,
+  clock,
   dateRange,
   eachDay,
   monthDay,
@@ -26,6 +28,7 @@ import {
   type ZonedNow,
 } from "@/lib/time";
 import { getTripNow, roundNumbers, isPast, isUnderway, type PublicEvent, type PublicTrip } from "@/lib/trip";
+import { PLACES, RESORT_MAP } from "@/lib/resortMap";
 import { getTrip } from "@/lib/viewer";
 import { getForecast, type DayWeather } from "@/lib/weather";
 
@@ -213,71 +216,179 @@ function phoneDays({ data, now, weather }: Ctx) {
   );
 }
 
-/** Where the viewer is staying and with whom: one quiet line under the cover. */
+/** Screen pixels per map pixel in the small map beside the lodging. */
+const NEAR = 0.85;
+
+/** Where the viewer is staying: the place, who shares it, when to arrive, and where it is. */
 function Stay({ data }: Ctx) {
   const { viewer, trip } = data;
   if (!viewer) return null;
   const mates = viewer.roommates;
-  const list = mates.length > 1 ? `${mates.slice(0, -1).join(", ")} and ${mates[mates.length - 1]}` : mates[0];
+  const place = PLACES[viewer.roomPlace];
+  const lodging = LODGING[viewer.roomPlace];
+  const slot = `lodging/${viewer.roomPlace}`;
+  const photo = photoFor(slot);
+  const inside = [`${slot}-living`, `${slot}-bedroom`].map((s) => [s, photoFor(s)] as const).filter(([, p]) => p);
+  const mapHref = `${scheduleHref(trip.slug, trip.startDate)}#map`;
+
+  const rows: { name: string; value: React.ReactNode }[] = [
+    ...(mates.length > 0
+      ? [{ name: "Staying with", value: <ul>{mates.map((name) => <li key={name}>{name}</li>)}</ul> }]
+      : []),
+    { name: "Check-in", value: <>{weekday(trip.startDate)}, {monthDay(trip.startDate)} <span className="block font-normal text-moss">from {clock(STAY.checkIn)}</span></> },
+    { name: "Check-out", value: <>{weekday(trip.endDate)}, {monthDay(trip.endDate)} <span className="block font-normal text-moss">by {clock(STAY.checkOut)}</span></> },
+    { name: "Shuttle", value: <a className="underline decoration-rule underline-offset-4 hover:decoration-copper" href={`tel:${STAY.shuttle.replace(/\D/g, "")}`}>{STAY.shuttle}</a> },
+  ];
+
   return (
-    <section aria-label="Where you're staying" className={`${WIDE} stay-section pt-8 md:pt-12`}>
-      <Link href={scheduleHref(trip.slug)} className="group flex items-center gap-4 border-y border-rule py-4">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest text-limestone">
-          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true">
-            <path d="M2.5 7.5L8 3l5.5 4.5V13h-11z" />
-          </svg>
-        </span>
-        <span className="min-w-0">
-          <span className="block text-label text-moss">{viewer.firstName}, you&rsquo;re staying in</span>
-          <span className="serif block text-[22px] leading-tight group-hover:text-forest">{viewer.room}</span>
-          {list && <span className="mt-0.5 block text-meta text-moss">with {list}</span>}
-        </span>
-        <span className="stay-action">Your itinerary <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14" /></svg></span>
-      </Link>
+    <section id="stay" aria-labelledby="stay-heading" className={`${WIDE} scroll-mt-24 pt-10 md:pt-16`}>
+      <div className="grid border-t border-copper bg-paper md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,0.8fr)]">
+        <div className="flex flex-col gap-px">
+          <div className="relative aspect-[16/10] flex-1 overflow-hidden bg-forest-deep md:aspect-auto md:min-h-[15rem]">
+            <Photo photo={photo} slot={slot} alt={lodging?.name ?? viewer.room} sizes="(min-width: 768px) 40vw, 100vw" />
+          </div>
+          {inside.length > 0 && (
+            <div className="grid grid-cols-2 gap-px">
+              {inside.map(([s, p]) => (
+                <div key={s} className="relative aspect-[16/10] overflow-hidden bg-forest-deep">
+                  <Photo photo={p} slot={s} sizes="(min-width: 768px) 20vw, 50vw" />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="p-5 md:p-7">
+          <p className="text-label font-semibold text-copper">Your stay</p>
+          <h2 id="stay-heading" className="display mt-1.5 text-[34px] md:text-[40px]">{viewer.room}</h2>
+          <dl className="figures mt-5 divide-y divide-rule border-y border-rule text-meta">
+            {rows.map(({ name, value }) => (
+              <div key={name} className="flex items-baseline gap-4 py-2.5">
+                <dt className="w-[6.25rem] shrink-0 text-moss">{name}</dt>
+                <dd className="font-semibold">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          {lodging?.about && <p className="mt-4 text-meta leading-relaxed text-moss">{lodging.about}</p>}
+          {lodging && (
+            <a className="action mt-2" href={lodging.url} target="_blank" rel="noreferrer">
+              {lodging.name} at Bandon Dunes
+            </a>
+          )}
+        </div>
+
+        {place && (
+          <Link
+            href={mapHref}
+            aria-label={`${lodging?.name ?? viewer.room} on the resort map`}
+            className="group relative block min-h-[12rem] overflow-hidden border-t border-rule md:col-span-2 lg:col-span-1 lg:border-l lg:border-t-0"
+          >
+            <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-[1.04]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={RESORT_MAP.src}
+                alt=""
+                className="absolute max-w-none"
+                style={{
+                  width: RESORT_MAP.width * NEAR,
+                  left: `calc(50% - ${place.x * NEAR}px)`,
+                  top: `calc(44% - ${place.y * NEAR}px)`,
+                }}
+              />
+            </div>
+            <div>
+              <span
+                aria-hidden="true"
+                className="absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-paper bg-copper text-paper shadow-[0_2px_10px_rgb(13_33_27/0.45)]"
+                style={{ left: "50%", top: "44%" }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
+                  <path d="M2.5 7.5L8 3l5.5 4.5V13h-11z" />
+                </svg>
+              </span>
+              <span className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 bg-forest/92 px-4 py-2.5 text-label font-semibold text-limestone">
+                {lodging?.name ?? viewer.room}
+                <span className="flex items-center gap-2 text-copper-light">
+                  Resort map
+                  <svg width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M1 1l6 6-6 6" />
+                  </svg>
+                </span>
+              </span>
+            </div>
+          </Link>
+        )}
+      </div>
     </section>
   );
 }
 
-/** The trip at a glance: each day and the course played on it. Every day opens its schedule. */
-function Itinerary({ data, now }: Ctx) {
+/**
+ * The trip at a glance: each day and the course played on it. With the opening card
+ * beside it, a day turns the card to that day; otherwise it opens the day's schedule.
+ */
+function Itinerary({ data, now, cardDate }: Ctx & { cardDate?: string }) {
   const { trip, events } = data;
   const days = eachDay(trip.startDate, trip.endDate);
-  // The next round still to be played marks its day.
+  // With the card beside it, the day the card shows is marked, and the mark follows the
+  // card. Without one, the next round still to be played marks its day.
   const nextRound = events.find((e) => e.type === "golf" && !isPast(e, now));
   return (
     <nav aria-label="The itinerary" className="bg-forest-deep text-limestone">
-      <ol
-        className="mx-auto grid max-w-6xl divide-x divide-rule-light px-2.5 md:px-4"
-        style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}
-      >
-        {days.map((date) => {
-          const main = events.find((e) => e.date === date && e.type === "golf") ?? events.find((e) => e.date === date);
-          const on = nextRound?.date === date;
-          return (
-            <li key={date}>
-              <Link
-                href={scheduleHref(trip.slug, date)}
-                className={`group flex h-full min-h-[4.5rem] flex-col justify-center border-t-2 px-2 py-3 transition-colors hover:bg-forest/70 md:px-6 md:py-5 ${
-                  on ? "border-copper-light" : "border-transparent"
-                }`}
-              >
-                <span className={`figures text-label font-semibold ${on ? "text-copper-light" : "text-mist"}`}>
+      <div className="relative mx-auto max-w-6xl px-2.5 md:px-4">
+        {cardDate && (
+          <div className="pointer-events-none absolute inset-y-0 left-2.5 right-2.5 z-10 md:left-4 md:right-4">
+            <StripMarker days={days} shown={cardDate} />
+          </div>
+        )}
+        <ol
+          className="grid divide-x divide-rule-light"
+          style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}
+        >
+          {days.map((date) => {
+            const main = events.find((e) => e.date === date && e.type === "golf") ?? events.find((e) => e.date === date);
+            const card = cardDate !== undefined && main;
+            const on = !cardDate && nextRound?.date === date;
+            const href = scheduleHref(trip.slug, date);
+            const className = `group flex h-full min-h-[4.5rem] flex-col justify-center border-t-2 px-2 py-3 transition-colors hover:bg-forest/70 md:px-6 md:py-5 ${
+              on ? "border-copper-light" : "border-transparent"
+            }`;
+            const label = (
+              <>
+                <span
+                  className={`figures text-label font-semibold transition-colors duration-500 group-aria-[current=true]:text-copper-light ${
+                    on ? "text-copper-light" : "text-mist"
+                  }`}
+                >
                   {weekdayShort(date)} {Number(date.slice(8))}
                 </span>
                 <span className="serif mt-0.5 text-[14px] italic leading-tight md:text-[21px]">
                   {main ? main.title : "Open"}
                 </span>
-              </Link>
-            </li>
-          );
-        })}
-      </ol>
+              </>
+            );
+            return (
+              <li key={date}>
+                {card ? (
+                  <CardDay href={href} eventId={card.id} date={date} shown={cardDate} className={className}>
+                    {label}
+                  </CardDay>
+                ) : (
+                  <Link href={href} className={className}>
+                    {label}
+                  </Link>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      </div>
     </nav>
   );
 }
 
 /** The opening card's slides: every event, and which one to open on. */
-function nextUp({ data, now, weather, roundOf }: Ctx) {
+function cardDeck({ data, now, weather, roundOf }: Ctx) {
   const { trip, events } = data;
   const slides: NextUpSlide[] = events.map((e) => ({
     event: e,
@@ -291,7 +402,17 @@ function nextUp({ data, now, weather, roundOf }: Ctx) {
   const upcoming = slides.findIndex((x) => x.state === "upcoming");
   const initial = upcoming >= 0 ? upcoming : slides.findIndex((x) => x.state === "now");
   if (initial < 0) return null;
-  return (
+  return { slides, initial };
+}
+
+/** The opening card, and the day it opens on so the itinerary strip can mark it. */
+function nextUp(ctx: Ctx) {
+  const deck = cardDeck(ctx);
+  if (!deck) return { card: null, cardDate: undefined };
+  const { slides, initial } = deck;
+  const { data, now } = ctx;
+  const { trip } = data;
+  const card = (
     <NextUp
       // Keyed by who is looking, so it reopens on that person's next event.
       key={data.viewer?.id ?? "nobody"}
@@ -302,6 +423,7 @@ function nextUp({ data, now, weather, roundOf }: Ctx) {
       timeZone={trip.timezone}
     />
   );
+  return { card, cardDate: slides[initial].event.date };
 }
 
 function Forecast({
@@ -417,6 +539,7 @@ function Before(ctx: Ctx) {
   const { trip, events } = data;
   const golf = events.filter((e) => e.type === "golf");
   const first = events.find((e) => e.startTime) ?? events[0];
+  const { card, cardDate } = nextUp(ctx);
 
   return (
     <>
@@ -439,8 +562,8 @@ function Before(ctx: Ctx) {
             </p>
           </>
         }
-        panel={nextUp(ctx)}
-        strip={<Itinerary {...ctx} />}
+        panel={card}
+        strip={<Itinerary {...ctx} cardDate={cardDate} />}
         phone={phoneDays(ctx)}
       />
 
@@ -465,6 +588,7 @@ function During(ctx: Ctx) {
   const tomorrowDate = addDays(now.date, 1);
   const tomorrow = events.filter((e) => e.date === tomorrowDate);
   const tomorrowGolf = tomorrow.find((e) => e.type === "golf");
+  const { card, cardDate } = nextUp(ctx);
 
   const row = (e: PublicEvent) => (
     <EventRow key={e.id} event={e} photo={photos[e.id]} slot={slotFor(e)} summary={eventSummary(e)} />
@@ -475,7 +599,7 @@ function During(ctx: Ctx) {
       <Cover
         hero={hero}
         tall={false}
-        strip={<Itinerary {...ctx} />}
+        strip={<Itinerary {...ctx} cardDate={cardDate} />}
         phone={phoneDays(ctx)}
         title={
           <>
@@ -491,7 +615,7 @@ function During(ctx: Ctx) {
           </>
         }
         panel={
-          nextUp(ctx) ?? (
+          card ?? (
             <p className="serif bg-forest p-6 text-[20px] italic text-limestone">
               Nothing left on the schedule. Safe travels home.
             </p>
