@@ -6,7 +6,8 @@ import { courseById } from "@/data/courses";
 import { photosForEvents, slotFor, slotName } from "@/lib/photos";
 import { placeFor } from "@/lib/resortMap";
 import { clock, dateRange, eachDay } from "@/lib/time";
-import { getTrip, getTripNow, isPast, isUnderway, roundNumbers } from "@/lib/trip";
+import { getTripNow, isPast, isUnderway, roundNumbers } from "@/lib/trip";
+import { getTrip } from "@/lib/viewer";
 import { getForecast } from "@/lib/weather";
 import { getWind } from "@/lib/wind";
 import { compass, hourIndex, minutesFromStart } from "@/lib/windMath";
@@ -22,7 +23,7 @@ export default async function SchedulePage({
   const { day } = await searchParams;
   const data = await getTrip(slug);
   if (!data) notFound();
-  const { trip, events, lodging } = data;
+  const { trip, events, viewer } = data;
   const [{ now, phase }, weather, wind] = await Promise.all([
     getTripNow(trip),
     getForecast(trip),
@@ -51,7 +52,7 @@ export default async function SchedulePage({
     const id = placeFor(e.title, e.venue);
     if (id) places[e.id] = id;
   }
-  const homePlace = placeFor(lodging);
+  const homePlace = viewer?.roomPlace ?? null;
 
   // Hour-by-hour: what it is forecast to be doing when each event starts, the day's
   // daylight, and a note on anything outdoors that runs past sunset.
@@ -102,6 +103,7 @@ export default async function SchedulePage({
       daylight={daylight}
       places={places}
       homePlace={homePlace}
+      homeLabel={viewer?.room ?? null}
       initialDay={requested ?? today ?? days[0]}
       today={today}
     />
