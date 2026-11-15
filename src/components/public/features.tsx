@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { CourseFacts } from "@/lib/catalog";
 import { monthDay, monthDayShort, weekday, weekdayShort } from "@/lib/time";
 import { eventTimes, type PublicEvent } from "@/lib/trip";
 import type { DayWeather } from "@/lib/weather";
@@ -83,7 +82,6 @@ type CourseProps = {
   photo: PhotoData;
   slot: string;
   round: RoundInfo | null;
-  facts: CourseFacts | null;
   weather?: DayWeather;
   href: string;
   className?: string;
@@ -134,11 +132,9 @@ export function CourseCard({ event, photo, slot, round, weather, href, className
 }
 
 /** The lead course, given room: a large photograph beside its details. Desktop only. */
-export function CourseFeature({ event, photo, slot, round, facts, weather, href, className = "", sizes }: CourseProps) {
+export function CourseFeature({ event, photo, slot, round, weather, href, className = "", sizes }: CourseProps) {
   const rows: [string, string][] = [["Day", `${weekday(event.date)}, ${monthDay(event.date)}`]];
   if (event.startTime) rows.push(["Tee times", eventTimes(event)]);
-  if (round) rows.push(["Par", String(round.par)]);
-  if (facts) rows.push(["Design", `${facts.designer}, ${facts.opened}`]);
   return (
     <Link href={href} className={`group grid-cols-12 bg-forest text-limestone ${className}`}>
       <div className="relative isolate col-span-8 min-h-[540px] overflow-hidden bg-forest-deep">
