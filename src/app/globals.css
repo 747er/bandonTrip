@@ -168,3 +168,410 @@ details.event[open] .event-body {
   }
 }
 }
+
+/* Wind: one compact instrument, with geography kept clear between the readouts. */
+.wind-instrument {
+  position: relative; isolation: isolate; height: 100svh; min-height: 680px;
+  overflow: hidden; background: var(--color-forest-deep); color: var(--color-limestone);
+  --instrument-rule: rgb(233 231 224 / .2);
+  --instrument-ground: rgb(13 33 27 / .96);
+}
+.wind-instrument button { cursor: pointer; }
+.wind-instrument button:disabled { opacity: .35; cursor: default; }
+.wind-instrument :focus-visible { outline-color: var(--color-copper-light); }
+.wind-canvas { pointer-events: none; position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 350ms; }
+.wind-canvas.is-ready { opacity: 1; }
+.wind-map-shade { pointer-events: none; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(13 33 27 / .7), transparent 22%, transparent 70%, rgb(13 33 27 / .6)); }
+.wind-map-status { position: absolute; top: 43%; left: 50%; transform: translate(-50%, -50%); max-width: 26rem; padding: 12px 18px; background: var(--instrument-ground); font-size: 14px; text-align: center; }
+.wind-readout { position: absolute; top: 96px; left: 40px; width: 278px; background: var(--instrument-ground); border: 1px solid var(--instrument-rule); padding: 16px; }
+.wind-readout-heading { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--color-mist); }
+.wind-readout-heading h2 { font-weight: 600; color: var(--color-limestone); }
+.wind-main-reading { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 12px; }
+.wind-compass { flex-shrink: 0; }
+.wind-speed { font-size: 54px; font-weight: 500; letter-spacing: -.04em; line-height: 1; display: flex; align-items: center; gap: 9px; }
+.wind-speed > span { font-size: 14px; font-weight: 500; letter-spacing: 0; line-height: 1.4; }
+.wind-speed small { display: block; color: var(--color-mist); font-size: 12px; }
+.wind-stats { display: flex; width: 100%; justify-content: space-between; border-top: 1px solid var(--instrument-rule); padding-top: 12px; font-variant-numeric: tabular-nums; }
+.wind-stats dt { font-size: 12px; color: var(--color-mist); }
+.wind-stats dd { font-size: 17px; font-weight: 600; margin-top: 2px; }
+.wind-context { display: flex; flex-direction: column; border-top: 1px solid var(--instrument-rule); padding-top: 12px; margin-top: 12px; gap: 3px; font-size: 14px; }
+.wind-context > span { color: var(--color-mist); font-size: 12px; }
+.wind-context strong { font-weight: 500; }
+.wind-daylight { font-size: 12px; color: var(--color-mist); margin-top: 7px; }
+.wind-daylight.is-dark { color: var(--color-copper-light); }
+.wind-map-tools { position: absolute; top: 96px; right: 40px; display: flex; flex-direction: column; background: var(--instrument-ground); border: 1px solid var(--instrument-rule); }
+.wind-map-tools button, .wind-north { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-bottom: 1px solid var(--instrument-rule); }
+.wind-map-tools button:last-child { border: 0; }
+.wind-map-tools button[aria-pressed=true] { color: var(--color-copper-light); }
+.wind-north { flex-direction: column; font-size: 10px; height: 50px; gap: 1px; color: var(--color-mist); }
+.wind-map-tools button:hover, .wind-transport button:hover, .wind-range-switch button:hover { background: var(--color-forest); }
+.wind-pin { min-height: 36px; }
+.wind-pin:focus-visible { outline: 2px solid var(--color-copper-light); outline-offset: 4px; }
+.wind-probe { position: absolute; z-index: 3; transform: translate(-50%, -100%); display: flex; align-items: center; gap: 12px; background: var(--instrument-ground); border: 1px solid var(--instrument-rule); padding: 9px 4px 9px 12px; font-size: 13px; box-shadow: 0 8px 24px rgb(0 0 0 / .2); }
+.wind-probe-label { display: block; font-size: 11px; color: var(--color-mist); }
+.wind-probe p { white-space: nowrap; }
+.wind-probe button { width: 36px; height: 36px; display: grid; place-items: center; }
+.wind-probe-dot { position: absolute; left: calc(50% - 4px); bottom: -10px; width: 8px; height: 8px; background: var(--color-copper-light); border-radius: 50%; }
+.wind-console { position: absolute; bottom: 32px; left: 40px; right: 40px; max-width: 1152px; margin: auto; background: var(--instrument-ground); border: 1px solid var(--instrument-rule); padding: 0 18px; }
+.wind-timebar { display: flex; align-items: center; min-height: 58px; gap: 16px; border-bottom: 1px solid var(--instrument-rule); }
+.wind-transport { display: flex; gap: 2px; }
+.wind-transport button { width: 36px; min-height: 40px; display: grid; place-items: center; transition: background 160ms; }
+.wind-transport .wind-play { background: var(--color-limestone); color: var(--color-pine); width: 40px; }
+.wind-transport .wind-play:hover { background: var(--color-paper); }
+.wind-time { display: flex; align-items: baseline; gap: 12px; }
+.wind-time strong { font-size: 21px; font-weight: 500; min-width: 108px; }
+.wind-time > span { color: var(--color-mist); font-size: 13px; }
+.wind-range-switch { margin-left: auto; display: flex; border: 1px solid var(--instrument-rule); }
+.wind-range-switch button { min-height: 32px; padding: 0 14px; font-size: 12px; }
+.wind-range-switch button[aria-pressed=true] { color: var(--color-pine); background: var(--color-limestone); }
+.wind-days { display: flex; position: absolute; right: 160px; top: 7px; gap: 6px; }
+.wind-days button { display: flex; align-items: center; gap: 7px; padding: 0 12px; min-height: 44px; font-size: 13px; color: var(--color-mist); border-bottom: 2px solid transparent; }
+.wind-days button[aria-pressed=true] { color: var(--color-limestone); border-color: var(--color-copper-light); }
+.wind-days button:hover { background: var(--color-forest); }
+.wind-chart-key { display: flex; align-items: center; gap: 16px; padding-top: 10px; font-size: 12px; color: var(--color-mist); }
+.wind-chart-key > span { display: inline-flex; align-items: center; gap: 5px; }
+.wind-chart-key i { width: 14px; border-top: 2px solid var(--color-limestone); }
+.wind-chart-key .gust-key { border-top: 1px dashed var(--color-mist); }
+.wind-chart-key .night-key { border: 1px solid var(--instrument-rule); height: 9px; background: rgb(0 0 0 / .3); }
+.wind-chart-key .tee-key { border-color: var(--color-copper-light); }
+.wind-plot { display: flex; position: relative; height: 111px; padding-top: 7px; padding-bottom: 22px; gap: 8px; }
+.wind-plot-axis { display: flex; width: 20px; flex-shrink: 0; flex-direction: column; justify-content: space-between; padding-top: 12px; padding-bottom: 2px; font-size: 10px; font-variant-numeric: tabular-nums; color: var(--color-mist); }
+.wind-plot-field { position: relative; flex: 1; min-width: 0; margin-right: 10px; }
+.wind-plot-field > svg { width: 100%; height: 100%; overflow: hidden; }
+.wind-plot-field > input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; touch-action: pan-y; margin: 0; }
+.wind-plot-field:has(input:focus-visible) { outline: 2px solid var(--color-copper-light); outline-offset: 4px; }
+.wind-plot-point { pointer-events: none; position: absolute; width: 7px; height: 7px; border-radius: 50%; transform: translate(-50%, -50%); background: var(--color-copper-light); border: 1px solid var(--color-forest-deep); }
+.wind-plot-ticks { position: absolute; top: calc(100% + 3px); inset-inline: 0; font-size: 10px; color: var(--color-mist); }
+.wind-plot-ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.wind-plot-ticks span:first-child { transform: none; }
+.wind-events { display: flex; overflow-x: auto; gap: 0; border-top: 1px solid var(--instrument-rule); padding: 7px 0; scrollbar-width: thin; scrollbar-color: var(--color-moss) transparent; }
+.wind-events li { flex-shrink: 0; }
+.wind-events button { display: flex; flex-direction: column; padding: 7px 14px; min-height: 48px; text-align: left; border: 1px solid transparent; transition: background 160ms, border-color 160ms; }
+.wind-events button:hover { background: var(--color-forest); }
+.wind-events button[aria-pressed=true] { border-color: var(--color-copper-light); background: rgb(217 154 108 / .08); }
+.wind-events strong { font-weight: 500; font-size: 14px; }
+.wind-events button > span { font-size: 12px; color: var(--color-mist); font-variant-numeric: tabular-nums; }
+.wind-events em { font-style: normal; color: var(--color-copper-light); margin-left: 8px; }
+.wind-empty { padding: 10px 0; color: var(--color-mist); font-size: 13px; }
+.wind-console-footer { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--instrument-rule); padding: 7px 0; font-size: 11px; color: var(--color-mist); }
+.wind-speed-key { display: flex; align-items: center; gap: 6px; }
+.wind-speed-key i { display: block; width: 80px; height: 4px; }
+.wind-attribution { position: absolute; bottom: 8px; right: 40px; font-size: 10px; color: var(--color-mist); background: rgb(13 33 27 / .8); padding: 1px 4px; }
+.wind-attribution a { text-decoration: underline; text-underline-offset: 2px; }
+@media (min-width: 768px) and (max-width: 1100px) {
+  .wind-time > span { display: none; }
+  .wind-days { gap: 0; right: 134px; }
+  .wind-days button { padding: 0 8px; }
+  .wind-range-switch button { padding: 0 10px; }
+}
+@media (max-width: 767px) {
+  .wind-instrument { min-height: 650px; }
+  .wind-readout { top: 0; left: 0; right: 0; width: auto; padding: calc(8px + env(safe-area-inset-top)) 14px 8px; border: 0; border-bottom: 1px solid var(--instrument-rule); }
+  .wind-readout-heading { font-size: 10px; }
+  .wind-main-reading { margin-top: 4px; gap: 8px; flex-wrap: nowrap; }
+  .wind-compass { width: 36px; height: 36px; }
+  .wind-speed { font-size: 34px; gap: 6px; }
+  .wind-speed > span { font-size: 11px; }
+  .wind-speed small { font-size: 10px; }
+  .wind-stats { width: auto; flex: 1; margin-left: 10px; border: 0; padding: 0; gap: 12px; justify-content: flex-end; }
+  .wind-stats dt { font-size: 11px; }
+  .wind-stats dd { font-size: 13px; }
+  .wind-context { flex-direction: row; margin-top: 6px; padding-top: 6px; font-size: 11px; gap: 6px; }
+  .wind-context > span { font-size: 11px; }
+  .wind-daylight { display: none; }
+  .wind-map-tools { top: calc(120px + env(safe-area-inset-top)); right: 12px; }
+  .wind-north { display: none; }
+  .wind-console { left: 0; right: 0; bottom: calc(67px + env(safe-area-inset-bottom)); padding: 0 12px; border-inline: 0; }
+  .wind-timebar { min-height: 49px; gap: 8px; border-bottom: 0; }
+  .wind-transport { gap: 0; }
+  .wind-transport button { width: 30px; min-height: 40px; }
+  .wind-transport .wind-play { width: 36px; height: 36px; min-height: 36px; margin-block: 2px; }
+  .wind-time { flex-direction: column; gap: 0; }
+  .wind-time strong { font-size: 18px; min-width: 97px; }
+  .wind-time > span { font-size: 10px; }
+  .wind-range-switch button { min-height: 36px; padding: 0 10px; }
+  .wind-days { position: static; justify-content: space-between; gap: 0; border-bottom: 1px solid var(--instrument-rule); }
+  .wind-days button { flex: 1; justify-content: center; min-height: 36px; padding: 0 7px; font-size: 12px; }
+  .wind-chart-key { padding-top: 6px; gap: 13px; font-size: 11px; }
+  .wind-plot { height: 81px; padding-bottom: 19px; padding-top: 2px; }
+  .wind-plot-axis { font-size: 9px; width: 15px; }
+  .wind-events { padding: 4px 0; }
+  .wind-events button { padding: 5px 10px; min-height: 44px; }
+  .wind-events strong { font-size: 13px; }
+  .wind-events button > span { font-size: 12px; }
+  .wind-console-footer { display: none; }
+  .wind-attribution { bottom: calc(315px + env(safe-area-inset-bottom)); right: 7px; font-size: 8px; max-width: calc(100% - 14px); }
+  .wind-probe { max-width: 220px; }
+}
+
+/* Shared interaction finish: stable figures, visible focus and a quiet press response. */
+.pub { scrollbar-color: var(--color-moss) var(--color-limestone); }
+.pub button, .pub input, .pub select { -webkit-tap-highlight-color: transparent; }
+.pub button:active:not(:disabled) { filter: brightness(.94); }
+.figures { font-variant-numeric: tabular-nums lining-nums; }
+@media (prefers-reduced-motion: reduce) {
+  .pub *, .pub *::before, .pub *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+.arrival-photo { animation: arrival-settle 1800ms var(--ease-settle); transform-origin: 55% 55%; }
+@keyframes arrival-settle { from { transform: scale(1.035); } to { transform: scale(1); } }
+.hero-copy > * { animation-delay: calc(var(--i, 0) * 90ms); animation-duration: 650ms; }
+.schedule-days { border-bottom: 1px solid var(--color-rule); }
+.schedule-days [role=tab] { border-bottom: 2px solid transparent; }
+.schedule-days [aria-selected=true] { border-bottom-color: var(--color-copper-light); }
+.packing-row { transition: background 180ms; }
+.packing-row:hover { background: rgb(243 241 236 / .55); }
+.packing-row input:checked + span svg { animation: check-settle 180ms var(--ease-settle); }
+@keyframes check-settle { from { transform: scale(.65); opacity: .4; } }
+@media (prefers-reduced-motion: reduce) { .arrival-photo { animation: none; } }
+.wind-daylight-compact { display: none; }
+.wind-plot-field > input { appearance: none; background: transparent; }
+.wind-plot-field > input::-webkit-slider-thumb { appearance: none; width: 1px; height: 44px; }
+.wind-plot-field > input::-moz-range-thumb { width: 1px; height: 44px; border: 0; }
+@media (max-width: 767px) {
+  .wind-context { padding-right: 110px; }
+  .wind-context strong { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .wind-daylight { display: block; position: absolute; right: 14px; bottom: 8px; margin: 0; font-size: 10px; }
+  .wind-daylight-full { display: none; }
+  .wind-daylight-compact { display: inline; }
+}
+
+/* The field guide and its planning tools share one measured editorial rhythm. */
+.trip-heading { padding-bottom: 26px; border-bottom: 1px solid var(--color-pine); }
+.trip-heading-title { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; }
+.trip-heading-title h1 { font-size: clamp(48px, 6vw, 80px); }
+.trip-heading-title > p { font-size: 15px; color: var(--color-moss); }
+.trip-heading-description { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 10px 32px; margin-top: 20px; }
+.trip-heading-description > p { font-family: var(--font-serif); font-size: 21px; }
+.trip-heading-description > span { font-size: 14px; color: var(--color-moss); }
+.section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; margin-bottom: 32px; }
+.section-heading h2 { font-size: clamp(44px, 6vw, 72px); }
+.section-heading p { color: var(--color-moss); font-size: 15px; }
+.stay-section > a { transition: background 180ms; }
+.stay-section > a:hover { background: var(--color-paper); }
+.stay-action { margin-left: auto; display: flex; align-items: center; gap: 20px; font-size: 14px; font-weight: 600; }
+.course-explorer { max-width: 1152px; margin: 0 auto; padding: 88px 40px 0; }
+.course-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--color-rule); }
+.course-tabs button { display: flex; gap: 12px; align-items: center; text-align: left; padding: 18px 12px; border-bottom: 2px solid transparent; min-width: 0; transition: background 180ms, border-color 180ms; }
+.course-tabs button:hover { background: var(--color-paper); }
+.course-tabs button[aria-selected=true] { background: var(--color-paper); border-bottom-color: var(--color-copper); }
+.course-tab-photo { position: relative; overflow: hidden; height: 52px; width: 52px; flex-shrink: 0; }
+.course-tab-date { display: block; font-size: 12px; color: var(--color-moss); margin-bottom: 3px; }
+.course-tab-date > span { margin-left: 8px; }
+.course-tabs strong { display: block; font-size: 15px; font-weight: 500; }
+.course-explorer-panel { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr); min-height: 560px; background: var(--color-forest); color: var(--color-limestone); }
+.course-explorer-photo { position: relative; overflow: hidden; min-height: 400px; }
+.course-photo-layer { position: absolute; inset: 0; opacity: 0; transition: opacity 420ms var(--ease-settle); }
+.course-photo-layer[data-active=true] { opacity: 1; }
+.course-photo-count { position: absolute; left: 20px; top: 20px; padding: 7px 12px; background: var(--color-forest-deep); font-size: 13px; }
+.course-explorer-detail { display: flex; flex-direction: column; padding: 32px; }
+.course-explorer-detail h3 { font-size: clamp(38px, 4.1vw, 56px); }
+.course-explorer-designer { font-size: 13px; color: var(--color-mist); margin-top: 12px; }
+.course-explorer-intro { font-size: 18px; line-height: 1.5; margin: 24px 0; }
+.course-explorer-facts { border-top: 1px solid var(--color-rule-light); }
+.course-explorer-facts > div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--color-rule-light); font-size: 14px; }
+.course-explorer-facts dt { color: var(--color-mist); flex-shrink: 0; font-size: 13px; }
+.course-explorer-facts dd { text-align: right; font-variant-numeric: tabular-nums; }
+.course-explorer-link { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 48px; border-top: 1px solid var(--color-rule-light); margin-top: auto; padding-top: 18px; font-size: 15px; font-weight: 600; }
+.course-explorer-link svg { color: var(--color-copper-light); transition: transform 180ms; }
+.course-explorer-link:hover svg { transform: translateX(4px); }
+.course-explorer-detail > dl + a, .course-explorer-detail > dl:last-of-type { margin-bottom: 20px; }
+.forecast-board { display: grid; grid-template-columns: repeat(var(--days), minmax(0, 1fr)); border-block: 1px solid var(--color-rule-light); }
+.forecast-board > li { border-left: 1px solid var(--color-rule-light); }
+.forecast-board > li:first-child { border-left: 0; }
+.forecast-day { display: block; height: 100%; padding: 24px; transition: background 180ms; }
+.forecast-day:hover { background: var(--color-forest); }
+.forecast-day-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 15px; }
+.forecast-day-heading svg { color: var(--color-copper-light); }
+.forecast-course { font-size: 13px; color: var(--color-mist); margin-top: 6px; min-height: 20px; }
+.forecast-temperature { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 24px 0 18px; }
+.forecast-temperature .display { font-size: 60px; }
+.forecast-temperature > span:last-child { width: 100%; font-size: 14px; }
+.forecast-range { display: flex; align-items: center; gap: 8px; color: var(--color-mist); font-size: 12px; font-variant-numeric: tabular-nums; }
+.forecast-range > div { position: relative; flex: 1; height: 4px; background: var(--color-rule-light); }
+.forecast-range i { position: absolute; top: 0; height: 100%; background: var(--color-sand); }
+.forecast-measures { margin-top: 20px; font-variant-numeric: tabular-nums; }
+.forecast-measures > div { display: flex; justify-content: space-between; border-top: 1px solid var(--color-rule-light); padding: 8px 0; }
+.forecast-measures dt, .forecast-measures dd > span { color: var(--color-mist); font-size: 13px; }
+.forecast-measures dd { font-size: 16px; font-weight: 500; }
+
+/* Schedule: the same selected stop is legible in the route, event and map. */
+.schedule-days { margin-top: 20px; }
+.day-route { display: flex; overflow-x: auto; border-bottom: 1px solid var(--color-rule); padding: 16px 0; gap: 24px; }
+.day-route button { display: flex; align-items: center; gap: 10px; text-align: left; min-height: 48px; flex: 1 0 auto; padding: 4px 8px 4px 0; }
+.route-number { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--color-moss); border-radius: 50%; color: var(--color-moss); font-size: 12px; }
+.day-route button > span:last-child { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.day-route strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+.day-route button[aria-pressed=true] .route-number { background: var(--color-forest); color: var(--color-paper); border-color: var(--color-forest); }
+.day-route button:hover { color: var(--color-copper); }
+.schedule-event { scroll-margin-top: 130px; outline: 1px solid transparent; outline-offset: 4px; transition: outline-color 220ms; }
+.schedule-event[data-selected=true] { outline-color: var(--color-copper); }
+.schedule-event[data-past=true] > div { border-bottom-color: var(--color-moss); }
+.schedule-conditions { background: var(--color-paper); padding: 20px; border-color: var(--color-rule); }
+.schedule-conditions .text-fine { font-size: 12px; }
+.schedule-map { scroll-margin-top: 130px; }
+.locate-event { min-height: 44px; display: inline-flex; gap: 6px; align-items: center; font-size: 14px; color: var(--color-moss); }
+.locate-event:hover { color: var(--color-copper); }
+.day-map-figure { border-top: 1px solid var(--color-pine); padding-top: 10px; }
+.day-map-figure ol button[aria-pressed=true] { background: var(--color-paper); }
+.pub table tr:has(td .font-semibold) { background: rgb(203 187 151 / .13); }
+.pub table th { padding-left: 8px; }
+
+/* Course pages: broad landscape, precise card, then a practical round briefing. */
+.course-back { position: absolute; top: 108px; left: max(40px, calc((100vw - 1072px) / 2)); display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; background: rgb(13 33 27 / .85); font-size: 14px; }
+.course-back:hover { background: var(--color-forest); }
+.course-cover-meta { margin-bottom: 16px; }
+.course-card-strip { background: var(--color-forest-deep); color: var(--color-limestone); }
+.course-card-strip dl { display: grid; grid-template-columns: 2.4fr repeat(5, 1fr); max-width: 1152px; padding: 0 40px; margin: auto; }
+.course-card-strip dl > div { padding: 22px 20px; border-left: 1px solid var(--color-rule-light); }
+.course-card-strip dl > div:first-child { border-left: 0; padding-left: 0; }
+.course-card-strip dt { color: var(--color-mist); font-size: 12px; margin-bottom: 7px; }
+.course-card-strip dd { font-size: 18px; font-variant-numeric: tabular-nums; }
+.course-card-strip dl > div:first-child dd { font-size: 16px; }
+.course-chapters { position: sticky; top: 0; z-index: 15; background: var(--color-paper); border-bottom: 1px solid var(--color-rule); }
+.course-chapters > div { display: flex; gap: 32px; max-width: 1152px; padding: 0 40px; margin: auto; }
+.course-chapters a { display: inline-flex; align-items: center; gap: 8px; min-height: 60px; font-size: 14px; white-space: nowrap; }
+.course-chapters a:hover { color: var(--color-copper); }
+.course-chapters a:last-child { margin-left: auto; }
+#course-overview, #expect, #your-round { scroll-margin-top: 88px; }
+.course-intro { text-wrap: pretty; }
+.course-round { padding: 26px; background: var(--color-paper); border-top: 1px solid var(--color-copper); }
+.course-round table { font-size: 15px; }
+.course-round table th { width: 90px; }
+.course-round .action { font-size: 14px; }
+.course-clubhouse { padding: 24px; margin-top: 28px; background: rgb(203 187 151 / .18); }
+.course-related-photo { display: block; flex-shrink: 0; width: 54px; height: 54px; position: relative; overflow: hidden; }
+.course-related[aria-current=page] { color: var(--color-pine); }
+.course-related .text-label { font-size: 11px; max-width: 45px; text-align: right; }
+
+/* Packing: the progress bar reflects each category, with reversible filtering. */
+.packing-toolbar { position: sticky; top: 0; z-index: 10; background: var(--color-limestone); padding: 16px 0 0; border-bottom: 1px solid var(--color-rule); }
+.packing-progress-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.packing-progress-heading > p { display: flex; align-items: center; gap: 10px; }
+.packing-progress-heading strong { font-family: var(--font-display); font-size: 48px; font-weight: 400; line-height: 1; }
+.packing-progress-heading p > span { font-size: 14px; color: var(--color-moss); }
+.packing-progress { display: flex; gap: 4px; margin: 18px 0 12px; }
+.packing-progress > span { height: 5px; background: rgb(20 38 31 / .12); }
+.packing-progress i { display: block; height: 100%; background: var(--color-forest); transition: width 240ms var(--ease-settle); }
+.packing-filter { display: flex; align-items: center; gap: 20px; }
+.packing-filter button { min-height: 44px; border-bottom: 2px solid transparent; color: var(--color-moss); font-size: 14px; }
+.packing-filter button[aria-pressed=true] { color: var(--color-pine); border-bottom-color: var(--color-copper); font-weight: 600; }
+.packing-filter button > span { font-size: 12px; margin-left: 6px; }
+.packing-save-state { font-size: 11px; color: var(--color-moss); margin-left: auto; }
+.packing-index { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 20px 0 30px; }
+.packing-index a { display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: 13px; color: var(--color-moss); border-bottom: 1px solid var(--color-rule); }
+.packing-index a:hover { color: var(--color-copper); border-color: var(--color-copper); }
+.packing-index a span { font-size: 11px; font-variant-numeric: tabular-nums; }
+.packing-section h2 { scroll-margin-top: 190px; }
+.packing-section { padding-bottom: 8px; }
+.packing-row { padding-inline: 8px; margin-inline: -8px; }
+.packing-complete { padding: 36px 0; }
+.packing-complete h2 { font-size: 40px; margin-bottom: 14px; }
+.packing-mobile-outlook { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 1px solid var(--color-rule); padding: 18px 0; gap: 12px; }
+.packing-mobile-outlook dt { color: var(--color-moss); font-size: 12px; }
+.packing-mobile-outlook dd { font-size: 14px; margin-top: 5px; font-variant-numeric: tabular-nums; }
+
+@media (min-width: 768px) and (max-width: 1050px) {
+  .course-tab-photo { display: none; }
+  .course-explorer-panel { grid-template-columns: 1fr 1fr; }
+  .forecast-day { padding: 18px; }
+  .course-card-strip dl { grid-template-columns: 2fr repeat(5, 1fr); }
+  .course-card-strip dl > div { padding-inline: 12px; }
+}
+@media (max-width: 767px) {
+  .trip-heading { padding-bottom: 22px; }
+  .trip-heading-title { flex-direction: column; gap: 14px; }
+  .trip-heading-title h1 { font-size: 48px; }
+  .trip-heading-title > p { font-size: 13px; }
+  .trip-heading-description { margin-top: 16px; gap: 8px; }
+  .trip-heading-description > p { font-size: 19px; }
+  .trip-heading-description > span { font-size: 13px; }
+  .stay-action { font-size: 0; gap: 0; }
+  .stay-action svg { width: 20px; }
+  .course-explorer { padding: 48px 20px 0; }
+  .section-heading { align-items: flex-start; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+  .section-heading p { font-size: 13px; }
+  .course-tabs { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: thin; }
+  .course-tabs button { min-width: 192px; padding: 12px 10px; scroll-snap-align: start; gap: 9px; }
+  .course-tab-photo { width: 44px; height: 44px; }
+  .course-tabs strong { font-size: 14px; }
+  .course-tab-date { font-size: 11px; }
+  .course-explorer-panel { display: flex; flex-direction: column; }
+  .course-explorer-photo { min-height: 0; height: 280px; }
+  .course-explorer-detail { padding: 24px; }
+  .course-explorer-detail h3 { font-size: 42px; }
+  .course-explorer-intro { margin-block: 20px; }
+  .course-explorer-facts > div { font-size: 13px; }
+  .course-explorer-link { margin-top: 20px; }
+  .forecast-board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .forecast-board > li { border-bottom: 1px solid var(--color-rule-light); }
+  .forecast-board > li:nth-child(odd) { border-left: 0; }
+  .forecast-day { padding: 18px 12px; }
+  .forecast-day-heading { font-size: 13px; gap: 6px; }
+  .forecast-course { font-size: 12px; min-height: 36px; }
+  .forecast-temperature { margin-top: 12px; gap: 8px; }
+  .forecast-temperature .display { font-size: 48px; }
+  .forecast-temperature > svg { width: 26px; }
+  .forecast-temperature > span:last-child { font-size: 13px; }
+  .forecast-measures { margin-top: 16px; }
+  .day-route { gap: 18px; padding-block: 12px; }
+  .day-route button { max-width: 210px; }
+  .schedule-conditions { padding: 16px; }
+  .schedule-event { scroll-margin-top: 110px; }
+  .course-back { top: 70px; left: 20px; font-size: 13px; }
+  .course-cover { min-height: 380px; }
+  .course-cover-meta { font-size: 13px; }
+  .course-cover-meta > span { display: block; margin-left: 0; margin-top: 5px; }
+  .course-card-strip dl { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 0 20px; }
+  .course-card-strip dl > div { padding: 14px 10px; }
+  .course-card-strip dl > div:nth-child(4) { border-left: 0; padding-left: 0; }
+  .course-card-strip dl > div:nth-child(n+4) { border-top: 1px solid var(--color-rule-light); }
+  .course-card-strip dd { font-size: 17px; }
+  .course-card-strip dl > div:first-child dd { font-size: 13px; }
+  .course-chapters > div { padding: 0 20px; gap: 24px; overflow-x: auto; }
+  .course-chapters a { min-height: 52px; font-size: 13px; }
+  .course-chapters a:last-child { margin-left: 0; }
+  .course-round { padding: 22px; }
+  .course-intro { font-size: 23px; }
+  .packing-toolbar { margin-inline: -20px; padding-inline: 20px; }
+  .packing-filter { gap: 16px; }
+  .packing-save-state { font-size: 10px; max-width: 75px; text-align: right; }
+  .packing-index { gap: 4px 16px; }
+  .packing-row { gap: 12px; }
+  .packing-row > span:last-child:not(:nth-child(3)) { max-width: 80px; font-size: 14px; }
+}
+
+@media (min-width: 1024px) { .packing-mobile-outlook { display: none; } }
+.trip-desktop-nav a { position: relative; border-bottom: 0; }
+.trip-desktop-nav a::after { content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform 220ms var(--ease-settle); }
+.trip-desktop-nav a[aria-current=page]::after { transform: scaleX(1); background: var(--color-copper-light); }
+.trip-desktop-nav a:hover::after { transform: scaleX(1); }
+.pub .course-explorer :focus-visible, .pub .forecast-board :focus-visible, .pub .on-forest :focus-visible { outline-color: var(--color-copper-light); }
+
+@media (min-width: 768px) { .course-card-strip dl { grid-template-columns: 2.2fr .9fr .7fr 1.4fr .8fr .8fr; } .course-card-strip dd { white-space: nowrap; } .course-card-strip dl > div:first-child dd { white-space: normal; } }
+@media (min-width: 1024px) { .day-map-figure > div:first-child { aspect-ratio: auto; height: clamp(220px, 34svh, 360px); } .schedule-page > div > aside { top: 128px; } }
+
+.course-photo-controls { position: absolute; right: 18px; bottom: 18px; display: flex; border: 1px solid var(--color-rule-light); background: var(--color-forest-deep); }
+.course-photo-controls button { display: grid; place-items: center; width: 44px; height: 44px; }
+.course-photo-controls button + button { border-left: 1px solid var(--color-rule-light); }
+.course-photo-controls button:hover:not(:disabled) { background: var(--color-forest); }
+.course-photo-controls button:disabled { opacity: .35; cursor: default; }
+@media (max-width: 767px) { .trip-arrival .hero-copy { padding-right: 24px; } .trip-arrival .hero-copy > p span { display: block; margin: 5px 0 0; } }
+
+@media (max-width: 767px) {
+  .packing-mobile-outlook { padding-block: 14px; }
+  .packing-toolbar { padding-top: 12px; }
+  .packing-progress-heading strong { font-size: 38px; }
+  .packing-progress { margin: 12px 0 8px; }
+  .packing-index { flex-wrap: nowrap; overflow-x: auto; margin: 16px 0 24px; }
+  .packing-index a { flex-shrink: 0; }
+}
+
+.packing-filter button { white-space: nowrap; }
+@media (max-width: 359px) { .packing-save-state { display: none; } }
+
+.course-explorer-details { display: grid; min-width: 0; }
+.course-explorer-detail { grid-area: 1 / 1; visibility: hidden; }
+.course-explorer-detail[data-active=true] { visibility: visible; }
+#courses, #forecast { scroll-margin-top: 24px; }
+.forecast-board { color: var(--color-limestone); }
