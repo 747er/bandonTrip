@@ -1,6 +1,7 @@
 import {
   boolean,
   date,
+  doublePrecision,
   integer,
   pgTable,
   primaryKey,
@@ -37,6 +38,9 @@ export const trips = pgTable("trips", {
   visibility: text("visibility", { enum: ["public", "unlisted"] })
     .notNull()
     .default("unlisted"),
+  /** Where the trip happens, for the weather forecast. */
+  latitude: doublePrecision("latitude"),
+  longitude: doublePrecision("longitude"),
   heroImageUrl: text("hero_image_url"),
   heroImageCredit: text("hero_image_credit"),
   createdAt: createdAt(),
