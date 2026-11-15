@@ -5,8 +5,9 @@ import { Map as MapLibre, Marker, setWorkerUrl } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { WindData } from "@/lib/wind";
 import coast from "@/lib/coast.json";
-import { compass, minutesFromStart, SPEED_STOPS } from "@/lib/windMath";
+import { compass, interpolate, interpolateDirection, timelineLocal, minutesFromStart, SPEED_STOPS } from "@/lib/windMath";
 import { WindParticles } from "./particles";
+import { ForecastTimeline } from "./ForecastTimeline";
 
 export type WindEvent = {
   id: string;
@@ -107,7 +108,14 @@ export function WindExplorer({
   initialHour: number;
 }) {
   const hours = data.times.length;
-  const [t, setT] = useState(initialHour);
+  const [t, setT] = useState(Math.max(0, Math.min(hours - 1, initialHour)));
+  const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+  const [wholeTrip, setWholeTrip] = useState(false);
+  const [flowing, setFlowing] = useState(true);
+  const flow = useRef(true);
+  const [mapFailed, setMapFailed] = useState(false);
+  useEffect(() => { flow.current = flowing; }, [flowing]);
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false);
   const mapBox = useRef<HTMLDivElement>(null);
@@ -131,10 +139,13 @@ export function WindExplorer({
   // Where the group is at the chosen hour: wherever the day's most recent event began,
   // and home before the day's first one.
   const today = Math.floor(t / 24);
-  const lastStarted = events.filter((e) => e.placeId && Math.floor(e.start / 24) === today && e.start <= t + 0.01).at(-1);
-  const activePlace = lastStarted?.placeId ?? places.find((p) => p.home)?.id ?? null;
+  const lastStarted = events.filter((e) => e.placeId && Math.floor(e.start / 24) === today && e.start <= t).at(-1);
+  const activePlace = selectedPlace ?? lastStarted?.placeId ?? places.find((p) => p.home)?.id ?? null;
   const active = useRef(activePlace);
-  const mark = () => pins.current.forEach((el, id) => el.setAttribute("data-active", String(id === active.current)));
+  const mark = () => pins.current.forEach((el, id) => {
+    el.setAttribute("data-active", String(id === active.current));
+    el.setAttribute("aria-pressed", String(id === active.current));
+  });
   useEffect(() => {
     active.current = activePlace;
     mark();
@@ -149,7 +160,9 @@ export function WindExplorer({
   useEffect(() => {
     if (!mapBox.current || !canvas.current) return;
     // Open with every pin in view, clear of whatever sits over the map at this width.
-    const phone = window.innerWidth < 768;
+    const pinElements = pins.current;
+    const phone = mapBox.current.clientWidth < 768;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     const pinLons = places.map((p) => p.lon);
     const pinLats = places.map((p) => p.lat);
     const frame = {
@@ -165,15 +178,21 @@ export function WindExplorer({
       options: {
         // Labels run to the right of their pins, so that side needs the most room.
         padding: phone
-          ? { top: 84, bottom: 235, left: 36, right: 150 }
-          : { top: 130, bottom: 340, left: 420, right: 220 },
+          ? { top: 122, bottom: 360, left: 38, right: 155 }
+          : { top: 120, bottom: 350, left: 350, right: 180 },
         maxZoom: 14.4,
       },
     };
-    home.current = () => m.fitBounds(frame.bounds, { ...frame.options, duration: 1200 });
+    home.current = () => {
+      const phoneNow = (mapBox.current?.clientWidth ?? 0) < 768;
+      m.stop().fitBounds(frame.bounds, { ...frame.options, padding: phoneNow
+        ? { top: 122, bottom: 360, left: 38, right: 155 }
+        : { top: 120, bottom: 350, left: 350, right: 180 }, duration: reduce.matches ? 0 : 750 });
+    };
     // The library's worker script is copied into public/ at build time (scripts/photos.mjs).
     setWorkerUrl("/maplibre-worker.mjs");
-    const m = new MapLibre({
+    let m: MapLibre;
+    try { m = new MapLibre({
       container: mapBox.current,
       style: {
         version: 8,
@@ -223,6 +242,10 @@ export function WindExplorer({
       touchPitch: false,
       attributionControl: false,
     });
+    } catch {
+      setTimeout(() => setMapFailed(true), 0);
+      return;
+    }
     m.touchZoomRotate.disableRotation();
     m.keyboard.disableRotation();
     map.current = m;
@@ -236,11 +259,18 @@ export function WindExplorer({
     for (const p of places) {
       // A badge with the place's icon, and its name. Whichever place the group is at for
       // the chosen hour is marked data-active and turns copper (see the effect below).
-      const el = document.createElement("div");
-      el.className = `group flex cursor-pointer items-center gap-1.5 ${p.side === "left" ? "flex-row-reverse" : ""}`;
+      const el = document.createElement("button");
+      el.type = "button";
+      el.className = `wind-pin group flex cursor-pointer items-center gap-1.5 ${p.side === "left" ? "flex-row-reverse" : ""}`;
       el.setAttribute("role", "button");
       el.setAttribute("aria-label", `Zoom to ${p.name}`);
-      el.addEventListener("click", () => m.flyTo({ center: [p.lon, p.lat], zoom: 15.6, duration: 1400 }));
+      el.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setSelectedPlace(p.id);
+        setSelectedEvent(null);
+        setProbe({ lng: p.lon, lat: p.lat });
+        m.stop().flyTo({ center: [p.lon, p.lat], zoom: 15.6, padding: {top: 100, bottom: 290, left: 36, right: 36}, duration: reduce.matches ? 0 : 850 });
+      });
       el.innerHTML = `<span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-paper bg-forest-deep text-paper shadow-md transition-colors duration-300 group-data-[active=true]:bg-copper"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${
         ICONS[p.kind]
       }</svg></span><span class="whitespace-nowrap bg-paper/95 px-1.5 py-0.5 text-[13px] font-semibold text-pine shadow-md transition-colors duration-300 group-data-[active=true]:bg-copper group-data-[active=true]:text-paper"></span>`;
@@ -252,7 +282,9 @@ export function WindExplorer({
     }
     mark();
 
-    const particles = new WindParticles(canvas.current);
+    let particles: WindParticles;
+    try { particles = new WindParticles(canvas.current); }
+    catch { m.remove(); map.current = null; setTimeout(() => setMapFailed(true), 0); return; }
     const { lats, lons, u, v } = data.grid;
     const rows = lats.length;
     const cols = lons.length;
@@ -326,7 +358,6 @@ export function WindExplorer({
       locate();
     };
 
-    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let moving = false;
     let frames = 0;
     let last = 0;
@@ -341,13 +372,16 @@ export function WindExplorer({
         frames = 0;
       }
       // With reduced motion, draw the streaks for a moment and then hold them still.
-      if (still && frames > 70) return;
+      if ((reduce.matches || !flow.current) && frames > 20) return;
       frames++;
       particles.frame();
     };
 
     // Touch the map anywhere for the wind at that spot. The reading follows the map.
-    m.on("click", (e) => setProbe({ lng: e.lngLat.lng, lat: e.lngLat.lat }));
+    m.on("click", (e) => {
+      setSelectedPlace(null);
+      setProbe({ lng: e.lngLat.lng, lat: e.lngLat.lat });
+    });
     m.on("move", () => {
       const p = probeRef.current;
       if (p) setProbeAt(m.project([p.lng, p.lat]));
@@ -377,6 +411,7 @@ export function WindExplorer({
       particles.destroy();
       m.remove();
       map.current = null;
+      pinElements.clear();
     };
     // The map is built once; later changes reach it through refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -385,9 +420,18 @@ export function WindExplorer({
   // ---- Playback ----
   useEffect(() => {
     if (!playing) return;
-    const timer = setInterval(() => setT((now) => (now + 0.15 >= hours - 1 ? 0 : +(now + 0.15).toFixed(2))), 90);
+    const timer = setInterval(() => {
+      if (!document.hidden) setT(now => Math.min(hours - 1, now + 1 / 30));
+    }, 50);
     return () => clearInterval(timer);
   }, [playing, hours]);
+
+  useEffect(() => {
+    if (playing && t >= hours - 1) {
+      const stop = setTimeout(() => setPlaying(false), 0);
+      return () => clearTimeout(stop);
+    }
+  }, [playing, t, hours]);
 
   // ---- What the readout says for the chosen hour ----
   // The wind at the touched point for the chosen hour, read from the same field the
@@ -419,8 +463,7 @@ export function WindExplorer({
     };
   }, [probe, t, data, hours]);
 
-  const h = Math.min(hours - 1, Math.round(t));
-  const local = data.times[h];
+  const local = timelineLocal(data.times, t);
   const date = local.slice(0, 10);
   const day = data.days.find((d) => d.date === date);
   const minuteNow = Math.round(t * 60);
@@ -438,7 +481,11 @@ export function WindExplorer({
             : `Sunset at ${hourLabel(day.sunset)}`;
   const dark = day && sunrise >= 0 ? minuteNow < sunrise || minuteNow >= sunset : false;
   const { speed, gust, direction, temp, rainChance } = data.point;
-  const peak = useMemo(() => Math.max(20, ...data.point.gust, ...data.point.speed), [data]);
+  const windSpeed = Math.round(interpolate(speed, t));
+  const windGust = Math.round(interpolate(gust, t));
+  const windDirection = interpolateDirection(direction, t);
+  const temperature = Math.round(interpolate(temp, t));
+  const chance = rainChance[Math.min(hours - 1, Math.floor(t))];
   const dates = useMemo(() => [...new Set(data.times.map((x) => x.slice(0, 10)))], [data]);
   const nights = useMemo(() => {
     // Shade from each sunset to the next sunrise, plus the edges of the range.
@@ -453,310 +500,98 @@ export function WindExplorer({
     return data.days.length ? spans : [];
   }, [data, hours]);
 
+  // Camera changes belong exclusively to explicit map/location actions.
   const jump = (e: WindEvent) => {
     setPlaying(false);
-    setT(+e.start.toFixed(2));
-    if (e.place) map.current?.flyTo({ center: [e.place[1], e.place[0]], zoom: 15.6, duration: 1600 });
+    setSelectedEvent(e.id);
+    setSelectedPlace(e.placeId);
+    setT(Math.min(hours - 1, e.start));
+    if (e.place) {
+      setProbe({lng: e.place[1], lat: e.place[0]});
+      map.current?.stop().flyTo({ center: [e.place[1], e.place[0]], zoom: 15.6,
+        padding: {top: 100, bottom: 290, left: 36, right: 36},
+        duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 850 });
+    } else setProbe(null);
   };
   const scrub = (value: number) => {
     setPlaying(false);
-    setT(value);
+    setSelectedPlace(null);
+    setSelectedEvent(null);
+    setT(Math.max(0, Math.min(hours - 1, value)));
   };
-  const zoom = (by: number) => map.current?.easeTo({ zoom: map.current.getZoom() + by, duration: 300 });
-  const reset = () => home.current();
-  const control =
-    "flex h-11 w-11 items-center justify-center bg-forest-deep/85 text-limestone backdrop-blur-md transition-colors hover:bg-forest";
-
+  const zoom = (by: number) => {
+    const m = map.current;
+    if (m) m.stop().easeTo({ zoom: m.getZoom() + by, duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 220 });
+  };
+  const reset = () => { setProbe(null); home.current(); };
   const dayIndex = Math.max(0, dates.indexOf(date));
-  const stats: [string, string][] = [
-    ["Gusts", gust[h] > speed[h] ? `${gust[h]} mph` : "None"],
-    ["Temp", `${temp[h]}°`],
-    ["Rain", rainChance[h] === null ? "n/a" : `${rainChance[h]}%`],
-  ];
-  const arrow = (size: number) => (
-    <svg width={size} height={size} viewBox="0 0 52 52" className="shrink-0" role="img" aria-label={`Wind from the ${compass(direction[h])}`}>
-      <circle cx="26" cy="26" r="24" fill="none" stroke="rgb(233 231 224 / 0.25)" strokeWidth="1.5" />
-      <text x="26" y="9.5" textAnchor="middle" fontSize="7" fill="rgb(195 208 205)">N</text>
-      {/* The arrow points the way the wind is going */}
-      <g transform={`rotate(${direction[h] + 180} 26 26)`} style={{ transition: "transform 300ms" }}>
-        <path d="M26 12 L32.5 31 L26 27 L19.5 31 Z" fill="#d99a6c" />
-      </g>
+  const activeName = places.find(p => p.id === activePlace)?.name;
+  const dayEvents = events.filter(e => Math.floor(e.start / 24) === dayIndex);
+  const stats = [["Gusts", `${windGust} mph`], ["Temp", `${temperature}°F`], ["Rain", chance === null ? "n/a" : `${chance}%`]];
+  const arrow = (
+    <svg width="52" height="52" viewBox="0 0 52 52" className="wind-compass" role="img" aria-label={`Wind from the ${compass(windDirection)}`}>
+      <circle cx="26" cy="26" r="24" fill="none" stroke="rgb(233 231 224 / .3)" />
+      <path d="M26 3v3M49 26h-3M26 49v-3M3 26h3" stroke="rgb(233 231 224 / .6)" />
+      <text x="26" y="13" textAnchor="middle" fontSize="8" fill="#c3d0cd">N</text>
+      <g transform={`rotate(${windDirection + 180} 26 26)`}><path d="M26 16L32 34L26 30L20 34Z" fill="#d99a6c" /></g>
     </svg>
   );
-  const playButton = (className: string) => (
-    <button
-      type="button"
-      aria-pressed={playing}
-      aria-label={playing ? "Pause" : "Play through the trip"}
-      onClick={() => setPlaying(!playing)}
-      className={`flex shrink-0 items-center justify-center bg-limestone text-pine transition-colors hover:bg-paper ${className}`}
-    >
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-        {playing ? <path d="M3.5 2.5h3.2v11H3.5zM9.3 2.5h3.2v11H9.3z" /> : <path d="M4 2.2l9.5 5.8L4 13.8z" />}
-      </svg>
-    </button>
-  );
-  /** The wind chart for hours [from, to), with a slider laid over it for scrubbing. */
-  const chart = (from: number, to: number, className: string) => (
-    <div className={`relative ${className}`}>
-      <svg className="absolute inset-0 h-full w-full" viewBox={`${from} 0 ${to - from} 100`} preserveAspectRatio="none" aria-hidden="true">
-        {nights.map(([a, b]) => (
-          <rect key={a} x={a} y="0" width={Math.max(0, b - a)} height="100" fill="rgb(0 0 0 / 0.38)" />
-        ))}
-        {events
-          .filter((e) => e.type === "golf" || e.sunsetNote !== null)
-          .map((e) => (
-            <rect key={e.id} x={e.start} y="0" width={Math.max(0.6, e.end - e.start)} height="7" fill={e.type === "golf" ? "#e9e7e0" : "#d99a6c"} />
-          ))}
-        {gust.map((g, i) => (
-          <rect key={`g${i}`} x={i + 0.12} y={100 - (Math.max(g, speed[i]) / peak) * 84} width="0.76" height={(Math.max(g, speed[i]) / peak) * 84} fill="rgb(195 208 205 / 0.28)" />
-        ))}
-        {speed.map((sp, i) => (
-          <rect key={`s${i}`} x={i + 0.12} y={100 - (sp / peak) * 84} width="0.76" height={(sp / peak) * 84} fill={i === h ? "#d99a6c" : "rgb(233 231 224 / 0.8)"} />
-        ))}
-        {dates.slice(1).map((d, i) => (
-          <line key={d} x1={(i + 1) * 24} x2={(i + 1) * 24} y1="0" y2="100" stroke="rgb(233 231 224 / 0.35)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-        ))}
-        <line x1={t + 0.5} x2={t + 0.5} y1="0" y2="100" stroke="#d99a6c" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-      </svg>
-      {/* On the one-day chart there is room to say what each mark along the top is. */}
-      {to - from <= 24 &&
-        events
-          .filter((e) => (e.type === "golf" || e.sunsetNote !== null) && e.start >= from && e.start < to)
-          .map((e) => (
-            <span
-              key={e.id}
-              className={`pointer-events-none absolute top-[7px] whitespace-nowrap text-[11px] font-semibold leading-none [text-shadow:0_0_3px_rgb(13_33_27)] ${
-                e.type === "golf" ? "text-limestone" : "text-copper-light"
-              }`}
-              style={{ left: `${((e.start - from) / (to - from)) * 100}%` }}
-            >
-              {e.title}
-            </span>
-          ))}
-      <input
-        type="range"
-        min={from}
-        max={to - 1}
-        step={0.25}
-        value={Math.min(to - 1, Math.max(from, t))}
-        onChange={(e) => scrub(Number(e.target.value))}
-        aria-label="Hour"
-        aria-valuetext={`${dayLabel(date)} ${hourLabel(local)}`}
-        className="absolute inset-0 h-full w-full cursor-ew-resize touch-pan-y opacity-0"
-      />
-    </div>
-  );
-  const chip = (e: WindEvent, showDay: boolean) => {
-    const on = t >= e.start - 0.01 && t <= Math.max(e.end, e.start + 1);
-    return (
-      <li key={e.id} className="shrink-0">
-        <button
-          type="button"
-          onClick={() => jump(e)}
-          className={`flex min-h-11 flex-col justify-center px-3 py-1.5 text-left transition-colors ${
-            on ? "bg-limestone text-pine" : "bg-forest/90 text-limestone hover:bg-forest md:bg-forest-deep/85 md:backdrop-blur-md"
-          }`}
-        >
-          <span className="text-label font-semibold">{e.title}</span>
-          <span className={`figures text-fine ${on ? "text-moss" : "text-mist"}`}>
-            {showDay ? e.label : e.label.replace(/^\S+ /, "")}
-            {e.sunsetNote && <span className={`ml-1.5 font-semibold ${on ? "text-copper" : "text-copper-light"}`}>{e.sunsetNote}</span>}
-          </span>
-        </button>
-      </li>
-    );
-  };
-  const legend = (
-    <>
-      <span>Calm</span>
-      <span
-        className="h-1.5 w-28"
-        style={{
-          background: `linear-gradient(to right, ${SPEED_STOPS.map(([sp, c]) => `rgb(${c.join(" ")}) ${(sp / 35) * 100}%`).join(", ")})`,
-        }}
-      />
-      <span>35 mph</span>
-    </>
-  );
-  const credits = (
-    <>
-      Imagery USDA NAIP via USGS. Wind{" "}
-      <a className="underline underline-offset-2" href="https://open-meteo.com/" target="_blank" rel="noreferrer">
-        Open-Meteo
-      </a>
-      . Places © OpenStreetMap.
-    </>
-  );
-
+  const icon = (path: string) => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={path} /></svg>;
   return (
-    <>
-      <section aria-label="Wind map" className="relative isolate h-[100svh] min-h-[560px] overflow-hidden bg-forest-deep text-limestone">
-        {/* The map library sets its own positioning on its container, so it gets a plain box inside ours. */}
-        <div className="absolute inset-0">
-          <div ref={mapBox} className="h-full w-full" />
+    <section aria-label="Wind map" className="wind-instrument">
+      <div className="absolute inset-0"><div ref={mapBox} className="h-full w-full" /></div>
+      <canvas ref={canvas} aria-hidden="true" className={`wind-canvas ${ready ? "is-ready" : ""}`} />
+      <div className="wind-map-shade" aria-hidden="true" />
+      {!ready && <p className="wind-map-status" role="status">{mapFailed ? "Map unavailable. Forecast and itinerary remain available below." : "Loading resort imagery…"}</p>}
+
+      <aside className="wind-readout" aria-label="Resort forecast">
+        <div className="wind-readout-heading"><h2>Resort forecast</h2><span>Pacific time</span></div>
+        <div className="wind-main-reading">
+          {arrow}<p className="wind-speed tabular">{windSpeed}<span>mph<small>from {compass(windDirection)}</small></span></p>
+          <dl className="wind-stats">{stats.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
         </div>
-        <canvas ref={canvas} aria-hidden="true" className={`pointer-events-none absolute inset-0 h-full w-full transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`} />
-        {/* Type sits over the top and bottom of the picture: shade only those. */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to bottom, rgb(13 33 27 / 0.75) 0%, rgb(13 33 27 / 0) 20%, rgb(13 33 27 / 0) 62%, rgb(13 33 27 / 0.8) 100%)" }} />
+        <div className="wind-context"><span>{selectedPlace ? "Selected" : "Itinerary"}</span><strong>{activeName ?? "Resort overview"}</strong></div>
+        <p className={`wind-daylight ${dark ? "is-dark" : ""}`}><span className="wind-daylight-full">{light ?? "Daylight information unavailable"}</span><span className="wind-daylight-compact">{dark ? "After dark" : sunset > minuteNow && sunset - minuteNow <= 90 ? `${sunset - minuteNow} min of light` : day ? `Sunset ${hourLabel(day.sunset)}` : ""}</span></p>
+      </aside>
 
-        {/* The reading at a touched point: a dot, a short stem, and the wind there. */}
-        {probe && probeAt && reading && (
-          <div className="pointer-events-none absolute left-0 top-0 z-10" style={{ transform: `translate(${probeAt.x}px, ${probeAt.y}px)` }}>
-            <span className="absolute -left-[5px] -top-[5px] h-2.5 w-2.5 rounded-full border-2 border-forest-deep bg-paper" />
-            <span className="absolute -top-4 left-[-0.5px] h-3 w-px bg-paper/90" />
-            <div className="figures pointer-events-auto absolute bottom-4 left-0 flex -translate-x-4 items-center gap-2 whitespace-nowrap bg-forest-deep/92 py-1 pl-3 pr-1 text-limestone shadow-lg backdrop-blur-md">
-              <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true" style={{ transform: `rotate(${reading.from + 180}deg)` }}>
-                <path d="M7 1 L11 12 L7 9.5 L3 12 Z" fill="#d99a6c" />
-              </svg>
-              <span className="text-ui font-semibold">{reading.mph} mph</span>
-              <span className="text-meta text-mist">{compass(reading.from)}</span>
-              <button
-                type="button"
-                aria-label="Close the reading"
-                onClick={() => setProbe(null)}
-                className="flex h-9 w-9 items-center justify-center text-mist hover:text-limestone"
-              >
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
-                  <path d="M2 2l8 8M10 2l-8 8" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
+      <div className="wind-map-tools" role="group" aria-label="Map controls">
+        <span className="wind-north" aria-label="North is up">N{icon("M9 15V3M5 7l4-4 4 4")}</span>
+        <button type="button" title="Zoom in" aria-label="Zoom in" onClick={() => zoom(1)}>{icon("M9 3v12M3 9h12")}</button>
+        <button type="button" title="Zoom out" aria-label="Zoom out" onClick={() => zoom(-1)}>{icon("M3 9h12")}</button>
+        <button type="button" title="Reset to resort overview" aria-label="Reset to resort overview" onClick={reset}>{icon("M3 7V3h4M15 7V3h-4M3 11v4h4M15 11v4h-4")}</button>
+        <button type="button" title={flowing ? "Freeze wind particles" : "Animate wind particles"} aria-label={flowing ? "Freeze wind particles" : "Animate wind particles"} aria-pressed={flowing} onClick={() => setFlowing(!flowing)}>{icon("M2 6h9a2 2 0 1 0-2-2M2 10h12a2 2 0 1 1-2 2M2 14h4")}</button>
+      </div>
 
-        {/* ---------- Phones: one line of readout across the top (the site header steps aside
-            on this page), one strip of timeline, and the map ---------- */}
-        <p
-          className="figures absolute inset-x-0 top-0 flex items-center gap-2.5 bg-forest-deep/85 px-4 pb-1.5 text-label backdrop-blur-md md:hidden"
-          style={{ paddingTop: "calc(0.375rem + env(safe-area-inset-top))" }}
-        >
-          {arrow(30)}
-          <span className="display text-[30px] leading-none">{speed[h]}</span>
-          <span className="font-semibold leading-tight">
-            mph
-            <span className="block font-medium text-mist">{compass(direction[h])}</span>
-          </span>
-          <span className="ml-auto flex gap-3.5">
-            {gust[h] > speed[h] && (
-              <span>
-                <span className="text-mist">gusts </span>
-                <span className="font-semibold">{gust[h]}</span>
-              </span>
-            )}
-            <span className="font-semibold">{temp[h]}°</span>
-            {rainChance[h] !== null && (
-              <span>
-                <span className="text-mist">rain </span>
-                <span className="font-semibold">{rainChance[h]}%</span>
-              </span>
-            )}
-          </span>
-        </p>
+      {probe && probeAt && reading && <div className="wind-probe" style={{left: probeAt.x, top: probeAt.y}}>
+        <span className="wind-probe-dot" />
+        <div><span className="wind-probe-label">{places.find(p => p.id === selectedPlace)?.name ?? "At this point"}</span><p><strong>{reading.mph} mph</strong> from {compass(reading.from)}</p></div>
+        <button type="button" aria-label="Close the reading" onClick={() => setProbe(null)}>{icon("M5 5l8 8M13 5l-8 8")}</button>
+      </div>}
 
-        <div className="absolute inset-x-0 bottom-[calc(67px+env(safe-area-inset-bottom))] bg-forest-deep/88 px-4 pb-2 backdrop-blur-md md:hidden">
-          <div role="group" aria-label="Day" className="figures flex items-center text-label">
-            {dates.map((d, i) => (
-              <button
-                key={d}
-                type="button"
-                aria-pressed={i === dayIndex}
-                // Keep the hour of day when changing day.
-                onClick={() => scrub(Math.min(hours - 1, i * 24 + (t - dayIndex * 24)))}
-                className={`min-h-10 pr-4 font-semibold ${i === dayIndex ? "text-limestone underline decoration-copper-light decoration-2 underline-offset-[6px]" : "text-mist"}`}
-              >
-                {dayLabel(d, "short")}
-              </button>
-            ))}
-            <span className={`ml-auto font-semibold ${dark ? "text-copper-light" : "text-limestone"}`}>
-              {hourLabel(local)}
-              {dark ? ", dark" : sunset - minuteNow <= 90 && sunset > minuteNow ? `, ${sunset - minuteNow} min of light` : ""}
-            </span>
+      <div className="wind-console">
+        <div className="wind-timebar">
+          <div className="wind-transport">
+            <button type="button" aria-label="Previous hour" disabled={t <= 0} onClick={() => scrub(t - 1)}>{icon("M11 4L6 9l5 5")}</button>
+            <button type="button" className="wind-play" aria-label={playing ? "Pause forecast" : "Play forecast"} aria-pressed={playing} onClick={() => {
+              setSelectedPlace(null); setSelectedEvent(null);
+              if (t >= hours - 1) setT(0);
+              setPlaying(!playing);
+            }}>{icon(playing ? "M6 4v10M12 4v10" : "M6 3l9 6-9 6V3")}</button>
+            <button type="button" aria-label="Next hour" disabled={t >= hours - 1} onClick={() => scrub(t + 1)}>{icon("M7 4l5 5-5 5")}</button>
           </div>
-          {chart(dayIndex * 24, Math.min(hours, dayIndex * 24 + 24), "h-14")}
-          <div className="figures mt-1 grid grid-cols-4 text-fine text-mist" aria-hidden="true">
-            <span>12 AM</span>
-            <span>6 AM</span>
-            <span>Noon</span>
-            <span>6 PM</span>
-          </div>
+          <div className="wind-time tabular"><strong>{hourLabel(local)}</strong><span>{dayLabel(date, "short")}, {new Intl.DateTimeFormat("en-US", {month: "short", day: "numeric", timeZone: "UTC"}).format(new Date(`${date}T12:00:00Z`))}</span></div>
+          <div className="wind-range-switch" role="group" aria-label="Timeline range"><button type="button" aria-pressed={!wholeTrip} onClick={() => setWholeTrip(false)}>Day</button><button type="button" aria-pressed={wholeTrip} onClick={() => setWholeTrip(true)}>Trip</button></div>
         </div>
-
-        {/* ---------- Wider screens: a readout card, map controls and the whole trip on one timeline ---------- */}
-        <div className="absolute left-10 top-24 hidden w-[21rem] bg-forest-deep/85 p-5 backdrop-blur-md md:block">
-          <p className="text-meta text-mist">
-            {dayLabel(date)}, <span className="figures font-semibold text-limestone">{hourLabel(local)}</span>
-          </p>
-          <div className="mt-2 flex items-center gap-4">
-            {arrow(52)}
-            <div>
-              <p className="display figures text-[60px] leading-none">
-                {speed[h]}
-                <span className="ml-1.5 font-sans text-ui font-semibold tracking-normal">mph</span>
-              </p>
-              <p className="mt-1 text-meta font-medium">From the {compass(direction[h])}</p>
-            </div>
-          </div>
-          <dl className="mt-3 grid grid-cols-3 gap-x-3 border-t border-rule-light pt-3">
-            {stats.map(([name, value]) => (
-              <div key={name} className="flex flex-col-reverse">
-                <dt className="text-label text-mist">{name}</dt>
-                <dd className="figures text-ui font-semibold">{value}</dd>
-              </div>
-            ))}
-          </dl>
-          {light && (
-            <p className={`mt-3 border-t border-rule-light pt-3 text-meta font-medium ${dark ? "text-copper-light" : "text-limestone"}`}>
-              {light}
-            </p>
-          )}
-        </div>
-
-        <div className="absolute right-10 top-24 hidden flex-col gap-1.5 md:flex">
-          <button type="button" className={control} aria-label="Zoom in" onClick={() => zoom(1)}>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M9 3v12M3 9h12" /></svg>
-          </button>
-          <button type="button" className={control} aria-label="Zoom out" onClick={() => zoom(-1)}>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M3 9h12" /></svg>
-          </button>
-          <button type="button" className={control} aria-label="Back to the whole resort" onClick={reset}>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V3h4M15 7V3h-4M3 11v4h4M15 11v4h-4" /></svg>
-          </button>
-        </div>
-
-        <div className="absolute inset-x-0 bottom-8 hidden px-10 md:block">
-          <div className="mx-auto max-w-6xl">
-            <ul className="flex gap-2 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {events.map((e) => chip(e, true))}
-            </ul>
-            <div className="flex items-stretch gap-2 bg-forest-deep/85 p-4 backdrop-blur-md">
-              {playButton("w-11 self-stretch")}
-              <div className="min-w-0 flex-1">
-                {chart(0, hours, "h-20")}
-                <div className="mt-1.5 flex">
-                  {dates.map((d, i) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => scrub(i * 24 + 10)}
-                      className={`figures min-h-8 flex-1 text-left text-label ${d === date ? "font-semibold text-limestone" : "text-mist hover:text-limestone"}`}
-                    >
-                      {dayLabel(d, "short")} {Number(d.slice(8))}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-1 text-fine text-mist">
-              <p className="flex items-center gap-2">
-                {legend}
-                <span className="ml-3">White bars: wind each hour. Faint bars behind: gusts. Shaded: night. Marks along the top: tee times.</span>
-              </p>
-              <p>{credits}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-    </>
+        <div className="wind-days" role="group" aria-label="Forecast day">{dates.map((d, i) => <button key={d} type="button" aria-pressed={i === dayIndex} onClick={() => scrub(i * 24 + t % 24)}><span>{dayLabel(d, "short")}</span><span className="tabular">{Number(d.slice(8))}</span></button>)}</div>
+        <div className="wind-chart-key"><span><i />Wind</span><span><i className="gust-key" />Gusts</span><span><i className="night-key" />Night</span><span><i className="tee-key" />Tee times</span><span className="ml-auto">mph</span></div>
+        <ForecastTimeline data={data} events={events} time={t} from={wholeTrip ? 0 : dayIndex * 24} to={wholeTrip ? hours : Math.min(hours, dayIndex * 24 + 24)} nights={nights} onChange={scrub} />
+        <ul className="wind-events" aria-label="Itinerary destinations">{(wholeTrip ? events : dayEvents).map(e => {
+          const on = selectedEvent ? selectedEvent === e.id : t >= e.start && t < Math.max(e.end, e.start + 1);
+          return <li key={e.id}><button type="button" aria-pressed={on} onClick={() => jump(e)}><strong>{e.title}</strong><span>{wholeTrip ? e.label : e.label.replace(/^\S+ /, "")}{e.sunsetNote && <em>{e.sunsetNote}</em>}</span></button></li>;
+        })}{!wholeTrip && dayEvents.length === 0 && <li className="wind-empty">No events scheduled this day</li>}</ul>
+        <div className="wind-console-footer"><span>Scrub to explore · Select a destination to fly</span><div className="wind-speed-key"><span>0</span><i style={{background: `linear-gradient(to right, ${SPEED_STOPS.map(([sp,c]) => `rgb(${c.join(" ")}) ${sp / 35 * 100}%`).join(",")})`}} /><span>35+ mph</span></div></div>
+      </div>
+      <p className="wind-attribution">Imagery USDA NAIP / USGS · Wind <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a> · Places © OpenStreetMap</p>
+    </section>
   );
 }
