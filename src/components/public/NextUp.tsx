@@ -87,7 +87,7 @@ export function NextUp({
 
   const go = (to: number) => {
     const el = track.current;
-    if (el) el.scrollTo({ left: Math.max(0, Math.min(slides.length - 1, to)) * el.clientWidth, behavior: "smooth" });
+    if (el) el.scrollTo({ left: Math.max(0, Math.min(slides.length - 1, to)) * el.clientWidth, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
   };
   const onScroll = () => {
     const el = track.current;
