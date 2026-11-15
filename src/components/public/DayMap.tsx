@@ -18,7 +18,7 @@ export type MapStop = {
 type View = { scale: number; x: number; y: number };
 
 const { width: W, height: H } = RESORT_MAP;
-const PAD = 150;
+const PAD = 108;
 
 /** Zoom and pan that frames the given points, never showing past the map's edges. */
 function frame(points: { x: number; y: number }[], cw: number, ch: number): View {
@@ -28,7 +28,7 @@ function frame(points: { x: number; y: number }[], cw: number, ch: number): View
   const x1 = Math.max(...points.map((p) => p.x)) + PAD;
   const y0 = Math.min(...points.map((p) => p.y)) - PAD;
   const y1 = Math.max(...points.map((p) => p.y)) + PAD;
-  const closest = cw / 460; // never closer than ~460 map pixels across
+  const closest = cw / 330; // never closer than ~330 map pixels across
   const scale = Math.max(cover, Math.min(cw / (x1 - x0), ch / (y1 - y0), closest));
   const clamp = (v: number, min: number) => Math.min(0, Math.max(min, v));
   return {
