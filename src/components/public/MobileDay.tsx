@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { monthDay, weekday } from "@/lib/time";
-import { eventTimes, type PublicEvent } from "@/lib/trip";
+import { eventTimes, teeLabel, type PublicEvent } from "@/lib/trip";
 import type { DayWeather } from "@/lib/weather";
 import { Countdown } from "./Countdown";
 import { Conditions } from "./features";
@@ -140,7 +140,7 @@ export function MobileDay({
                   <path d="M9 5.5V9l2.5 1.5" />
                 </svg>
                 <span>
-                  {event.type === "golf" && <span className="mr-2 font-medium text-mist">Tee times</span>}
+                  {event.type === "golf" && <span className="mr-2 font-medium text-mist">{teeLabel(event)}</span>}
                   {eventTimes(event)}
                   {event.partySize && <span className="ml-2 font-medium text-mist">party of {event.partySize}</span>}
                 </span>
