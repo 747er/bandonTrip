@@ -20,7 +20,6 @@ export type ScheduleProps = {
   /** Days that fall inside the trip, in order, for "Day two" labels */
   tripDays: string[];
   events: PublicEvent[];
-  names: Record<string, string>;
   photos: Record<string, PhotoData>;
   slots: Record<string, string>;
   weather: Record<string, DayWeather>;
@@ -238,16 +237,14 @@ function Actions({ event }: { event: PublicEvent }) {
   );
 }
 
-function Details({ event: e, names }: { event: PublicEvent; names: Record<string, string> }) {
-  const attendees =
-    e.audience.kind === "everyone" ? [] : e.audience.ids.map((id) => names[id]).filter(Boolean);
-  const teeTimes = e.teeTimes.filter((t) => t.playerIds.length > 0 || t.note);
+function Details({ event: e }: { event: PublicEvent }) {
+  const teeTimes = e.teeTimes.filter((t) => t.players.length > 0 || t.note);
   const rows: [string, string][] = [];
   if (e.venue && e.venue !== e.title) rows.push(["Where", e.venue]);
   if (e.address) rows.push(["Address", e.address]);
   if (e.partySize) rows.push(["Party", `${e.partySize}`]);
   if (e.reservationNote) rows.push(["Reservation", e.reservationNote]);
-  if (attendees.length) rows.push(["Who", attendees.join(", ")]);
+  if (e.group) rows.push(["Who", e.group]);
 
   return (
     <div className="space-y-4 text-ui">
@@ -267,12 +264,12 @@ function Details({ event: e, names }: { event: PublicEvent; names: Record<string
           <caption className="pb-1 text-left text-label text-moss">Tee times</caption>
           <tbody className="divide-y divide-rule border-y border-rule">
             {teeTimes.map((t) => (
-              <tr key={t.id}>
+              <tr key={t.time}>
                 <th scope="row" className="figures w-24 py-2.5 text-left align-top font-semibold">
                   {clock(t.time)}
                 </th>
                 <td className="py-2.5">
-                  {t.playerIds.map((id) => names[id]).filter(Boolean).join(", ")}
+                  {t.players.join(", ")}
                   {t.note && <span className="block text-moss">{t.note}</span>}
                 </td>
               </tr>
@@ -301,7 +298,7 @@ const Toggle = () => (
 );
 
 /** Golf leads the day: the course's photograph, round and tee times up front. */
-function GolfEvent({ event: e, photos, slots, rounds, facts, states, names, atStart }: EventProps) {
+function GolfEvent({ event: e, photos, slots, rounds, facts, states, atStart }: EventProps) {
   const round = rounds[e.id];
   const fact = facts[e.id];
   const state = states[e.id];
@@ -339,8 +336,8 @@ function GolfEvent({ event: e, photos, slots, rounds, facts, states, names, atSt
             Pairings and details <Toggle />
           </summary>
           <div className="event-body px-5 pb-5 pt-1 md:px-7">
-            <Details event={e} names={names} />
-            {e.teeTimes.every((t) => t.playerIds.length === 0 && !t.note) && (
+            <Details event={e} />
+            {e.teeTimes.every((t) => t.players.length === 0 && !t.note) && (
               <p className="mt-3 text-meta text-moss">Pairings will appear here once they are set.</p>
             )}
           </div>
@@ -351,7 +348,7 @@ function GolfEvent({ event: e, photos, slots, rounds, facts, states, names, atSt
 }
 
 /** Meals and everything else: a compact row that opens for details. */
-function PlainEvent({ event: e, photos, slots, states, names, atStart, lateNote }: EventProps) {
+function PlainEvent({ event: e, photos, slots, states, atStart, lateNote }: EventProps) {
   const state = states[e.id];
   const photo = photos[e.id];
   return (
@@ -393,7 +390,7 @@ function PlainEvent({ event: e, photos, slots, states, names, atStart, lateNote 
                 <span className="block">{atStart[e.id]}</span>
               </p>
             )}
-            <Details event={e} names={names} />
+            <Details event={e} />
             <div className="mt-2">
               <Actions event={e} />
             </div>
