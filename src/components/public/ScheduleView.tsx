@@ -215,9 +215,6 @@ export function ScheduleView(props: ScheduleProps) {
             </div>
           )}
           <div className="flex flex-wrap gap-x-8 lg:flex-col">
-            <a className="action" href={`/t/${trip.slug}/calendar.ics`}>
-              Add the whole trip to your calendar
-            </a>
             <Link className="action" href={`/t/${trip.slug}/packing`}>
               Packing list
             </Link>
@@ -230,16 +227,12 @@ export function ScheduleView(props: ScheduleProps) {
 
 type EventProps = ScheduleProps & { event: PublicEvent };
 
-function Actions({ event, slug }: { event: PublicEvent; slug: string }) {
+function Actions({ event }: { event: PublicEvent }) {
+  if (!event.venue && !event.address) return null;
   return (
     <div className="flex flex-wrap gap-x-7">
-      {(event.venue || event.address) && (
-        <a className="action" href={directionsUrl(event)} target="_blank" rel="noreferrer">
-          Get directions
-        </a>
-      )}
-      <a className="action" href={`/t/${slug}/calendar.ics?event=${event.id}`}>
-        Add to calendar
+      <a className="action" href={directionsUrl(event)} target="_blank" rel="noreferrer">
+        Get directions
       </a>
     </div>
   );
@@ -308,7 +301,7 @@ const Toggle = () => (
 );
 
 /** Golf leads the day: the course's photograph, round and tee times up front. */
-function GolfEvent({ event: e, photos, slots, rounds, facts, states, names, trip, atStart }: EventProps) {
+function GolfEvent({ event: e, photos, slots, rounds, facts, states, names, atStart }: EventProps) {
   const round = rounds[e.id];
   const fact = facts[e.id];
   const state = states[e.id];
@@ -339,7 +332,7 @@ function GolfEvent({ event: e, photos, slots, rounds, facts, states, names, trip
       </div>
       <div className="bg-paper">
         <div className="px-5 md:px-7">
-          <Actions event={e} slug={trip.slug} />
+          <Actions event={e} />
         </div>
         <details className="event border-t border-rule">
           <summary className="flex min-h-14 items-center justify-between gap-4 px-5 text-ui font-semibold md:px-7">
@@ -358,7 +351,7 @@ function GolfEvent({ event: e, photos, slots, rounds, facts, states, names, trip
 }
 
 /** Meals and everything else: a compact row that opens for details. */
-function PlainEvent({ event: e, photos, slots, states, names, trip, atStart, lateNote }: EventProps) {
+function PlainEvent({ event: e, photos, slots, states, names, atStart, lateNote }: EventProps) {
   const state = states[e.id];
   const photo = photos[e.id];
   return (
@@ -402,7 +395,7 @@ function PlainEvent({ event: e, photos, slots, states, names, trip, atStart, lat
             )}
             <Details event={e} names={names} />
             <div className="mt-2">
-              <Actions event={e} slug={trip.slug} />
+              <Actions event={e} />
             </div>
           </div>
           {photo && (
