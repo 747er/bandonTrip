@@ -9,9 +9,10 @@ import {
   ForecastStrip,
   type RoundInfo,
 } from "@/components/public/features";
+import { MobileDay, type MobileStop } from "@/components/public/MobileDay";
 import { NextUp, type NextUpSlide } from "@/components/public/NextUp";
 import { Photo, PhotoCredit, type PhotoData } from "@/components/public/Photo";
-import { HERO_SLOT, photoFor, photosForEvents, slotFor } from "@/lib/photos";
+import { HERO_SLOT, photoFor, photosForEvents, slotFor, slotName } from "@/lib/photos";
 import {
   addDays,
   dateRange,
@@ -20,6 +21,7 @@ import {
   eachDay,
   monthDay,
   weekday,
+  weekdayShort,
   zonedToUtc,
   type ZonedNow,
 } from "@/lib/time";
@@ -74,65 +76,213 @@ const scheduleHref = (slug: string, date?: string) =>
 
 // ---------- Shared sections ----------
 
+const HERO_TALL = "md:h-[78svh] md:min-h-[640px] lg:h-[90svh] lg:max-h-[960px] lg:min-h-[680px]";
+const HERO_SHORT = "md:h-[64svh] md:min-h-[600px] lg:h-[70svh]";
+/** The panel takes a third of the screen from tablet width up, and never less than it needs. */
+const PANEL_W = "md:w-[max(34%,18.5rem)]";
+const PANEL_GAP = "md:right-[max(34%,18.5rem)]";
+
+/** Contour lines, like a course map: rings around a point, each with a slow wobble. */
+function contours(cx: number, cy: number, rings: number, gap: number, phase: number) {
+  return Array.from({ length: rings }, (_, k) => {
+    const r = (k + 1) * gap;
+    const points = Array.from({ length: 73 }, (_, n) => {
+      const a = (n / 72) * Math.PI * 2;
+      const w = 1 + 0.09 * Math.sin(3 * a + k * 0.6 + phase) + 0.05 * Math.sin(5 * a + k * 1.1 + phase * 2);
+      return `${(cx + Math.cos(a) * r * w).toFixed(1)},${(cy + Math.sin(a) * r * w * 0.86).toFixed(1)}`;
+    });
+    return points.join(" ");
+  });
+}
+const CONTOURS = [...contours(360, 70, 9, 34, 0.4), ...contours(40, 760, 7, 38, 2.1)];
+
 /**
- * The cover. On phones a compact photograph carries the title, and the panel sits clear
- * of it underneath: the picture sets the mood, the card does the work. On wide screens
- * the photograph is the whole first screen, title lower left and panel lower right.
+ * The cover. On phones: a compact photograph with the title, the four-day strip, then
+ * the panel as a card. On wide screens the photograph is the whole first screen, the
+ * title sits lower left, and the panel is a green field cut into the right of the
+ * picture along a curve, with the strip running underneath.
  */
 function Cover({
   hero,
   tall,
   title,
   panel,
+  strip,
+  phone,
 }: {
   hero: PhotoData;
   tall: boolean;
   title: React.ReactNode;
   panel?: React.ReactNode;
+  strip?: React.ReactNode;
+  /** Phones get their own day tabs and summary in place of the strip and the panel */
+  phone?: React.ReactNode;
 }) {
-  const photoHeight = tall ? "h-[40svh] min-h-[280px]" : "h-[32svh] min-h-[240px]";
+  const photoHeight = tall ? "h-[50svh] min-h-[360px]" : "h-[44svh] min-h-[330px]";
+  const heroHeight = tall ? HERO_TALL : HERO_SHORT;
   return (
-    <section
-      className={`relative isolate ${
-        tall ? "lg:h-[94svh] lg:max-h-[1000px] lg:min-h-[680px]" : "lg:h-[72svh] lg:min-h-[600px]"
-      }`}
-    >
-      <div className={`absolute inset-x-0 top-0 overflow-hidden bg-forest-deep ${photoHeight} lg:inset-0 lg:h-auto lg:min-h-0`}>
-        <Photo photo={hero} slot={HERO_SLOT} priority sizes="100vw" />
-        {/* Shade only behind the masthead and behind the title, lower left. */}
+    <section className="relative">
+      <div className={`relative isolate overflow-hidden bg-forest-deep ${photoHeight} ${heroHeight}`}>
+        {/* From tablet width up the photograph stops where the panel begins, so its
+            subject is framed in the part you can see rather than hidden behind it. */}
+        <div className={`absolute inset-0 ${panel ? PANEL_GAP : ""}`}>
+          <Photo photo={hero} slot={HERO_SLOT} priority sizes="(min-width: 768px) 70vw, 100vw" />
+        </div>
+        {/* Shade only where type sits: behind the masthead, and from tablet width up
+            behind the title, lower left. */}
         <div
           aria-hidden="true"
           className="absolute inset-0"
+          style={{ background: "linear-gradient(to bottom, rgb(13 33 27 / 0.6) 0%, rgb(13 33 27 / 0) 22%)" }}
+        />
+        <div
+          aria-hidden="true"
+          className={`absolute inset-0 ${phone ? "hidden md:block" : ""}`}
           style={{
             background:
-              "linear-gradient(to bottom, rgb(13 33 27 / 0.6) 0%, rgb(13 33 27 / 0) 22%), radial-gradient(120% 85% at 0% 100%, rgb(13 33 27 / 0.92) 0%, rgb(13 33 27 / 0.55) 42%, rgb(13 33 27 / 0) 72%)",
+              "radial-gradient(120% 85% at 0% 100%, rgb(13 33 27 / 0.9) 0%, rgb(13 33 27 / 0.5) 42%, rgb(13 33 27 / 0) 72%)",
           }}
         />
-        <PhotoCredit photo={hero} className="absolute right-4 top-16 lg:top-20" />
-      </div>
-      <div
-        className={`${WIDE} relative ${
-          panel ? "lg:grid lg:h-full lg:grid-cols-[minmax(0,1fr)_25rem] lg:items-end lg:gap-12 lg:pb-12" : "lg:flex lg:h-full lg:items-end lg:pb-12"
-        }`}
-      >
-        <div className={`hero-copy flex flex-col justify-end pb-6 text-paper ${photoHeight} lg:h-auto lg:min-h-0 lg:pb-1`}>
+        {phone && (
+          <div
+            aria-hidden="true"
+            className="absolute inset-x-0 bottom-0 h-1/2 md:hidden"
+            style={{
+              background:
+                "linear-gradient(to top, #0d211b 0%, rgb(13 33 27 / 0.8) 30%, rgb(13 33 27 / 0) 100%)",
+            }}
+          />
+        )}
+        <PhotoCredit photo={hero} className="absolute right-4 top-16 md:bottom-3 md:left-10 md:right-auto md:top-auto" />
+        <div
+          className={`hero-copy absolute inset-x-0 bottom-0 px-6 ${phone ? "pb-[4.75rem]" : "pb-6"} text-paper md:px-10 md:pb-12 lg:pb-14 xl:pl-[max(2.5rem,calc((100vw-72rem)/2+2.5rem))] ${
+            panel ? "md:pr-[calc(max(34%,18.5rem)+6rem)] lg:pr-[calc(max(34%,18.5rem)+9rem)]" : ""
+          }`}
+        >
           {title}
         </div>
-        {panel && <div className="pt-5 lg:pt-0">{panel}</div>}
       </div>
+
+      {phone}
+      <div className={phone ? "hidden md:block" : ""}>{strip}</div>
+
+      {panel && (
+        <div
+          className={`${phone ? "hidden" : "mx-auto w-full max-w-6xl px-5 pt-5"} md:absolute md:right-0 md:top-0 md:mx-0 md:flex md:max-w-none md:items-center md:px-3 md:pb-6 md:pt-24 lg:px-6 xl:px-9 ${PANEL_W} ${heroHeight}`}
+        >
+          {/* The panel: a field of deep green cut into the photograph along a curve,
+              drawn with contour lines and a fine copper line on its edge. */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 hidden overflow-hidden md:block"
+            style={{ background: "linear-gradient(to bottom, #1d4033 0%, #17332b 45%, #10261f 100%)" }}
+          >
+            <svg className="h-full w-full" viewBox="0 0 400 820" preserveAspectRatio="xMaxYMid slice">
+              <g fill="none" stroke="#e9e7e0" strokeWidth="1" opacity="0.1">
+                {CONTOURS.map((points, n) => (
+                  <polygon key={n} points={points} vectorEffect="non-scaling-stroke" />
+                ))}
+              </g>
+            </svg>
+          </div>
+          <svg
+            aria-hidden="true"
+            className="absolute right-full top-0 hidden h-full w-20 md:block lg:w-36"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
+            <defs>
+              <linearGradient id="panel-edge" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#1d4033" />
+                <stop offset="0.45" stopColor="#17332b" />
+                <stop offset="1" stopColor="#10261f" />
+              </linearGradient>
+            </defs>
+            <path d="M101 0 C 52 24 88 64 0 100 L 101 100 Z" fill="url(#panel-edge)" />
+            <path
+              d="M101 0 C 52 24 88 64 0 100"
+              fill="none"
+              stroke="#d99a6c"
+              strokeWidth="1.25"
+              opacity="0.6"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+          <div className="relative w-full">{panel}</div>
+        </div>
+      )}
     </section>
   );
 }
 
+/** Phones: the event panel. Opens on whatever is next; its arrows step through the rest. */
+function phoneDays({ data, now, weather }: Ctx) {
+  const { trip, events } = data;
+  if (events.length === 0) return null;
+  const upcoming = events.findIndex((e) => !isPast(e, now) && !isUnderway(e, now));
+  const current = events.findIndex((e) => isUnderway(e, now));
+  // After the last event has finished, rest on it.
+  const initial = upcoming >= 0 ? upcoming : current >= 0 ? current : events.length - 1;
+  const first = events[initial];
+  return (
+    <MobileDay
+      stops={events.map((e): MobileStop => ({ event: e, weather: weather[e.date] }))}
+      initial={initial}
+      live={upcoming >= 0 || current >= 0}
+      underway={upcoming < 0 && current >= 0}
+      start={first.startTime ? zonedToUtc(first.date, first.startTime, trip.timezone).toISOString() : null}
+      slug={trip.slug}
+      now={now.instant.toISOString()}
+      timeZone={trip.timezone}
+    />
+  );
+}
+
+/** The trip at a glance: each day and the course played on it. Every day opens its schedule. */
+function Itinerary({ data, now }: Ctx) {
+  const { trip, events } = data;
+  const days = eachDay(trip.startDate, trip.endDate);
+  // The next round still to be played marks its day.
+  const nextRound = events.find((e) => e.type === "golf" && !isPast(e, now));
+  return (
+    <nav aria-label="The itinerary" className="bg-forest-deep text-limestone">
+      <ol
+        className="mx-auto grid max-w-6xl divide-x divide-rule-light px-2.5 md:px-4"
+        style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}
+      >
+        {days.map((date) => {
+          const main = events.find((e) => e.date === date && e.type === "golf") ?? events.find((e) => e.date === date);
+          const on = nextRound?.date === date;
+          return (
+            <li key={date}>
+              <Link
+                href={scheduleHref(trip.slug, date)}
+                className={`group flex h-full min-h-[4.5rem] flex-col justify-center border-t-2 px-2 py-3 transition-colors hover:bg-forest/70 md:px-6 md:py-5 ${
+                  on ? "border-copper-light" : "border-transparent"
+                }`}
+              >
+                <span className={`figures text-label font-semibold ${on ? "text-copper-light" : "text-mist"}`}>
+                  {weekdayShort(date)} {Number(date.slice(8))}
+                </span>
+                <span className="serif mt-0.5 text-[14px] italic leading-tight md:text-[21px]">
+                  {main ? main.title : "Open"}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
 /** The opening card's slides: every event, and which one to open on. */
-function nextUp({ data, now, photos, weather, roundOf }: Ctx) {
+function nextUp({ data, now, weather, roundOf }: Ctx) {
   const { trip, events } = data;
   const slides: NextUpSlide[] = events.map((e) => ({
     event: e,
     round: roundOf(e.id),
     weather: weather[e.date],
-    photo: photos[e.id],
-    slot: slotFor(e),
     start: e.startTime ? zonedToUtc(e.date, e.startTime, trip.timezone).toISOString() : null,
     state: isUnderway(e, now) ? "now" : isPast(e, now) ? "past" : "upcoming",
   }));
@@ -215,7 +365,7 @@ function Courses({ data, photos, weather, roundOf, heading }: Ctx & { heading: s
     slot: slotFor(e),
     round: roundOf(e.id),
     weather: weather[e.date],
-    href: scheduleHref(data.trip.slug, e.date),
+    href: `/t/${data.trip.slug}/courses/${slotName(e.title)}`,
   });
   const span = (i: number) => {
     if (rest.length % 2 === 1 && i === rest.length - 1) return "md:col-span-12 md:h-[380px]";
@@ -340,12 +490,14 @@ function Before(ctx: Ctx) {
         tall
         title={
           <>
-            <p className="text-ui font-semibold md:text-fact" style={{ "--i": 0 } as React.CSSProperties}>
+            {/* Phones: the photograph does the talking. The trip's name and year are in the
+                masthead, and the dates are in the panel right below. */}
+            <p className="hidden text-fact font-semibold md:block" style={{ "--i": 0 } as React.CSSProperties}>
               {dateRange(trip.startDate, trip.endDate)}
               {trip.location && <span className="ml-3 font-medium text-paper/85">{trip.location}</span>}
             </p>
             <h1
-              className="display mt-2 text-[clamp(3.75rem,19vw,9rem)]"
+              className="title sr-only md:not-sr-only md:mt-2 md:text-[clamp(4rem,9vw,8.5rem)]"
               style={{ "--i": 1 } as React.CSSProperties}
             >
               {trip.title}
@@ -353,6 +505,8 @@ function Before(ctx: Ctx) {
           </>
         }
         panel={nextUp(ctx)}
+        strip={<Itinerary {...ctx} />}
+        phone={phoneDays(ctx)}
       />
 
       <Courses {...ctx} heading={golf.length === 1 ? "The course" : "The courses"} />
@@ -388,16 +542,18 @@ function During(ctx: Ctx) {
       <Cover
         hero={hero}
         tall={false}
+        strip={<Itinerary {...ctx} />}
+        phone={phoneDays(ctx)}
         title={
           <>
-            <p className="text-ui font-semibold md:text-fact" style={{ "--i": 0 } as React.CSSProperties}>
+            <p className="text-meta font-semibold md:text-fact" style={{ "--i": 0 } as React.CSSProperties}>
               {weekday(now.date)}, {monthDay(now.date)}
               <span className="ml-3 font-medium text-paper/85">
                 Day {dayCount(dayNumber)} of {dayCount(totalDays)}
               </span>
             </p>
             <h1
-              className="display mt-2 text-[clamp(3rem,14vw,7rem)]"
+              className="title mt-1 text-[clamp(2.5rem,12vw,3.5rem)] md:mt-2 md:text-[clamp(3.5rem,8vw,7rem)]"
               style={{ "--i": 1 } as React.CSSProperties}
             >
               Today at Bandon
@@ -448,7 +604,7 @@ function During(ctx: Ctx) {
                 slot={slotFor(tomorrowGolf)}
                 round={roundOf(tomorrowGolf.id)}
                 weather={weather[tomorrowGolf.date]}
-                href={scheduleHref(trip.slug, tomorrowGolf.date)}
+                href={`/t/${trip.slug}/courses/${slotName(tomorrowGolf.title)}`}
                 sizes="(min-width: 768px) 55vw, 100vw"
                 className="aspect-[4/3] md:aspect-auto md:h-[400px]"
               />
@@ -475,10 +631,12 @@ function After(ctx: Ctx) {
       <Cover
         hero={hero}
         tall={false}
+        strip={<Itinerary {...ctx} />}
+        phone={phoneDays(ctx)}
         title={
           <>
             <p className="text-ui font-semibold md:text-fact">{dateRange(trip.startDate, trip.endDate)}</p>
-            <h1 className="display mt-2 text-[clamp(3rem,13vw,7rem)]">{trip.title}, in the books</h1>
+            <h1 className="title mt-2 text-[clamp(3rem,13vw,7rem)]">{trip.title}, in the books</h1>
           </>
         }
       />
