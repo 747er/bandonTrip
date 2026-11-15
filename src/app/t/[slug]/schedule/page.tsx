@@ -10,7 +10,7 @@ import { getTripNow, isPast, isUnderway, roundNumbers } from "@/lib/trip";
 import { getTrip } from "@/lib/viewer";
 import { getForecast } from "@/lib/weather";
 import { getWind } from "@/lib/wind";
-import { compass, hourIndex, minutesFromStart } from "@/lib/windMath";
+import { forecastSummary, minutesFromStart } from "@/lib/windMath";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Schedule" };
@@ -63,12 +63,9 @@ export default async function SchedulePage({
     for (const d of wind.days) daylight[d.date] = { sunrise: clock(d.sunrise.slice(11)), sunset: clock(d.sunset.slice(11)) };
     for (const e of events) {
       if (!e.startTime) continue;
-      const h = hourIndex(wind.times, e.date, e.startTime);
-      if (h < 0) continue;
-      const { temp, speed, gust, direction } = wind.point;
-      atStart[e.id] = `${temp[h]}°, wind ${speed[h]} mph from the ${compass(direction[h])}${
-        gust[h] > speed[h] ? `, gusts ${gust[h]}` : ""
-      }`;
+      const minute = minutesFromStart(wind.times, `${e.date}T${e.startTime}`);
+      if (minute < 0) continue;
+      atStart[e.id] = forecastSummary(wind.point, minute / 60);
       const day = wind.days.find((d) => d.date === e.date);
       if (day && e.endTime && e.type !== "dining") {
         const late =
