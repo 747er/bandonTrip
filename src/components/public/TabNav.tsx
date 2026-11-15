@@ -51,7 +51,7 @@ export function TabNav({
     <>
       {/* The wind map wants the whole phone screen: there the bottom bar is the only navigation. */}
       <div
-        className={`h-14 items-center justify-between gap-8 px-5 md:flex md:h-20 md:justify-start md:px-10 ${
+        className={`trip-masthead h-14 items-center justify-between gap-8 px-5 md:flex md:h-20 md:justify-start md:px-10 ${
           // On phones the wind map wants the whole screen, and Home sets the trip's
           // name at the top of its photograph instead.
           pathname === `${base}/weather` || pathname === base ? "hidden" : "flex"
@@ -61,7 +61,7 @@ export function TabNav({
           {onCover ? "BandonTrip" : title}
         </Link>
 
-        <nav aria-label="Trip" className="hidden md:block">
+        <nav aria-label="Trip" className="trip-desktop-nav hidden md:block">
           <ul className="flex gap-8">
             {tabs.map((tab) => {
               const active = isActive(tab.href);
