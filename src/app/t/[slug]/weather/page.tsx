@@ -78,7 +78,7 @@ export default async function WeatherPage({ params, searchParams }: PageProps<"/
             events.some((e) => e.type === type && placeFor(e.title, e.venue) === id),
           ) ?? "other",
     // Two places a short walk apart: the western one carries its label on the left.
-    side: placeIds.some(
+    side: id === homeId || placeIds.some(
       (other) =>
         other !== id &&
         Math.abs(GEO[other][0] - GEO[id][0]) < 0.0012 &&
@@ -96,10 +96,10 @@ export default async function WeatherPage({ params, searchParams }: PageProps<"/
   const firstThatDay = windEvents.find((e) => Math.floor(e.start / 24) === asked);
   const initialHour =
     asked >= 0
-      ? Math.floor(firstThatDay?.start ?? asked * 24 + 10)
+      ? (firstThatDay?.start ?? asked * 24 + 10)
       : current >= 0
-        ? Math.floor(current)
-        : Math.floor(windEvents[0]?.start ?? 10);
+        ? current
+        : (windEvents[0]?.start ?? 10);
 
   return (
     <>
