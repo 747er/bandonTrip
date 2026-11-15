@@ -6,7 +6,7 @@ import { courseFacts, type CourseFacts } from "@/lib/catalog";
 import { photosForEvents, slotFor } from "@/lib/photos";
 import { placeFor } from "@/lib/resortMap";
 import { clock, dateRange, eachDay, zonedToUtc } from "@/lib/time";
-import { getTrip, getTripNow, isPast, isUnderway } from "@/lib/trip";
+import { getTrip, getTripNow, isPast, isUnderway, roundNumbers } from "@/lib/trip";
 import { getForecast } from "@/lib/weather";
 import { getWind } from "@/lib/wind";
 import { compass, hourIndex, minutesFromStart } from "@/lib/windMath";
@@ -22,7 +22,7 @@ export default async function SchedulePage({
   const { day } = await searchParams;
   const data = await getTrip(slug);
   if (!data) notFound();
-  const { trip, events, people, rounds, lodgings } = data;
+  const { trip, events, lodging } = data;
   const [{ now, phase }, weather, wind] = await Promise.all([
     getTripNow(trip),
     getForecast(trip),
@@ -35,11 +35,7 @@ export default async function SchedulePage({
   const requested = typeof day === "string" && days.includes(day) ? day : null;
   const today = phase === "during" ? now.date : null;
 
-  const counting = rounds.filter((r) => r.countsTowardTotal && r.eventId);
-  const roundInfo: Record<string, RoundInfo> = {};
-  counting.forEach((r, i) => {
-    roundInfo[r.eventId!] = { number: i + 1, total: counting.length, par: r.par };
-  });
+  const roundInfo: Record<string, RoundInfo> = roundNumbers(events);
 
   const facts: Record<string, CourseFacts> = {};
   const states: Record<string, "past" | "now"> = {};
@@ -58,7 +54,7 @@ export default async function SchedulePage({
     const id = placeFor(e.title, e.venue);
     if (id) places[e.id] = id;
   }
-  const homePlace = lodgings.map((l) => placeFor(l.name)).find(Boolean) ?? null;
+  const homePlace = placeFor(lodging);
 
   // Hour-by-hour: what it is forecast to be doing when each event starts, the day's
   // daylight, and a note on anything outdoors that runs past sunset.
@@ -100,7 +96,6 @@ export default async function SchedulePage({
       days={days}
       tripDays={tripDays}
       events={events}
-      names={Object.fromEntries(people.map((p) => [p.id, p.name]))}
       photos={photosForEvents(events)}
       slots={Object.fromEntries(events.map((e) => [e.id, slotFor(e)]))}
       weather={weather}
