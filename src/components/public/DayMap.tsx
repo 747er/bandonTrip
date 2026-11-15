@@ -94,11 +94,25 @@ export function DayMap({
   const at = (p: { x: number; y: number }) =>
     view ? `translate(${p.x * view.scale + view.x}px, ${p.y * view.scale + view.y}px)` : undefined;
 
+  // Keep labels within the instrument, including clubhouses shared by several events.
+  const labelAt = (p: { x: number; y: number }, text: string) => {
+    if (!size || !view) return {};
+    const x = p.x * view.scale + view.x;
+    const width = Math.min(220, text.length * 7 + 16, size.w - 48);
+    const fitsLeft = x > width + 30;
+    const fitsRight = x + width + 30 < size.w;
+    return {
+      width,
+      left: fitsLeft ? -width - 24 : fitsRight ? 24 : Math.max(8 - x, Math.min(-width / 2, size.w - x - width - 8)),
+      top: fitsLeft || fitsRight ? 0 : -38,
+    };
+  };
+
   // Home, then each stop in order: the shape of the day, not a walking route.
   const path = [...(home ? [home] : []), ...stops.map((s) => PLACES[s.placeId])];
 
   return (
-    <figure>
+    <figure className="day-map-figure">
       <div ref={box} className="relative isolate aspect-square overflow-hidden bg-forest-deep sm:aspect-[4/3] lg:aspect-[5/6]">
         <div
           className="absolute left-0 top-0 origin-top-left"
@@ -156,7 +170,7 @@ export function DayMap({
                     <path d="M2.5 7.5L8 3l5.5 4.5V13h-11z" />
                   </svg>
                 </span>
-                <span className="absolute left-5 top-0 -translate-y-1/2 whitespace-nowrap bg-forest px-2 py-1 text-label font-semibold text-limestone shadow-md">
+                <span style={labelAt(home, home.name.replace(/ clubhouse$/, ""))} className="absolute -translate-y-1/2 bg-forest px-2 py-1 text-center text-[12px] font-semibold text-limestone shadow-md">
                   {home.name.replace(/ clubhouse$/, "")}
                 </span>
               </span>
@@ -171,7 +185,7 @@ export function DayMap({
                   type="button"
                   aria-pressed={on}
                   aria-label={`${here.map((s) => s.title).join(" and ")}, ${place.name}`}
-                  onClick={() => onSelect(on ? null : here[0].eventId)}
+                  onClick={() => { setWhole(false); onSelect(on ? null : here[0].eventId); }}
                   className="group absolute left-0 top-0 z-10"
                   style={{ transform: at(place), transition: MOVE }}
                 >
@@ -190,8 +204,8 @@ export function DayMap({
                     </span>
                   </span>
                   <span
-                    style={{ right: here.length > 1 ? 34 : 24 }}
-                    className={`absolute top-0 -translate-y-1/2 whitespace-nowrap px-2 py-1 text-right text-label font-semibold shadow-md ${
+                    style={labelAt(place, here.map(s => s.title).join(", "))}
+                    className={`absolute -translate-y-1/2 px-2 py-1 text-center text-[12px] font-semibold shadow-md ${
                       on ? "bg-forest-deep text-paper" : "bg-paper text-pine"
                     }`}
                   >
@@ -258,6 +272,7 @@ export function DayMap({
           );
         })}
       </ol>
+    <figcaption className="mt-3 text-fine text-moss">Stops in itinerary order. Connecting lines are not walking routes.</figcaption>
     </figure>
   );
 }
