@@ -16,6 +16,8 @@ export type WindEvent = {
   end: number;
   label: string;
   place: [number, number] | null;
+  /** The map place this happens at, when it is on the map */
+  placeId: string | null;
   /** Set when the sun goes down while this is still going: "Sunset 4:49 PM" */
   sunsetNote: string | null;
 };
@@ -26,6 +28,8 @@ export type WindPlace = {
   lat: number;
   lon: number;
   home: boolean;
+  /** What the pin's icon shows */
+  kind: "home" | "golf" | "dining" | "other";
   /** Which side of its dot the label sits on, so close neighbours don't overlap */
   side: "left" | "right";
 };
@@ -67,6 +71,19 @@ export function WindExplorer({
   const canvas = useRef<HTMLCanvasElement>(null);
   const map = useRef<MapLibre | null>(null);
   const live = useRef({ t: initialHour, dirty: true });
+  const pins = useRef(new Map<string, HTMLElement>());
+
+  // Where the group is at the chosen hour: wherever the day's most recent event began,
+  // and home before the day's first one.
+  const today = Math.floor(t / 24);
+  const lastStarted = events.filter((e) => e.placeId && Math.floor(e.start / 24) === today && e.start <= t + 0.01).at(-1);
+  const activePlace = lastStarted?.placeId ?? places.find((p) => p.home)?.id ?? null;
+  const active = useRef(activePlace);
+  const mark = () => pins.current.forEach((el, id) => el.setAttribute("data-active", String(id === active.current)));
+  useEffect(() => {
+    active.current = activePlace;
+    mark();
+  }, [activePlace]);
 
   useEffect(() => {
     live.current.t = t;
@@ -122,17 +139,30 @@ export function WindExplorer({
     m.keyboard.disableRotation();
     map.current = m;
 
+    const ICONS = {
+      home: '<path d="M2.5 7.5L8 3l5.5 4.5V13h-11z"/>',
+      golf: '<path d="M5 14V2.5l7 2.7L5 8"/>',
+      dining: '<path d="M4 2v4.5a1.5 1.5 0 003 0V2M5.5 8v6M11.5 14V2c-1.6 1.2-2.2 3.2-2.2 5.5h2.2"/>',
+      other: '<circle cx="8" cy="8" r="2.5" fill="currentColor"/>',
+    };
     for (const p of places) {
+      // A badge with the place's icon, and its name. Whichever place the group is at for
+      // the chosen hour is marked data-active and turns copper (see the effect below).
       const el = document.createElement("div");
-      el.className = `pointer-events-none flex items-center gap-1.5 ${p.side === "left" ? "flex-row-reverse" : ""}`;
-      el.innerHTML = `<span class="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-paper shadow-md ${
-        p.home ? "bg-copper" : "bg-forest-deep"
-      }"></span><span class="whitespace-nowrap px-1.5 py-0.5 text-[13px] font-semibold shadow-md ${
-        p.home ? "bg-copper text-paper" : "bg-paper/95 text-pine"
-      }"></span>`;
+      el.className = `group flex cursor-pointer items-center gap-1.5 ${p.side === "left" ? "flex-row-reverse" : ""}`;
+      el.setAttribute("role", "button");
+      el.setAttribute("aria-label", `Zoom to ${p.name}`);
+      el.addEventListener("click", () => m.flyTo({ center: [p.lon, p.lat], zoom: 15.6, duration: 1400 }));
+      el.innerHTML = `<span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-paper bg-forest-deep text-paper shadow-md transition-colors duration-300 group-data-[active=true]:bg-copper"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${
+        ICONS[p.kind]
+      }</svg></span><span class="whitespace-nowrap bg-paper/95 px-1.5 py-0.5 text-[13px] font-semibold text-pine shadow-md transition-colors duration-300 group-data-[active=true]:bg-copper group-data-[active=true]:text-paper"></span>`;
       (el.lastElementChild as HTMLElement).textContent = p.name;
-      new Marker({ element: el, anchor: p.side === "left" ? "right" : "left", offset: [p.side === "left" ? 7 : -7, 0] }).setLngLat([p.lon, p.lat]).addTo(m);
+      new Marker({ element: el, anchor: p.side === "left" ? "right" : "left", offset: [p.side === "left" ? 12 : -12, 0] })
+        .setLngLat([p.lon, p.lat])
+        .addTo(m);
+      pins.current.set(p.id, el);
     }
+    mark();
 
     const particles = new WindParticles(canvas.current);
     const { lats, lons, u, v } = data.grid;
@@ -363,6 +393,21 @@ export function WindExplorer({
         ))}
         <line x1={t + 0.5} x2={t + 0.5} y1="0" y2="100" stroke="#d99a6c" strokeWidth="2" vectorEffect="non-scaling-stroke" />
       </svg>
+      {/* On the one-day chart there is room to say what each mark along the top is. */}
+      {to - from <= 24 &&
+        events
+          .filter((e) => (e.type === "golf" || e.sunsetNote !== null) && e.start >= from && e.start < to)
+          .map((e) => (
+            <span
+              key={e.id}
+              className={`pointer-events-none absolute top-[7px] whitespace-nowrap text-[11px] font-semibold leading-none [text-shadow:0_0_3px_rgb(13_33_27)] ${
+                e.type === "golf" ? "text-limestone" : "text-copper-light"
+              }`}
+              style={{ left: `${((e.start - from) / (to - from)) * 100}%` }}
+            >
+              {e.title}
+            </span>
+          ))}
       <input
         type="range"
         min={from}
@@ -417,7 +462,6 @@ export function WindExplorer({
       . Places © OpenStreetMap.
     </>
   );
-  const todays = events.filter((e) => Math.floor(e.start / 24) === dayIndex);
 
   return (
     <>
@@ -430,43 +474,42 @@ export function WindExplorer({
         {/* Type sits over the top and bottom of the picture: shade only those. */}
         <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to bottom, rgb(13 33 27 / 0.75) 0%, rgb(13 33 27 / 0) 20%, rgb(13 33 27 / 0) 62%, rgb(13 33 27 / 0.8) 100%)" }} />
 
-        {/* ---------- Phones: a slim readout on top, the controls docked below, the map in between ---------- */}
-        <div className="absolute inset-x-3 top-14 bg-forest-deep/88 px-3.5 py-2.5 backdrop-blur-md md:hidden">
-          <div className="flex items-center gap-3">
-            {arrow(40)}
-            <p className="display figures text-[38px] leading-none">
-              {speed[h]}
-              <span className="ml-1 font-sans text-meta font-semibold tracking-normal">mph</span>
-            </p>
-            <p className="min-w-0 flex-1 text-right text-meta leading-tight">
-              <span className="block font-semibold">From the {compass(direction[h])}</span>
-              <span className="figures block text-mist">
-                {dayLabel(date, "short")} {hourLabel(local)}
+        {/* ---------- Phones: one line of readout, one strip of timeline, and the map ---------- */}
+        <p className="figures absolute inset-x-0 top-14 flex items-center gap-2.5 bg-forest-deep/80 px-4 py-1.5 text-label backdrop-blur-md md:hidden">
+          {arrow(30)}
+          <span className="display text-[30px] leading-none">{speed[h]}</span>
+          <span className="font-semibold leading-tight">
+            mph
+            <span className="block font-medium text-mist">{compass(direction[h])}</span>
+          </span>
+          <span className="ml-auto flex gap-3.5">
+            {gust[h] > speed[h] && (
+              <span>
+                <span className="text-mist">gusts </span>
+                <span className="font-semibold">{gust[h]}</span>
               </span>
-            </p>
-          </div>
-          <p className="figures mt-2 flex flex-wrap justify-between gap-x-3 border-t border-rule-light pt-2 text-label">
-            {stats.map(([name, value]) => (
-              <span key={name}>
-                <span className="text-mist">{name} </span>
-                <span className="font-semibold">{value}</span>
+            )}
+            <span className="font-semibold">{temp[h]}°</span>
+            {rainChance[h] !== null && (
+              <span>
+                <span className="text-mist">rain </span>
+                <span className="font-semibold">{rainChance[h]}%</span>
               </span>
-            ))}
-          </p>
-          {light && <p className={`mt-1 text-label font-medium ${dark ? "text-copper-light" : "text-mist"}`}>{light}</p>}
-        </div>
+            )}
+          </span>
+        </p>
 
         <button
           type="button"
-          className={`${control} absolute right-3 top-[11.5rem] md:hidden`}
+          className="absolute right-3 top-[6.75rem] flex h-10 w-10 items-center justify-center bg-forest-deep/80 text-limestone backdrop-blur-md md:hidden"
           aria-label="Back to the whole resort"
           onClick={reset}
         >
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V3h4M15 7V3h-4M3 11v4h4M15 11v4h-4" /></svg>
+          <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V3h4M15 7V3h-4M3 11v4h4M15 11v4h-4" /></svg>
         </button>
 
-        <div className="absolute inset-x-0 bottom-[calc(61px+env(safe-area-inset-bottom))] bg-forest-deep/94 backdrop-blur-md md:hidden">
-          <div role="group" aria-label="Day" className="grid" style={{ gridTemplateColumns: `repeat(${dates.length}, minmax(0, 1fr))` }}>
+        <div className="absolute inset-x-0 bottom-[calc(61px+env(safe-area-inset-bottom))] bg-forest-deep/88 px-4 pb-2 backdrop-blur-md md:hidden">
+          <div role="group" aria-label="Day" className="figures flex items-center text-label">
             {dates.map((d, i) => (
               <button
                 key={d}
@@ -474,33 +517,23 @@ export function WindExplorer({
                 aria-pressed={i === dayIndex}
                 // Keep the hour of day when changing day.
                 onClick={() => scrub(Math.min(hours - 1, i * 24 + (t - dayIndex * 24)))}
-                className={`figures min-h-11 text-meta font-semibold transition-colors ${
-                  i === dayIndex ? "bg-limestone text-pine" : "text-mist"
-                }`}
+                className={`min-h-10 pr-4 font-semibold ${i === dayIndex ? "text-limestone underline decoration-copper-light decoration-2 underline-offset-[6px]" : "text-mist"}`}
               >
-                {dayLabel(d, "short")} {Number(d.slice(8))}
+                {dayLabel(d, "short")}
               </button>
             ))}
+            <span className={`ml-auto font-semibold ${dark ? "text-copper-light" : "text-limestone"}`}>
+              {hourLabel(local)}
+              {dark ? ", dark" : sunset - minuteNow <= 90 && sunset > minuteNow ? `, ${sunset - minuteNow} min of light` : ""}
+            </span>
           </div>
-          <div className="flex items-stretch gap-2.5 px-3 pt-3">
-            {playButton("w-11 self-stretch")}
-            <div className="min-w-0 flex-1">
-              {chart(dayIndex * 24, Math.min(hours, dayIndex * 24 + 24), "h-[4.5rem]")}
-              <div className="figures mt-1 grid grid-cols-4 text-fine text-mist" aria-hidden="true">
-                <span>12 AM</span>
-                <span>6 AM</span>
-                <span>Noon</span>
-                <span>6 PM</span>
-              </div>
-            </div>
+          {chart(dayIndex * 24, Math.min(hours, dayIndex * 24 + 24), "h-14")}
+          <div className="figures mt-1 grid grid-cols-4 text-fine text-mist" aria-hidden="true">
+            <span>12 AM</span>
+            <span>6 AM</span>
+            <span>Noon</span>
+            <span>6 PM</span>
           </div>
-          {todays.length > 0 ? (
-            <ul className="flex gap-2 overflow-x-auto px-3 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {todays.map((e) => chip(e, false))}
-            </ul>
-          ) : (
-            <p className="px-3 py-3 text-label text-mist">Nothing scheduled this day.</p>
-          )}
         </div>
 
         {/* ---------- Wider screens: a readout card, map controls and the whole trip on one timeline ---------- */}
@@ -582,7 +615,7 @@ export function WindExplorer({
       {/* Phones: the key and credits sit under the map, out of its way. */}
       <div className="space-y-2 bg-forest-deep px-5 py-5 text-fine text-mist md:hidden">
         <p className="flex items-center gap-2">{legend}</p>
-        <p>White bars: wind each hour. Faint bars behind: gusts. Shaded: night. Marks along the top: tee times.</p>
+        <p>White bars: wind each hour. Faint bars behind: gusts. Shaded: night. Marks along the top: tee times. Tap a place name to zoom to it.</p>
         <p>{credits}</p>
       </div>
     </>
