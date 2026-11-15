@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import type { CourseFacts } from "@/lib/catalog";
 import { directionsUrl } from "@/lib/links";
 import { clock, dayCount, monthDay, weekday, weekdayShort } from "@/lib/time";
 import { eventTimes, type PublicEvent } from "@/lib/trip";
@@ -10,7 +9,7 @@ import type { DayWeather } from "@/lib/weather";
 import { Countdown } from "./Countdown";
 import { DayMap, type MapStop } from "./DayMap";
 import { eventSummary } from "./EventList";
-import { Conditions, Scrim, TypeMark, type RoundInfo } from "./features";
+import { Conditions, TypeMark, type RoundInfo } from "./features";
 import { WeatherGlyph } from "./Glyphs";
 import { Photo, PhotoCredit, type PhotoData } from "./Photo";
 
@@ -24,7 +23,6 @@ export type ScheduleProps = {
   slots: Record<string, string>;
   weather: Record<string, DayWeather>;
   rounds: Record<string, RoundInfo>;
-  facts: Record<string, CourseFacts>;
   /** "past" | "now" per event id, only set while the trip is under way */
   states: Record<string, "past" | "now">;
   /** Forecast at each event's start hour, as a short line of text */
@@ -303,36 +301,51 @@ const Toggle = () => (
 );
 
 /** Golf leads the day: the course's photograph, round and tee times up front. */
-function GolfEvent({ event: e, photos, slots, rounds, facts, states, atStart }: EventProps) {
+function GolfEvent({ event: e, photos, slots, rounds, states, atStart }: EventProps) {
   const round = rounds[e.id];
-  const fact = facts[e.id];
   const state = states[e.id];
   return (
     <li className={state === "past" ? "opacity-60" : ""}>
-      <div className="relative isolate aspect-[4/3] overflow-hidden bg-forest-deep text-paper sm:aspect-[16/8]">
+      {/* The photograph carries only the name. Times and conditions sit below it in dark
+          type on paper, where they can be read in any light. */}
+      <div className="relative isolate aspect-[16/10] overflow-hidden bg-forest-deep text-paper sm:aspect-[16/7]">
         <Photo photo={photos[e.id]} slot={slots[e.id]} sizes="(min-width: 1152px) 800px, 100vw" />
-        <Scrim />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to top, rgb(13 33 27 / 0.92) 0%, rgb(13 33 27 / 0.7) 30%, rgb(13 33 27 / 0) 68%), linear-gradient(to bottom, rgb(13 33 27 / 0.55) 0%, rgb(13 33 27 / 0) 26%)",
+          }}
+        />
         <div className="absolute inset-x-0 top-0 flex justify-between p-5 text-meta font-semibold md:p-7">
           <span>{round ? `Round ${round.number} of ${round.total}` : "Golf"}</span>
           {state === "now" && <span className="bg-copper px-2 py-0.5 text-paper">Now</span>}
         </div>
         <div className="absolute inset-x-0 bottom-0 p-5 md:p-7">
-          <h3 className="display text-[clamp(2.5rem,8vw,4rem)]">{e.title}</h3>
-          <p className="figures mt-3 text-fact font-semibold">
-            {e.startTime ? `Tee times ${eventTimes(e)}` : "Tee times to come"}
-          </p>
-          {atStart[e.id] && (
-            <p className="figures mt-1 text-meta font-semibold text-paper">At the first tee time: {atStart[e.id]}</p>
-          )}
-          <p className="figures mt-1 text-meta font-medium text-paper/90">
-            {[round && `Par ${round.par}`, fact && `${fact.designer}, ${fact.opened}`]
-              .filter(Boolean)
-              .join(". ")}
-          </p>
+          <h3 className="display text-[clamp(2.5rem,8vw,4rem)] [text-shadow:0_1px_14px_rgb(13_33_27/0.55)]">{e.title}</h3>
           <PhotoCredit photo={photos[e.id]} className="mt-1 block" />
         </div>
       </div>
       <div className="bg-paper">
+        <div className="border-b border-rule px-5 py-4 md:px-7">
+          <p className="figures text-fact font-semibold">
+            {e.startTime ? (
+              <>
+                <span className="mr-2 text-ui font-medium text-moss">Tee times</span>
+                {eventTimes(e)}
+              </>
+            ) : (
+              "Tee times to come"
+            )}
+          </p>
+          {atStart[e.id] && (
+            <p className="figures mt-1.5 text-meta">
+              <span className="text-moss">At the first tee time </span>
+              <span className="font-semibold">{atStart[e.id]}</span>
+            </p>
+          )}
+        </div>
         <div className="px-5 md:px-7">
           <Actions event={e} />
         </div>
