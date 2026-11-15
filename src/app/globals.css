@@ -215,8 +215,9 @@ details.event[open] .event-body {
 .wind-stats { display: flex; width: 100%; justify-content: space-between; border-top: 1px solid var(--panel-rule); padding-top: 12px; font-variant-numeric: tabular-nums; }
 .wind-stats dt { font-size: 12px; color: var(--color-moss); }
 .wind-stats dd { font-size: 17px; font-weight: 600; margin-top: 2px; }
-.wind-context { display: flex; flex-direction: column; border-top: 1px solid var(--panel-rule); padding-top: 12px; margin-top: 12px; gap: 1px; }
-.wind-context > span { color: var(--color-moss); font-size: 12px; }
+.wind-context { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 12px; row-gap: 1px; border-top: 1px solid var(--panel-rule); padding-top: 12px; margin-top: 12px; }
+.wind-context > span { grid-column: 1 / -1; color: var(--color-moss); font-size: 12px; }
+.wind-context > .wind-context-time { grid-column: auto; color: var(--color-pine); font-size: 15px; font-weight: 600; white-space: nowrap; font-variant-numeric: lining-nums; }
 .wind-context strong { font-family: var(--font-serif); font-style: italic; font-weight: 400; font-size: 21px; line-height: 1.2; }
 .wind-daylight { font-size: 12px; color: var(--color-moss); margin-top: 6px; }
 .wind-daylight.is-dark { color: var(--color-copper); }
@@ -284,7 +285,10 @@ details.event[open] .event-body {
 .wind-plot-span { fill: rgb(233 231 224 / .35); }
 .wind-plot-span.is-late { fill: var(--color-copper-light); }
 .wind-plot-span.is-on { fill: var(--color-copper); }
-.wind-plot-cursor { stroke: var(--color-copper); stroke-width: 1.5; }
+.wind-plot-cursor { pointer-events: none; position: absolute; bottom: -3px; width: 2px; margin-left: -1px; background: var(--color-copper); }
+/* The tab the marker ends in: the hour between two arrows, kept inside the plot's ends. */
+.wind-plot-handle { pointer-events: none; position: absolute; z-index: 1; top: calc(100% + 3px); left: clamp(34px, var(--at), calc(100% - 34px)); transform: translateX(-50%); display: flex; align-items: center; gap: 6px; height: 18px; padding: 0 6px; background: var(--color-copper); color: var(--color-paper); font-size: 10.5px; font-weight: 600; line-height: 1; white-space: nowrap; font-variant-numeric: lining-nums; }
+.wind-plot-handle svg { opacity: .7; }
 .wind-plot-point { pointer-events: none; position: absolute; width: 10px; height: 10px; border-radius: 50%; transform: translate(-50%, -50%); background: var(--color-copper); border: 2px solid var(--color-paper); }
 .wind-plot-name { pointer-events: none; position: absolute; left: 4px; font-size: 10px; font-weight: 600; letter-spacing: .02em; color: var(--color-moss); }
 .wind-plot-name.is-wind { color: var(--color-pine); }
@@ -295,7 +299,7 @@ details.event[open] .event-body {
 .wind-plot-field > input::-moz-range-thumb { width: 1px; height: 44px; border: 0; }
 .wind-plot-field:has(input:focus-visible) { outline: 2px solid var(--color-copper); outline-offset: 4px; }
 .wind-plot-ticks { position: absolute; top: calc(100% + 5px); inset-inline: 0; font-size: 10px; color: var(--color-moss); }
-.wind-plot-ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.wind-plot-ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; transition: opacity 160ms; }
 .wind-plot-ticks span:first-child { transform: none; }
 
 /* Itinerary flags: the map pins' badge and label, standing over their hours. */
@@ -338,8 +342,9 @@ details.event[open] .event-body {
   .wind-stats { width: auto; flex: 1; margin-left: 10px; border: 0; padding: 0; gap: 12px; justify-content: flex-end; }
   .wind-stats dt { font-size: 11px; }
   .wind-stats dd { font-size: 13px; }
-  .wind-context { position: relative; flex-direction: row; align-items: baseline; gap: 8px; margin-top: 6px; padding-top: 6px; padding-right: 110px; }
+  .wind-context { position: relative; display: flex; flex-direction: row; align-items: baseline; gap: 8px; margin-top: 6px; padding-top: 6px; padding-right: 110px; }
   .wind-context > span { font-size: 11px; }
+  .wind-context > .wind-context-time { font-size: 12px; flex-shrink: 0; }
   .wind-context strong { font-size: 16px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .wind-daylight { position: absolute; right: 14px; bottom: 9px; margin: 0; font-size: 11px; }
   .wind-daylight-full { display: none; }
