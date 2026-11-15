@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { RoundInfo } from "@/components/public/features";
 import { ScheduleView } from "@/components/public/ScheduleView";
-import { courseFacts, type CourseFacts } from "@/lib/catalog";
 import { photosForEvents, slotFor } from "@/lib/photos";
 import { placeFor } from "@/lib/resortMap";
 import { clock, dateRange, eachDay, zonedToUtc } from "@/lib/time";
@@ -37,11 +36,8 @@ export default async function SchedulePage({
 
   const roundInfo: Record<string, RoundInfo> = roundNumbers(events);
 
-  const facts: Record<string, CourseFacts> = {};
   const states: Record<string, "past" | "now"> = {};
   for (const e of events) {
-    const fact = e.type === "golf" ? courseFacts(e.venue || e.title) : null;
-    if (fact) facts[e.id] = fact;
     if (phase === "during") {
       if (isUnderway(e, now)) states[e.id] = "now";
       else if (isPast(e, now)) states[e.id] = "past";
@@ -100,7 +96,6 @@ export default async function SchedulePage({
       slots={Object.fromEntries(events.map((e) => [e.id, slotFor(e)]))}
       weather={weather}
       rounds={roundInfo}
-      facts={facts}
       states={states}
       atStart={atStart}
       lateNote={lateNote}
