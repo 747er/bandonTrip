@@ -8,6 +8,7 @@ import { clock, clockRange, dayCount, monthDay, weekday, weekdayShort } from "@/
 import type { PublicEvent } from "@/lib/trip";
 import type { DayWeather } from "@/lib/weather";
 import { Countdown } from "./Countdown";
+import { DayMap, type MapStop } from "./DayMap";
 import { eventSummary } from "./EventList";
 import { Conditions, Scrim, TypeMark, type RoundInfo } from "./features";
 import { WeatherGlyph } from "./Glyphs";
@@ -27,6 +28,10 @@ export type ScheduleProps = {
   facts: Record<string, CourseFacts>;
   /** "past" | "now" per event id, only set while the trip is under way */
   states: Record<string, "past" | "now">;
+  /** Resort-map place id per event id, for events the map can show */
+  places: Record<string, string>;
+  /** Place id of where the group is staying, if it is on the map */
+  homePlace: string | null;
   initialDay: string;
   today: string | null;
   upNext: { title: string; date: string; target: string; now: string } | null;
@@ -38,9 +43,22 @@ export function ScheduleView(props: ScheduleProps) {
   const dayEvents = events.filter((e) => e.date === day);
   const dayWeather = weather[day];
   const dayIndex = tripDays.indexOf(day);
+  const [activeStop, setActiveStop] = useState<string | null>(null);
+  const stops: MapStop[] = dayEvents
+    .filter((e) => props.places[e.id])
+    .map((e, i) => ({
+      eventId: e.id,
+      number: i + 1,
+      title: e.title,
+      time: e.startTime ? clock(e.startTime) : "All day",
+      type: e.type,
+      placeId: props.places[e.id],
+    }));
+  const otherPlaces = [...new Set(Object.values(props.places))];
 
   const choose = (date: string) => {
     setDay(date);
+    setActiveStop(null);
     const url = new URL(window.location.href);
     url.searchParams.set("day", date);
     window.history.replaceState(null, "", url);
@@ -106,7 +124,7 @@ export function ScheduleView(props: ScheduleProps) {
         })}
       </div>
 
-      <div className="mt-8 grid gap-x-14 gap-y-10 lg:grid-cols-[minmax(0,1fr)_15rem]">
+      <div className="mt-8 grid gap-x-14 gap-y-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)]">
         <section id="day-panel" role="tabpanel" aria-label={weekday(day)} key={day} className="day-panel min-w-0">
           <header className="flex items-end justify-between gap-4">
             <h2 className="display text-[44px] md:text-[60px]">{weekday(day)}</h2>
@@ -149,7 +167,22 @@ export function ScheduleView(props: ScheduleProps) {
         </section>
 
         {/* A slim rail on wide screens; on phones it closes the day as a short footer. */}
-        <aside className="border-t border-pine pt-5 lg:sticky lg:top-28 lg:self-start lg:border-l lg:border-t-0 lg:border-rule lg:pl-8 lg:pt-0">
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          {stops.length > 0 && (
+            <section aria-labelledby="day-map" className="mb-8">
+              <h2 id="day-map" className="display mb-3 text-[30px] lg:sr-only">
+                Where we&rsquo;ll be
+              </h2>
+              <DayMap
+                stops={stops}
+                homeId={props.homePlace}
+                otherPlaceIds={otherPlaces}
+                dayName={weekday(day)}
+                activeEventId={activeStop}
+                onSelect={setActiveStop}
+              />
+            </section>
+          )}
           {upNext && (
             <div className="mb-4">
               <p className="text-meta text-moss">
@@ -168,9 +201,6 @@ export function ScheduleView(props: ScheduleProps) {
             <a className="action" href={`/t/${trip.slug}/calendar.ics`}>
               Add the whole trip to your calendar
             </a>
-            <Link className="action" href={`/t/${trip.slug}/crew`}>
-              Rooms and pairings
-            </Link>
             <Link className="action" href={`/t/${trip.slug}/packing`}>
               Packing list
             </Link>
