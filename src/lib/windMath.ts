@@ -37,3 +37,36 @@ export function speedColor(mph: number): [number, number, number] {
   }
   return SPEED_STOPS[SPEED_STOPS.length - 1][1];
 }
+
+/** Linear interpolation keeps readouts on the same fractional hour as the wind field. */
+export function interpolate(values: number[], time: number): number {
+  const t = Math.max(0, Math.min(values.length - 1, time));
+  const a = Math.floor(t);
+  return values[a] + (values[Math.min(a + 1, values.length - 1)] - values[a]) * (t - a);
+}
+
+/** Interpolate through north along the shortest arc, never spinning through south. */
+export function interpolateDirection(values: number[], time: number): number {
+  const t = Math.max(0, Math.min(values.length - 1, time));
+  const a = Math.floor(t);
+  const delta = ((values[Math.min(a + 1, values.length - 1)] - values[a] + 540) % 360) - 180;
+  return (values[a] + delta * (t - a) + 360) % 360;
+}
+
+/** Course and schedule briefings use the same minute-level forecast as the map. */
+export function forecastSummary(point: { temp: number[]; speed: number[]; gust: number[]; direction: number[] }, time: number): string {
+  const temp = Math.round(interpolate(point.temp, time));
+  const speed = Math.round(interpolate(point.speed, time));
+  const gust = Math.round(interpolate(point.gust, time));
+  const direction = compass(interpolateDirection(point.direction, time));
+  return `${temp}°, wind ${speed} mph from the ${direction}${gust > speed ? `, gusts ${gust}` : ""}`;
+}
+
+export function timelineLocal(times: string[], time: number): string {
+  const minute = Math.max(0, Math.min((times.length - 1) * 60, Math.round(time * 60)));
+  return `${times[Math.floor(minute / 60)].slice(0, 14)}${String(minute % 60).padStart(2, "0")}`;
+}
+
+export function timelineLabel(times: string[], time: number): string {
+  return new Intl.DateTimeFormat("en-US", {weekday: "long", hour: "numeric", minute: "2-digit", timeZone: "UTC"}).format(new Date(`${timelineLocal(times, time)}Z`));
+}
