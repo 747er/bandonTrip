@@ -57,3 +57,24 @@ export function placeFor(...names: (string | null | undefined)[]): string | null
   }
   return null;
 }
+
+/**
+ * Real-world positions [latitude, longitude] for the weather map. Clubhouses and
+ * restaurants are from OpenStreetMap (© OpenStreetMap contributors); the ones marked
+ * "placed by eye" are not in OpenStreetMap and were set against the aerial imagery.
+ */
+export const GEO: Record<string, [number, number]> = {
+  "sheep-ranch": [43.22087, -124.38888],
+  "old-macdonald": [43.20303, -124.3836],
+  "ghost-tree": [43.20289, -124.38282],
+  "practice-center": [43.19656, -124.38486],
+  "pacific-dunes": [43.1936, -124.3899], // placed by eye on the clubhouse beside the Punchbowl
+  "bandon-dunes": [43.18838, -124.39038],
+  "main-lodge": [43.18792, -124.39017],
+  "the-inn": [43.18643, -124.39023],
+  "lily-pond": [43.18633, -124.38881],
+  "round-lake": [43.18507, -124.38772],
+  "grove-cottages": [43.1866, -124.3855], // placed by eye: south of Randolph Ln, above Round Lake
+  "bandon-trails": [43.18472, -124.39117],
+  shortys: [43.17599, -124.3937],
+};
