@@ -79,7 +79,7 @@ export default async function SchedulePage({
       if (day && e.endTime && e.type !== "dining") {
         const late =
           minutesFromStart(wind.times, `${e.date}T${e.endTime}`) - minutesFromStart(wind.times, day.sunset);
-        if (late > 0) lateNote[e.id] = `Ends ${late} min after sunset (${clock(day.sunset.slice(11))})`;
+        if (late > 0) lateNote[e.id] = `The sun sets at ${clock(day.sunset.slice(11))}, before this ends`;
       }
     }
   }
