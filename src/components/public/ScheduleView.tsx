@@ -171,6 +171,9 @@ export function ScheduleView(props: ScheduleProps) {
             <Link className="action" href={`/t/${trip.slug}/crew`}>
               Rooms and pairings
             </Link>
+            <Link className="action" href={`/t/${trip.slug}/packing`}>
+              Packing list
+            </Link>
           </div>
         </aside>
       </div>
