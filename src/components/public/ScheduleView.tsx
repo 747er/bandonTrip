@@ -74,7 +74,7 @@ export function ScheduleView(props: ScheduleProps) {
       <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
         <h1 className="display text-[clamp(2.75rem,11vw,4.5rem)]">Schedule</h1>
         <p className="pb-1.5 text-meta text-moss">
-          {trip.dates}. All times local to {trip.location || "the trip"}.
+          {trip.dates}
         </p>
       </div>
 
