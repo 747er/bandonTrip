@@ -16,6 +16,8 @@ export type WindEvent = {
   /** Hours from the first hour of the data, fractional */
   start: number;
   end: number;
+  /** When the player is taken to have left: see the wind page for the lengths assumed */
+  until: number;
   label: string;
   place: [number, number] | null;
   /** The map place this happens at, when it is on the map */
@@ -105,18 +107,29 @@ const hourLabel = (local: string) => {
 const dayLabel = (date: string, style: "long" | "short" = "long") =>
   new Intl.DateTimeFormat("en-US", { weekday: style, timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
 
+/** The drawing inside a pin's badge, by what is there. */
+const ICONS = {
+  home: '<path d="M2.5 7.5L8 3l5.5 4.5V13h-11z"/>',
+  golf: '<path d="M5 14V2.5l7 2.7L5 8"/>',
+  dining: '<path d="M4 2v4.5a1.5 1.5 0 003 0V2M5.5 8v6M11.5 14V2c-1.6 1.2-2.2 3.2-2.2 5.5h2.2"/>',
+  other: '<circle cx="8" cy="8" r="2.5" fill="currentColor"/>',
+};
+
 export function WindExplorer({
   data,
   events,
   places,
   center,
   initialHour,
+  stay,
 }: {
   data: WindData;
   events: WindEvent[];
   places: WindPlace[];
   center: [number, number];
   initialHour: number;
+  /** The hours of check-in and check-out; -1 when outside the forecast */
+  stay: [number, number];
 }) {
   const hours = data.times.length;
   const [t, setT] = useState(Math.max(0, Math.min(hours - 1, initialHour)));
@@ -147,24 +160,49 @@ export function WindExplorer({
   }, [probe]);
   const home = useRef<() => void>(() => {});
 
-  // Where the group is at the chosen hour: wherever the day's most recent event began,
-  // and home before the day's first one.
-  const today = Math.floor(t / 24);
-  const lastStarted = events.filter((e) => e.placeId && Math.floor(e.start / 24) === today && e.start <= t).at(-1);
-  // Copper marks only where the group is at the chosen hour. A pin someone clicks to look
-  // at is flown to, but stays as it is.
-  const groupPlace = lastStarted?.placeId ?? places.find((p) => p.home)?.id ?? null;
+  // Where the player is at the chosen hour: at an event from its start until it is taken
+  // to be over, and otherwise at their lodging, but only between check-in and check-out.
+  const happening = events.filter((e) => e.start <= t && t < e.until).at(-1);
+  const checkedIn = stay[0] >= 0 && t >= stay[0] && (stay[1] < 0 || t < stay[1]);
+  // Copper marks only where the player is at the chosen hour. A pin someone clicks to
+  // look at is flown to, but stays as it is.
+  const groupPlace = happening ? happening.placeId : checkedIn ? (places.find((p) => p.home)?.id ?? null) : null;
   const activePlace = selectedPlace ?? groupPlace;
+  // Several things share a pin (Punchbowl and Pacific Grill are both at the Pacific Dunes
+  // clubhouse), so a pin takes the name and icon of the event chosen or happening there.
+  const shown = events.find((e) => e.id === selectedEvent) ?? (selectedPlace ? undefined : happening);
+  const shownAt = shown?.placeId ?? null;
+  const shownTitle = shown?.title ?? null;
+  const shownKind = shown ? (shown.type === "golf" ? "golf" : shown.type === "dining" ? "dining" : "other") : null;
+  // Looking at one day, only that day's places and the lodging are pinned; the whole
+  // trip shows them all.
+  const dayOf = Math.floor(t / 24);
+  const pinned = wholeTrip
+    ? "*"
+    : events.filter((e) => e.placeId && Math.floor(e.start / 24) === dayOf).map((e) => e.placeId).join(",");
+  const onMap = useRef(pinned);
   const active = useRef(groupPlace);
+  const guest = useRef<{ at: string; title: string; kind: keyof typeof ICONS } | null>(null);
   const mark = () => pins.current.forEach((el, id) => {
     el.setAttribute("data-active", String(id === active.current));
     if (id === active.current) el.setAttribute("aria-current", "location");
     else el.removeAttribute("aria-current");
+    const place = places.find((p) => p.id === id);
+    if (!place) return;
+    el.style.display = onMap.current === "*" || place.home || onMap.current.split(",").includes(id) ? "" : "none";
+    const here = guest.current?.at === id && !place.home ? guest.current : null;
+    (el.lastElementChild as HTMLElement).textContent = here?.title ?? place.name;
+    const svg = el.querySelector("svg");
+    if (svg) svg.innerHTML = ICONS[here?.kind ?? place.kind];
   });
   useEffect(() => {
     active.current = groupPlace;
+    onMap.current = pinned;
+    guest.current = shownAt && shownTitle && shownKind ? { at: shownAt, title: shownTitle, kind: shownKind } : null;
     mark();
-  }, [groupPlace]);
+    // mark reads refs and the fixed list of places only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupPlace, shownAt, shownTitle, shownKind, pinned]);
 
   useEffect(() => {
     live.current.t = t;
@@ -261,12 +299,6 @@ export function WindExplorer({
     m.keyboard.disableRotation();
     map.current = m;
 
-    const ICONS = {
-      home: '<path d="M2.5 7.5L8 3l5.5 4.5V13h-11z"/>',
-      golf: '<path d="M5 14V2.5l7 2.7L5 8"/>',
-      dining: '<path d="M4 2v4.5a1.5 1.5 0 003 0V2M5.5 8v6M11.5 14V2c-1.6 1.2-2.2 3.2-2.2 5.5h2.2"/>',
-      other: '<circle cx="8" cy="8" r="2.5" fill="currentColor"/>',
-    };
     for (const p of places) {
       // A badge with the place's icon, and its name. Whichever place the group is at for
       // the chosen hour is marked data-active and turns copper (see the effect below).
@@ -537,7 +569,7 @@ export function WindExplorer({
   };
   const reset = () => { setProbe(null); home.current(); };
   const dayIndex = Math.max(0, dates.indexOf(date));
-  const activeName = places.find(p => p.id === activePlace)?.name;
+  const activeName = (shownAt === activePlace && shownTitle) || places.find(p => p.id === activePlace)?.name;
   const stats = [["Gusts", `${windGust} mph`], ["Temp", `${temperature}°F`], ["Rain", chance === null ? "n/a" : `${chance}%`]];
   const arrow = (
     <svg width="52" height="52" viewBox="0 0 52 52" className="wind-compass" role="img" aria-label={`Wind from the ${compass(windDirection)}`}>
@@ -598,7 +630,7 @@ export function WindExplorer({
           <div className="wind-range-switch" role="group" aria-label="Timeline range"><button type="button" aria-pressed={!wholeTrip} onClick={() => setWholeTrip(false)}>Day</button><button type="button" aria-pressed={wholeTrip} onClick={() => setWholeTrip(true)}>Trip</button></div>
         </div>
         <ForecastTimeline data={data} events={events} time={t} from={wholeTrip ? 0 : dayIndex * 24} to={wholeTrip ? hours : Math.min(hours, dayIndex * 24 + 24)} nights={nights}
-          selected={(e) => selectedEvent ? selectedEvent === e.id : t >= e.start && t < Math.max(e.end, e.start + 1)}
+          selected={(e) => selectedEvent ? selectedEvent === e.id : t >= e.start && t < e.until}
           onChange={scrub} onEvent={jump} />
       </div>
     </section>
