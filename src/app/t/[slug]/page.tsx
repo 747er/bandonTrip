@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Carousel } from "@/components/public/Carousel";
+import { CourseExplorer } from "@/components/public/CourseExplorer";
+import { courseById } from "@/data/courses";
 import { contours } from "@/components/public/contours";
 import { eventSummary } from "@/components/public/EventList";
 import {
   CourseCard,
-  CourseFeature,
   EventRow,
   ForecastStrip,
   type RoundInfo,
@@ -102,11 +102,11 @@ function Cover({
   const photoHeight = tall ? "h-[48svh] min-h-[340px]" : "h-[42svh] min-h-[310px]";
   const heroHeight = tall ? HERO_TALL : HERO_SHORT;
   return (
-    <section className="relative">
+    <section className="trip-arrival relative">
       <div className={`relative isolate overflow-hidden bg-forest-deep ${photoHeight} ${heroHeight}`}>
         {/* From tablet width up the photograph stops where the panel begins, so its
             subject is framed in the part you can see rather than hidden behind it. */}
-        <div className={`absolute inset-0 ${panel ? PANEL_GAP : ""}`}>
+        <div className={`arrival-photo absolute inset-0 ${panel ? PANEL_GAP : ""}`}>
           <Photo photo={hero} slot={HERO_SLOT} priority sizes="(min-width: 768px) 70vw, 100vw" />
         </div>
         {/* Shade only where type sits: behind the masthead, and from tablet width up
@@ -118,7 +118,7 @@ function Cover({
         />
         <div
           aria-hidden="true"
-          className={`absolute inset-0 ${phone ? "hidden md:block" : ""}`}
+          className="absolute inset-0"
           style={{
             background:
               "radial-gradient(120% 85% at 0% 100%, rgb(13 33 27 / 0.9) 0%, rgb(13 33 27 / 0.5) 42%, rgb(13 33 27 / 0) 72%)",
@@ -127,13 +127,14 @@ function Cover({
         <PhotoCredit photo={hero} className="absolute right-4 top-16 md:bottom-3 md:left-10 md:right-auto md:top-auto" />
         <div
           className={`hero-copy absolute inset-x-0 px-5 text-paper ${
-            phone ? "top-0 pt-3 md:bottom-0 md:top-auto md:pt-0" : "bottom-0 pb-6"
+            phone ? "bottom-0 pb-20 md:pt-0" : "bottom-0 pb-6"
           } md:px-10 md:pb-12 lg:pb-14 xl:pl-[max(2.5rem,calc((100vw-72rem)/2+2.5rem))] ${
             panel ? "md:pr-[calc(max(34%,18.5rem)+6rem)] lg:pr-[calc(max(34%,18.5rem)+9rem)]" : ""
           }`}
         >
           {title}
         </div>
+        {phone && <p className="absolute left-5 top-4 serif text-[17px] italic text-paper md:hidden">BandonTrip</p>}
       </div>
 
       {phone}
@@ -219,7 +220,7 @@ function Stay({ data }: Ctx) {
   const mates = viewer.roommates;
   const list = mates.length > 1 ? `${mates.slice(0, -1).join(", ")} and ${mates[mates.length - 1]}` : mates[0];
   return (
-    <section aria-label="Where you're staying" className={`${WIDE} pt-8 md:pt-12`}>
+    <section aria-label="Where you're staying" className={`${WIDE} stay-section pt-8 md:pt-12`}>
       <Link href={scheduleHref(trip.slug)} className="group flex items-center gap-4 border-y border-rule py-4">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest text-limestone">
           <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true">
@@ -231,6 +232,7 @@ function Stay({ data }: Ctx) {
           <span className="serif block text-[22px] leading-tight group-hover:text-forest">{viewer.room}</span>
           {list && <span className="mt-0.5 block text-meta text-moss">with {list}</span>}
         </span>
+        <span className="stay-action">Your itinerary <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14" /></svg></span>
       </Link>
     </section>
   );
@@ -326,7 +328,7 @@ function Forecast({
           <p className="text-meta text-mist">{data.trip.location}</p>
         </div>
         <div className="mt-7 md:mt-10">
-          <ForecastStrip days={days} weather={weather} today={today} playing={playing} />
+          <ForecastStrip days={days} weather={weather} today={today} playing={playing} slug={data.trip.slug} />
         </div>
         <Link
           href={`/t/${data.trip.slug}/weather`}
@@ -352,58 +354,15 @@ function Forecast({
   );
 }
 
-/**
- * The courses, laid out like a feature spread rather than a grid of equals: the first
- * gets a large photograph beside its details, the middle ones pair up at uneven widths,
- * and an odd one out runs the full width as a panorama. Phones swipe through all of them.
- */
-function Courses({ data, photos, weather, roundOf, heading }: Ctx & { heading: string }) {
+/** An interactive field guide, in the order this golfer plays. */
+function Courses({ data, photos, weather, heading }: Ctx & { heading: string }) {
   const golf = data.events.filter((e) => e.type === "golf");
-  if (golf.length === 0) return null;
-  const [lead, ...rest] = golf;
-  const props = (e: PublicEvent) => ({
-    event: e,
-    photo: photos[e.id],
-    slot: slotFor(e),
-    round: roundOf(e.id),
-    weather: weather[e.date],
-    href: `/t/${data.trip.slug}/courses/${slotName(e.title)}`,
-  });
-  const span = (i: number) => {
-    if (rest.length % 2 === 1 && i === rest.length - 1) return "md:col-span-12 md:h-[380px]";
-    const wideFirst = Math.floor(i / 2) % 2 === 0;
-    return `md:h-[460px] ${(i % 2 === 0) === wideFirst ? "md:col-span-7" : "md:col-span-5"}`;
-  };
-  const phone = "aspect-[4/5] w-[80vw] shrink-0 snap-start md:aspect-auto md:w-auto";
-
-  return (
-    <section aria-labelledby="courses" className="pt-12 md:pt-24">
-      <div className={`${WIDE} flex items-end justify-between gap-6`}>
-        <h2 id="courses" className="display text-[44px] md:text-[72px]">
-          {heading}
-        </h2>
-      </div>
-
-      <div className={`${WIDE} mt-10 hidden lg:block`}>
-        <CourseFeature {...props(lead)} sizes="(min-width: 1152px) 720px, 66vw" className="hidden lg:grid" />
-      </div>
-
-      <Carousel
-        label="The courses, in playing order"
-        className="mt-5 flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto scroll-smooth px-5 pb-1 [scrollbar-width:none] md:mx-auto md:mt-10 md:grid md:max-w-6xl md:grid-cols-12 md:gap-4 md:overflow-visible md:px-10 lg:mt-4 [&::-webkit-scrollbar]:hidden"
-      >
-        <CourseCard {...props(lead)} sizes="(min-width: 768px) 100vw, 84vw" className={`${phone} md:col-span-12 md:h-[420px] lg:hidden`} />
-        {rest.map((e, i) => (
-          <CourseCard
-            key={e.id}
-            {...props(e)}
-            sizes={`(min-width: 768px) ${span(i).includes("col-span-12") ? "100vw" : "58vw"}, 84vw`}
-            className={`${phone} ${span(i)}`}
-          />
-        ))}
-      </Carousel>
-    </section>
-  );
+  if (!golf.length) return null;
+  return <CourseExplorer heading={heading} courses={golf.map(e => ({
+    id: e.id, title: e.title, date: e.date, time: e.startTime,
+    photo: photos[e.id], slot: slotFor(e), weather: weather[e.date],
+    course: courseById(slotName(e.title)), href: `/t/${data.trip.slug}/courses/${slotName(e.title)}`,
+  }))} />;
 }
 
 /** The next few things on the schedule, in order and grouped by day, each leading to its day. */
@@ -466,18 +425,18 @@ function Before(ctx: Ctx) {
         tall
         title={
           <>
-            {/* Phones: the trip's name takes the masthead's place at the top of the picture,
-                and the dates are in the panel below. */}
-            <p className="hidden text-fact font-semibold md:block" style={{ "--i": 0 } as React.CSSProperties}>
-              {dateRange(trip.startDate, trip.endDate)}
-              {trip.location && <span className="ml-3 font-medium text-paper/85">{trip.location}</span>}
-            </p>
+            {/* The landscape leads; title and travel dates settle into its shaded foreground. */}
+
             <h1
-              className="title text-[2.5rem] md:mt-2 md:text-[clamp(4rem,9vw,8.5rem)]"
+              className="title text-[clamp(2.75rem,15vw,3.75rem)] md:mt-2 md:text-[clamp(4rem,9vw,8.5rem)]"
               style={{ "--i": 1 } as React.CSSProperties}
             >
               {trip.title}
             </h1>
+            <p className="mt-4 text-[13px] font-medium md:mt-5 md:text-ui" style={{ "--i": 2 } as React.CSSProperties}>
+              {dateRange(trip.startDate, trip.endDate)}
+              {trip.location && <span className="ml-3 font-medium text-paper/85">{trip.location}</span>}
+            </p>
           </>
         }
         panel={nextUp(ctx)}
