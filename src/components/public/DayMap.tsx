@@ -47,6 +47,7 @@ const MOVE = "transform 800ms cubic-bezier(0.2, 0.7, 0.2, 1)";
 export function DayMap({
   stops,
   homeId,
+  homeLabel,
   otherPlaceIds,
   dayName,
   activeEventId,
@@ -54,6 +55,8 @@ export function DayMap({
 }: {
   stops: MapStop[];
   homeId: string | null;
+  /** The viewer's room, by name */
+  homeLabel: string | null;
   /** Places used on other days: "Whole resort" pulls back far enough to take them in */
   otherPlaceIds: string[];
   dayName: string;
@@ -221,8 +224,8 @@ export function DayMap({
                 <path d="M2.5 7.5L8 3l5.5 4.5V13h-11z" />
               </svg>
             </span>
-            <span className="text-meta font-semibold">{home.name}</span>
-            <span className="ml-auto text-meta text-moss">Where we&rsquo;re staying</span>
+            <span className="text-meta font-semibold">{homeLabel ?? home.name}</span>
+            <span className="ml-auto text-meta text-moss">Where you&rsquo;re staying</span>
           </li>
         )}
         {stops.map((s) => {
