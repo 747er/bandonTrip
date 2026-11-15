@@ -115,6 +115,17 @@ export function WindExplorer({
   const map = useRef<MapLibre | null>(null);
   const live = useRef({ t: initialHour, dirty: true });
   const pins = useRef(new Map<string, HTMLElement>());
+  // A point the user has touched on the map, and where it currently is on screen.
+  const [probe, setProbe] = useState<{ lng: number; lat: number } | null>(null);
+  const [probeAt, setProbeAt] = useState<{ x: number; y: number } | null>(null);
+  const probeRef = useRef(probe);
+  useEffect(() => {
+    probeRef.current = probe;
+    const m = map.current;
+    // Deferred a tick so the position is set after React has finished this update.
+    const place = setTimeout(() => setProbeAt(probe && m ? m.project([probe.lng, probe.lat]) : null), 0);
+    return () => clearTimeout(place);
+  }, [probe]);
   const home = useRef<() => void>(() => {});
 
   // Where the group is at the chosen hour: wherever the day's most recent event began,
@@ -335,6 +346,12 @@ export function WindExplorer({
       particles.frame();
     };
 
+    // Touch the map anywhere for the wind at that spot. The reading follows the map.
+    m.on("click", (e) => setProbe({ lng: e.lngLat.lng, lat: e.lngLat.lat }));
+    m.on("move", () => {
+      const p = probeRef.current;
+      if (p) setProbeAt(m.project([p.lng, p.lat]));
+    });
     m.on("movestart", () => {
       moving = true;
       particles.clear();
@@ -373,6 +390,35 @@ export function WindExplorer({
   }, [playing, hours]);
 
   // ---- What the readout says for the chosen hour ----
+  // The wind at the touched point for the chosen hour, read from the same field the
+  // particles follow.
+  const reading = useMemo(() => {
+    if (!probe) return null;
+    const { lats, lons, u, v } = data.grid;
+    const rows = lats.length;
+    const cols = lons.length;
+    const time = Math.min(hours - 1, Math.max(0, t));
+    const h0 = Math.floor(time);
+    const h1 = Math.min(hours - 1, h0 + 1);
+    const f = time - h0;
+    const c = Math.min(cols - 1.001, Math.max(0, ((probe.lng - lons[0]) / (lons[cols - 1] - lons[0])) * (cols - 1)));
+    const r = Math.min(rows - 1.001, Math.max(0, ((probe.lat - lats[0]) / (lats[rows - 1] - lats[0])) * (rows - 1)));
+    const c0 = Math.floor(c);
+    const r0 = Math.floor(r);
+    const k = r0 * cols + c0;
+    const at = (field: number[][], i: number) => field[h0][i] + (field[h1][i] - field[h0][i]) * f;
+    const mix = (field: number[][]) =>
+      (at(field, k) * (1 - (c - c0)) + at(field, k + 1) * (c - c0)) * (1 - (r - r0)) +
+      (at(field, k + cols) * (1 - (c - c0)) + at(field, k + cols + 1) * (c - c0)) * (r - r0);
+    const east = mix(u);
+    const north = mix(v);
+    return {
+      mph: Math.round(Math.hypot(east, north)),
+      // Degrees the wind blows from
+      from: (Math.atan2(-east, -north) * 180) / Math.PI,
+    };
+  }, [probe, t, data, hours]);
+
   const h = Math.min(hours - 1, Math.round(t));
   const local = data.times[h];
   const date = local.slice(0, 10);
@@ -553,6 +599,31 @@ export function WindExplorer({
         <canvas ref={canvas} aria-hidden="true" className={`pointer-events-none absolute inset-0 h-full w-full transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`} />
         {/* Type sits over the top and bottom of the picture: shade only those. */}
         <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to bottom, rgb(13 33 27 / 0.75) 0%, rgb(13 33 27 / 0) 20%, rgb(13 33 27 / 0) 62%, rgb(13 33 27 / 0.8) 100%)" }} />
+
+        {/* The reading at a touched point: a dot, a short stem, and the wind there. */}
+        {probe && probeAt && reading && (
+          <div className="pointer-events-none absolute left-0 top-0 z-10" style={{ transform: `translate(${probeAt.x}px, ${probeAt.y}px)` }}>
+            <span className="absolute -left-[5px] -top-[5px] h-2.5 w-2.5 rounded-full border-2 border-forest-deep bg-paper" />
+            <span className="absolute -top-4 left-[-0.5px] h-3 w-px bg-paper/90" />
+            <div className="figures pointer-events-auto absolute bottom-4 left-0 flex -translate-x-4 items-center gap-2 whitespace-nowrap bg-forest-deep/92 py-1 pl-3 pr-1 text-limestone shadow-lg backdrop-blur-md">
+              <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true" style={{ transform: `rotate(${reading.from + 180}deg)` }}>
+                <path d="M7 1 L11 12 L7 9.5 L3 12 Z" fill="#d99a6c" />
+              </svg>
+              <span className="text-ui font-semibold">{reading.mph} mph</span>
+              <span className="text-meta text-mist">{compass(reading.from)}</span>
+              <button
+                type="button"
+                aria-label="Close the reading"
+                onClick={() => setProbe(null)}
+                className="flex h-9 w-9 items-center justify-center text-mist hover:text-limestone"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+                  <path d="M2 2l8 8M10 2l-8 8" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ---------- Phones: one line of readout across the top (the site header steps aside
             on this page), one strip of timeline, and the map ---------- */}
