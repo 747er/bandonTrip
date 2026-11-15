@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import type { CourseFacts } from "@/lib/catalog";
 import { directionsUrl } from "@/lib/links";
-import { clock, clockRange, dayCount, monthDay, weekday, weekdayShort } from "@/lib/time";
-import type { PublicEvent } from "@/lib/trip";
+import { clock, dayCount, monthDay, weekday, weekdayShort } from "@/lib/time";
+import { eventTimes, type PublicEvent } from "@/lib/trip";
 import type { DayWeather } from "@/lib/weather";
 import { Countdown } from "./Countdown";
 import { DayMap, type MapStop } from "./DayMap";
@@ -247,7 +247,7 @@ function Details({ event: e }: { event: PublicEvent }) {
   if (e.group) rows.push(["Who", e.group]);
 
   return (
-    <div className="space-y-4 text-ui">
+    <div className="flex flex-col gap-4 text-ui">
       {e.description && <p className="serif max-w-prose whitespace-pre-line text-[18px] leading-relaxed">{e.description}</p>}
       {rows.length > 0 && (
         <dl className="space-y-2">
@@ -260,8 +260,8 @@ function Details({ event: e }: { event: PublicEvent }) {
         </dl>
       )}
       {teeTimes.length > 0 && (
-        <table className="w-full max-w-lg">
-          <caption className="pb-1 text-left text-label text-moss">Tee times</caption>
+        <table className="order-first w-full max-w-lg">
+          <caption className="sr-only">Tee times</caption>
           <tbody className="divide-y divide-rule border-y border-rule">
             {teeTimes.map((t) => (
               <tr key={t.time}>
@@ -269,7 +269,12 @@ function Details({ event: e }: { event: PublicEvent }) {
                   {clock(t.time)}
                 </th>
                 <td className="py-2.5">
-                  {t.players.join(", ")}
+                  {t.players.map((p, i) => (
+                    <span key={p.name} className={p.ours ? "font-semibold" : "text-moss"}>
+                      {p.name}
+                      {i < t.players.length - 1 && ", "}
+                    </span>
+                  ))}
                   {t.note && <span className="block text-moss">{t.note}</span>}
                 </td>
               </tr>
@@ -314,7 +319,7 @@ function GolfEvent({ event: e, photos, slots, rounds, facts, states, atStart }: 
         <div className="absolute inset-x-0 bottom-0 p-5 md:p-7">
           <h3 className="display text-[clamp(2.5rem,8vw,4rem)]">{e.title}</h3>
           <p className="figures mt-3 text-fact font-semibold">
-            {e.startTime ? `Tee times ${clockRange(e.startTime, e.endTime)}` : "Tee times to come"}
+            {e.startTime ? `Tee times ${eventTimes(e)}` : "Tee times to come"}
           </p>
           {atStart[e.id] && (
             <p className="figures mt-1 text-meta font-semibold text-paper">At the first tee time: {atStart[e.id]}</p>
@@ -331,7 +336,7 @@ function GolfEvent({ event: e, photos, slots, rounds, facts, states, atStart }: 
         <div className="px-5 md:px-7">
           <Actions event={e} />
         </div>
-        <details className="event border-t border-rule">
+        <details className="event border-t border-rule" open={e.teeTimes.length > 0}>
           <summary className="flex min-h-14 items-center justify-between gap-4 px-5 text-ui font-semibold md:px-7">
             Pairings and details <Toggle />
           </summary>
@@ -365,7 +370,7 @@ function PlainEvent({ event: e, photos, slots, states, atStart, lateNote }: Even
           <span className="min-w-0 flex-1">
             <span className="serif block text-[23px] leading-tight md:text-[26px]">{e.title}</span>
             <span className="figures mt-1 block text-ui font-semibold sm:hidden">
-              {e.startTime ? clockRange(e.startTime, e.endTime) : "All day"}
+              {e.startTime ? eventTimes(e) : "All day"}
             </span>
             <span className="mt-0.5 block text-meta text-moss sm:mt-1">
               {state === "now" && <span className="mr-2 font-semibold text-copper">Now</span>}
@@ -376,7 +381,7 @@ function PlainEvent({ event: e, photos, slots, states, atStart, lateNote }: Even
             )}
           </span>
           <span className="figures hidden shrink-0 text-right text-ui font-semibold sm:block">
-            {e.startTime ? clockRange(e.startTime, e.endTime) : "All day"}
+            {e.startTime ? eventTimes(e) : "All day"}
           </span>
           <span className="text-moss">
             <Toggle />
