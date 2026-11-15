@@ -6,7 +6,7 @@ Bandon Dunes Golf Resort.
 
 ## Two halves
 
-- **Trip pages** (`/t/[slug]`): Home, Schedule, Scores, Crew. Styled as a travel publication.
+- **Trip pages** (`/t/[slug]`): Home, Schedule, Scores, Packing. Styled as a travel publication.
   The home page changes before, during and after the trip.
 - **Organizer** (`/admin`): plain, dense editing screens for the same data. Requires sign-in.
 
