@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { PackingList } from "@/components/public/PackingList";
 import { CLUB_NOTES, LEAVE_IN_ROOM, PACKING, SOURCES } from "@/lib/packing";
 import { dateRange, eachDay } from "@/lib/time";
-import { getTrip } from "@/lib/trip";
+import { getTrip } from "@/lib/viewer";
 import { getForecast } from "@/lib/weather";
 
 export const dynamic = "force-dynamic";
