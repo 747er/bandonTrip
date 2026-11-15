@@ -570,6 +570,12 @@ export function WindExplorer({
   const reset = () => { setProbe(null); home.current(); };
   const dayIndex = Math.max(0, dates.indexOf(date));
   const activeName = (shownAt === activePlace && shownTitle) || places.find(p => p.id === activePlace)?.name;
+  // "Fri 8:30 AM" without its day: when the event named in the card starts.
+  // With the player nowhere yet (before check-in, ahead of the day's first event), the
+  // card looks ahead to what is next that day.
+  const next = !activePlace ? events.find((e) => e.start > t && Math.floor(e.start / 24) === dayOf) : undefined;
+  const carded = shown && shownAt === activePlace ? shown : next;
+  const activeTime = carded ? carded.label.replace(/^\S+\s/, "") : null;
   const stats = [["Gusts", `${windGust} mph`], ["Temp", `${temperature}°F`], ["Rain", chance === null ? "n/a" : `${chance}%`]];
   const arrow = (
     <svg width="52" height="52" viewBox="0 0 52 52" className="wind-compass" role="img" aria-label={`Wind from the ${compass(windDirection)}`}>
@@ -593,7 +599,7 @@ export function WindExplorer({
           {arrow}<p className="wind-speed tabular">{windSpeed}<span>mph<small>from {compass(windDirection)}</small></span></p>
           <dl className="wind-stats">{stats.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
         </div>
-        <div className="wind-context"><span>{selectedPlace ? "Selected" : "Itinerary"}</span><strong>{activeName ?? "Resort overview"}</strong></div>
+        <div className="wind-context"><span>{selectedPlace ? "Selected" : next ? "Next up" : "Itinerary"}</span><strong>{activeName ?? next?.title ?? "Resort overview"}</strong>{activeTime && <span className="wind-context-time">{activeTime}</span>}</div>
         <p className={`wind-daylight ${dark ? "is-dark" : ""}`}><span className="wind-daylight-full">{light ?? "Daylight information unavailable"}</span><span className="wind-daylight-compact">{dark ? "After dark" : sunset > minuteNow && sunset - minuteNow <= 90 ? `${sunset - minuteNow} min of light` : day ? `Sunset ${hourLabel(day.sunset)}` : ""}</span></p>
       </aside>
 
