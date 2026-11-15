@@ -13,7 +13,9 @@ const TYPE_LABEL: Record<PublicEvent["type"], string> = {
 export function eventSummary(e: PublicEvent): string {
   const bits: string[] = [];
   if (e.type === "golf") {
-    bits.push(e.endTime && e.endTime !== e.startTime ? `Tee times until ${clock(e.endTime)}` : "Golf");
+    bits.push(
+      e.teeTimes.length === 0 && e.endTime && e.endTime !== e.startTime ? `Tee times until ${clock(e.endTime)}` : "Golf",
+    );
   } else if (TYPE_LABEL[e.type]) {
     bits.push(TYPE_LABEL[e.type]);
   }
