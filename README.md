@@ -3,7 +3,9 @@
 The hub site for our Bandon Dunes trip, November 19-22, 2026: an elevated spreadsheet for
 the group. An independent site, not affiliated with or endorsed by Bandon Dunes Golf Resort.
 
-There is no database, no sign-in and no admin. The trip is one file.
+There is no database, no sign-in and no admin. The trip is one file. Each person picks
+their name on the front door (remembered in a cookie on their device) and sees their own
+tee times, foursomes and room; our six also see the meals and outings.
 
 ## Changing the trip
 
