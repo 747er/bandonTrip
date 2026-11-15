@@ -44,7 +44,6 @@ export function TabNav({
   ];
   const isActive = (href: string) => (href === base ? pathname === base : pathname.startsWith(href));
   // The home page opens on a photograph, so its masthead is set in light type.
-  const year = title.match(/\b(19|20)\d{2}\b/)?.[0];
   const onCover = pathname === base || pathname === `${base}/weather` || pathname.startsWith(`${base}/courses/`);
   const ink = onCover ? "text-paper" : "text-forest-deep";
 
@@ -53,19 +52,13 @@ export function TabNav({
       {/* The wind map wants the whole phone screen: there the bottom bar is the only navigation. */}
       <div
         className={`h-14 items-center justify-between gap-8 px-5 md:flex md:h-20 md:justify-start md:px-10 ${
-          pathname === `${base}/weather` ? "hidden" : "flex"
+          // On phones the wind map wants the whole screen, and Home sets the trip's
+          // name at the top of its photograph instead.
+          pathname === `${base}/weather` || pathname === base ? "hidden" : "flex"
         }`}
       >
         <Link href={base} className={`serif text-[17px] italic ${ink}`}>
-          {onCover ? (
-            <>
-              BandonTrip
-              {/* On phones the home page has no big title, so the year rides with the name. */}
-              {pathname === base && year && <span className="md:hidden"> {year}</span>}
-            </>
-          ) : (
-            title
-          )}
+          {onCover ? "BandonTrip" : title}
         </Link>
 
         <nav aria-label="Trip" className="hidden md:block">
