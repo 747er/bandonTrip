@@ -1,0 +1,355 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import type { CourseFacts } from "@/lib/catalog";
+import { directionsUrl } from "@/lib/links";
+import { clock, clockRange, dayCount, monthDay, weekday, weekdayShort } from "@/lib/time";
+import type { PublicEvent } from "@/lib/trip";
+import type { DayWeather } from "@/lib/weather";
+import { Countdown } from "./Countdown";
+import { eventSummary } from "./EventList";
+import { Conditions, Scrim, TypeMark, type RoundInfo } from "./features";
+import { WeatherGlyph } from "./Glyphs";
+import { Photo, PhotoCredit, type PhotoData } from "./Photo";
+
+export type ScheduleProps = {
+  trip: { slug: string; title: string; location: string; dates: string };
+  days: string[];
+  /** Days that fall inside the trip, in order, for "Day two" labels */
+  tripDays: string[];
+  events: PublicEvent[];
+  names: Record<string, string>;
+  photos: Record<string, PhotoData>;
+  slots: Record<string, string>;
+  weather: Record<string, DayWeather>;
+  rounds: Record<string, RoundInfo>;
+  facts: Record<string, CourseFacts>;
+  /** "past" | "now" per event id, only set while the trip is under way */
+  states: Record<string, "past" | "now">;
+  initialDay: string;
+  today: string | null;
+  upNext: { title: string; date: string; target: string; now: string } | null;
+};
+
+export function ScheduleView(props: ScheduleProps) {
+  const { trip, days, tripDays, events, weather, today, upNext } = props;
+  const [day, setDay] = useState(props.initialDay);
+  const dayEvents = events.filter((e) => e.date === day);
+  const dayWeather = weather[day];
+  const dayIndex = tripDays.indexOf(day);
+
+  const choose = (date: string) => {
+    setDay(date);
+    const url = new URL(window.location.href);
+    url.searchParams.set("day", date);
+    window.history.replaceState(null, "", url);
+  };
+
+  return (
+    <div className="mx-auto max-w-6xl px-5 pb-16 pt-20 md:px-10 md:pt-32">
+      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
+        <h1 className="display text-[clamp(2.75rem,11vw,4.5rem)]">Schedule</h1>
+        <p className="pb-1.5 text-meta text-moss">
+          {trip.dates}. All times local to {trip.location || "the trip"}.
+        </p>
+      </div>
+
+      {/* Day picker: stays within reach while the day's events scroll. */}
+      <div
+        role="tablist"
+        aria-label="Trip days"
+        className="sticky top-0 z-20 -mx-5 mt-6 flex gap-1.5 overflow-x-auto bg-limestone/95 px-5 py-3 backdrop-blur-sm [scrollbar-width:none] md:mx-0 md:gap-2 md:px-0 [&::-webkit-scrollbar]:hidden"
+      >
+        {days.map((date) => {
+          const selected = date === day;
+          const w = weather[date];
+          const count = events.filter((e) => e.date === date).length;
+          return (
+            <button
+              key={date}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              aria-controls="day-panel"
+              onClick={() => choose(date)}
+              className={`group relative flex min-h-[4.25rem] min-w-[4.6rem] flex-1 items-center justify-between gap-2 px-3.5 py-2.5 text-left transition-colors duration-200 md:px-5 md:py-3.5 ${
+                selected
+                  ? "bg-forest text-limestone"
+                  : "bg-paper text-pine hover:bg-sand/40 active:bg-sand/60"
+              }`}
+            >
+              <span>
+                <span className={`block text-label font-semibold ${selected ? "text-mist" : "text-moss"}`}>
+                  {date === today ? "Today" : weekdayShort(date)}
+                </span>
+                <span className="display figures mt-0.5 block text-[28px] md:text-[34px]">
+                  {Number(date.slice(8))}
+                </span>
+              </span>
+              <span className={`hidden text-right text-label sm:block ${selected ? "text-limestone" : "text-moss"}`}>
+                {w && (
+                  <span className="figures flex items-center justify-end gap-1.5 font-semibold">
+                    <WeatherGlyph kind={w.kind} size={18} />
+                    {w.high}°
+                  </span>
+                )}
+                <span className="mt-1 block">
+                  {count} {count === 1 ? "event" : "events"}
+                </span>
+              </span>
+              {date === today && (
+                <span aria-hidden="true" className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-copper sm:hidden" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-8 grid gap-x-14 gap-y-10 lg:grid-cols-[minmax(0,1fr)_15rem]">
+        <section id="day-panel" role="tabpanel" aria-label={weekday(day)} key={day} className="day-panel min-w-0">
+          <header className="flex items-end justify-between gap-4">
+            <h2 className="display text-[44px] md:text-[60px]">{weekday(day)}</h2>
+            <p className="pb-1.5 text-right text-meta font-medium text-moss">
+              {monthDay(day)}
+              {dayIndex >= 0 && <span className="block">Day {dayCount(dayIndex + 1)}</span>}
+            </p>
+          </header>
+
+          {/* The selected day's conditions, right where the day begins. */}
+          <div className="mt-4 border-y border-pine py-4">
+            {dayWeather ? (
+              <>
+                <Conditions weather={dayWeather} tone="light" className="sm:justify-start sm:gap-x-12" />
+                <p className="mt-3 text-fine text-moss">
+                  Forecast for {trip.location || "the trip"} by{" "}
+                  <a className="underline underline-offset-2" href="https://open-meteo.com/" target="_blank" rel="noreferrer">
+                    Open-Meteo
+                  </a>
+                </p>
+              </>
+            ) : (
+              <p className="text-meta text-moss">No forecast for this day yet. It appears about two weeks out.</p>
+            )}
+          </div>
+
+          {dayEvents.length === 0 ? (
+            <p className="serif py-10 text-[19px] italic text-moss">Nothing scheduled for this day yet.</p>
+          ) : (
+            <ol className="mt-6 space-y-3">
+              {dayEvents.map((e) =>
+                e.type === "golf" ? (
+                  <GolfEvent key={e.id} event={e} {...props} />
+                ) : (
+                  <PlainEvent key={e.id} event={e} {...props} />
+                ),
+              )}
+            </ol>
+          )}
+        </section>
+
+        {/* A slim rail on wide screens; on phones it closes the day as a short footer. */}
+        <aside className="border-t border-pine pt-5 lg:sticky lg:top-28 lg:self-start lg:border-l lg:border-t-0 lg:border-rule lg:pl-8 lg:pt-0">
+          {upNext && (
+            <div className="mb-4">
+              <p className="text-meta text-moss">
+                Up next in{" "}
+                <Countdown className="font-semibold lowercase text-pine" target={upNext.target} initialNow={upNext.now} />
+              </p>
+              <p className="serif mt-1 text-[24px] leading-tight">{upNext.title}</p>
+              {upNext.date !== day && (
+                <button type="button" className="action" onClick={() => choose(upNext.date)}>
+                  Go to {weekday(upNext.date)}
+                </button>
+              )}
+            </div>
+          )}
+          <div className="flex flex-wrap gap-x-8 lg:flex-col">
+            <a className="action" href={`/t/${trip.slug}/calendar.ics`}>
+              Add the whole trip to your calendar
+            </a>
+            <Link className="action" href={`/t/${trip.slug}/crew`}>
+              Rooms and pairings
+            </Link>
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+type EventProps = ScheduleProps & { event: PublicEvent };
+
+function Actions({ event, slug }: { event: PublicEvent; slug: string }) {
+  return (
+    <div className="flex flex-wrap gap-x-7">
+      {(event.venue || event.address) && (
+        <a className="action" href={directionsUrl(event)} target="_blank" rel="noreferrer">
+          Get directions
+        </a>
+      )}
+      <a className="action" href={`/t/${slug}/calendar.ics?event=${event.id}`}>
+        Add to calendar
+      </a>
+    </div>
+  );
+}
+
+function Details({ event: e, names }: { event: PublicEvent; names: Record<string, string> }) {
+  const attendees =
+    e.audience.kind === "everyone" ? [] : e.audience.ids.map((id) => names[id]).filter(Boolean);
+  const teeTimes = e.teeTimes.filter((t) => t.playerIds.length > 0 || t.note);
+  const rows: [string, string][] = [];
+  if (e.venue && e.venue !== e.title) rows.push(["Where", e.venue]);
+  if (e.address) rows.push(["Address", e.address]);
+  if (e.partySize) rows.push(["Party", `${e.partySize}`]);
+  if (e.reservationNote) rows.push(["Reservation", e.reservationNote]);
+  if (attendees.length) rows.push(["Who", attendees.join(", ")]);
+
+  return (
+    <div className="space-y-4 text-ui">
+      {e.description && <p className="serif max-w-prose whitespace-pre-line text-[18px] leading-relaxed">{e.description}</p>}
+      {rows.length > 0 && (
+        <dl className="space-y-2">
+          {rows.map(([label, value]) => (
+            <div key={label} className="flex gap-3">
+              <dt className="w-24 shrink-0 pt-0.5 text-label text-moss">{label}</dt>
+              <dd className="font-medium">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {teeTimes.length > 0 && (
+        <table className="w-full max-w-lg">
+          <caption className="pb-1 text-left text-label text-moss">Tee times</caption>
+          <tbody className="divide-y divide-rule border-y border-rule">
+            {teeTimes.map((t) => (
+              <tr key={t.id}>
+                <th scope="row" className="figures w-24 py-2.5 text-left align-top font-semibold">
+                  {clock(t.time)}
+                </th>
+                <td className="py-2.5">
+                  {t.playerIds.map((id) => names[id]).filter(Boolean).join(", ")}
+                  {t.note && <span className="block text-moss">{t.note}</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+const Toggle = () => (
+  <svg
+    className="toggle shrink-0"
+    width="20"
+    height="20"
+    viewBox="0 0 18 18"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    aria-hidden="true"
+  >
+    <path d="M9 3v12M3 9h12" />
+  </svg>
+);
+
+/** Golf leads the day: the course's photograph, round and tee times up front. */
+function GolfEvent({ event: e, photos, slots, rounds, facts, states, names, trip }: EventProps) {
+  const round = rounds[e.id];
+  const fact = facts[e.id];
+  const state = states[e.id];
+  return (
+    <li className={state === "past" ? "opacity-60" : ""}>
+      <div className="relative isolate aspect-[4/3] overflow-hidden bg-forest-deep text-paper sm:aspect-[16/8]">
+        <Photo photo={photos[e.id]} slot={slots[e.id]} sizes="(min-width: 1152px) 800px, 100vw" />
+        <Scrim />
+        <div className="absolute inset-x-0 top-0 flex justify-between p-5 text-meta font-semibold md:p-7">
+          <span>{round ? `Round ${round.number} of ${round.total}` : "Golf"}</span>
+          {state === "now" && <span className="bg-copper px-2 py-0.5 text-paper">Now</span>}
+        </div>
+        <div className="absolute inset-x-0 bottom-0 p-5 md:p-7">
+          <h3 className="display text-[clamp(2.5rem,8vw,4rem)]">{e.title}</h3>
+          <p className="figures mt-3 text-fact font-semibold">
+            {e.startTime ? `Tee times ${clockRange(e.startTime, e.endTime)}` : "Tee times to come"}
+          </p>
+          <p className="figures mt-1 text-meta font-medium text-paper/90">
+            {[round && `Par ${round.par}`, fact && `${fact.designer}, ${fact.opened}`]
+              .filter(Boolean)
+              .join(". ")}
+          </p>
+          <PhotoCredit photo={photos[e.id]} className="mt-1 block" />
+        </div>
+      </div>
+      <div className="bg-paper">
+        <div className="px-5 md:px-7">
+          <Actions event={e} slug={trip.slug} />
+        </div>
+        <details className="event border-t border-rule">
+          <summary className="flex min-h-14 items-center justify-between gap-4 px-5 text-ui font-semibold md:px-7">
+            Pairings and details <Toggle />
+          </summary>
+          <div className="event-body px-5 pb-5 pt-1 md:px-7">
+            <Details event={e} names={names} />
+            {e.teeTimes.every((t) => t.playerIds.length === 0 && !t.note) && (
+              <p className="mt-3 text-meta text-moss">Pairings will appear here once they are set.</p>
+            )}
+          </div>
+        </details>
+      </div>
+    </li>
+  );
+}
+
+/** Meals and everything else: a compact row that opens for details. */
+function PlainEvent({ event: e, photos, slots, states, names, trip }: EventProps) {
+  const state = states[e.id];
+  const photo = photos[e.id];
+  return (
+    <li className={state === "past" ? "opacity-60" : ""}>
+      <details className={`event border-l-[3px] bg-paper ${e.type === "dining" ? "border-copper" : "border-moss"}`}>
+        <summary className="flex min-h-[5rem] items-center gap-4 p-4 md:px-5">
+          {photo ? (
+            <span className="relative block h-14 w-14 shrink-0 overflow-hidden bg-forest-deep">
+              <Photo photo={photo} slot={slots[e.id]} sizes="56px" />
+            </span>
+          ) : (
+            <TypeMark type={e.type} />
+          )}
+          <span className="min-w-0 flex-1">
+            <span className="serif block text-[23px] leading-tight md:text-[26px]">{e.title}</span>
+            <span className="figures mt-1 block text-ui font-semibold sm:hidden">
+              {e.startTime ? clockRange(e.startTime, e.endTime) : "All day"}
+            </span>
+            <span className="mt-0.5 block text-meta text-moss sm:mt-1">
+              {state === "now" && <span className="mr-2 font-semibold text-copper">Now</span>}
+              {eventSummary(e)}
+            </span>
+          </span>
+          <span className="figures hidden shrink-0 text-right text-ui font-semibold sm:block">
+            {e.startTime ? clockRange(e.startTime, e.endTime) : "All day"}
+          </span>
+          <span className="text-moss">
+            <Toggle />
+          </span>
+        </summary>
+        <div className="event-body grid gap-5 border-t border-rule p-4 md:grid-cols-[1fr_auto] md:p-5">
+          <div>
+            <Details event={e} names={names} />
+            <div className="mt-2">
+              <Actions event={e} slug={trip.slug} />
+            </div>
+          </div>
+          {photo && (
+            <div className="relative aspect-[4/3] w-full overflow-hidden md:w-56">
+              <Photo photo={photo} slot={slots[e.id]} sizes="224px" />
+            </div>
+          )}
+        </div>
+      </details>
+    </li>
+  );
+}
