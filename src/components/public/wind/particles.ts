@@ -90,7 +90,7 @@ export class WindParticles {
     this.canvas.height = Math.max(1, Math.round(height * dpr));
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
 
-    const count = Math.min(5000, Math.max(600, Math.round((width * height) / 320)));
+    const count = Math.min(2000, Math.max(240, Math.round((width * height) / 800)));
     this.count = count;
     this.x = new Float32Array(count);
     this.y = new Float32Array(count);
