@@ -3,21 +3,18 @@
 import Link from "next/link";
 import { useState } from "react";
 import { directionsUrl } from "@/lib/links";
-import { clock, dayCount, monthDay, weekday, weekdayShort } from "@/lib/time";
+import { clock, monthDay, weekday, weekdayShort } from "@/lib/time";
 import { eventTimes, type PublicEvent } from "@/lib/trip";
 import type { DayWeather } from "@/lib/weather";
-import { Countdown } from "./Countdown";
 import { DayMap, type MapStop } from "./DayMap";
 import { eventSummary } from "./EventList";
 import { Conditions, TypeMark, type RoundInfo } from "./features";
-import { WeatherGlyph } from "./Glyphs";
+import { WeatherGlyph, WindGlyph } from "./Glyphs";
 import { Photo, PhotoCredit, type PhotoData } from "./Photo";
 
 export type ScheduleProps = {
   trip: { slug: string; title: string; location: string; dates: string };
   days: string[];
-  /** Days that fall inside the trip, in order, for "Day two" labels */
-  tripDays: string[];
   events: PublicEvent[];
   photos: Record<string, PhotoData>;
   slots: Record<string, string>;
@@ -39,15 +36,13 @@ export type ScheduleProps = {
   homePlace: string | null;
   initialDay: string;
   today: string | null;
-  upNext: { title: string; date: string; target: string; now: string; timeZone: string } | null;
 };
 
 export function ScheduleView(props: ScheduleProps) {
-  const { trip, days, tripDays, events, weather, today, upNext } = props;
+  const { trip, days, events, weather, today } = props;
   const [day, setDay] = useState(props.initialDay);
   const dayEvents = events.filter((e) => e.date === day);
   const dayWeather = weather[day];
-  const dayIndex = tripDays.indexOf(day);
   const [activeStop, setActiveStop] = useState<string | null>(null);
   const stops: MapStop[] = dayEvents
     .filter((e) => props.places[e.id])
@@ -135,7 +130,6 @@ export function ScheduleView(props: ScheduleProps) {
             <h2 className="display text-[44px] md:text-[60px]">{weekday(day)}</h2>
             <p className="pb-1.5 text-right text-meta font-medium text-moss">
               {monthDay(day)}
-              {dayIndex >= 0 && <span className="block">Day {dayCount(dayIndex + 1)}</span>}
             </p>
           </header>
 
@@ -144,17 +138,20 @@ export function ScheduleView(props: ScheduleProps) {
             {dayWeather ? (
               <>
                 <Conditions weather={dayWeather} tone="light" className="sm:justify-start sm:gap-x-12" />
-                {props.daylight[day] && (
-                  <p className="figures mt-3 text-meta font-medium">
-                    Sunrise {props.daylight[day].sunrise}, sunset {props.daylight[day].sunset}
-                    <Link
-                      className="ml-4 font-semibold underline decoration-copper decoration-1 underline-offset-[5px] hover:text-copper"
-                      href={`/t/${trip.slug}/weather`}
-                    >
-                      Hour by hour on the wind map
-                    </Link>
-                  </p>
-                )}
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+                  {props.daylight[day] && (
+                    <p className="figures text-meta font-medium">
+                      Sunrise {props.daylight[day].sunrise}, sunset {props.daylight[day].sunset}
+                    </p>
+                  )}
+                  <Link
+                    href={`/t/${trip.slug}/weather?day=${day}`}
+                    className="inline-flex min-h-11 items-center gap-2 bg-forest px-4 text-meta font-semibold text-limestone transition-colors hover:bg-forest-deep"
+                  >
+                    <WindGlyph size={17} />
+                    Wind map
+                  </Link>
+                </div>
                 <p className="mt-3 text-fine text-moss">
                   Forecast for {trip.location || "the trip"} by{" "}
                   <a className="underline underline-offset-2" href="https://open-meteo.com/" target="_blank" rel="noreferrer">
@@ -199,25 +196,6 @@ export function ScheduleView(props: ScheduleProps) {
               />
             </section>
           )}
-          {upNext && (
-            <div className="mb-4">
-              <p className="text-meta text-moss">
-                Up next{" "}
-                <Countdown className="font-semibold text-pine" target={upNext.target} initialNow={upNext.now} timeZone={upNext.timeZone} />
-              </p>
-              <p className="serif mt-1 text-[24px] leading-tight">{upNext.title}</p>
-              {upNext.date !== day && (
-                <button type="button" className="action" onClick={() => choose(upNext.date)}>
-                  Go to {weekday(upNext.date)}
-                </button>
-              )}
-            </div>
-          )}
-          <div className="flex flex-wrap gap-x-8 lg:flex-col">
-            <Link className="action" href={`/t/${trip.slug}/packing`}>
-              Packing list
-            </Link>
-          </div>
         </aside>
       </div>
     </div>
