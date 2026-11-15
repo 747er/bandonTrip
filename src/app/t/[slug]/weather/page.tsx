@@ -53,6 +53,7 @@ export default async function WeatherPage({ params }: PageProps<"/t/[slug]/weath
         end: Math.max(start, end),
         label: `${weekdayShort(e.date)} ${clockRange(e.startTime, e.endTime)}`,
         place: placeId && GEO[placeId] ? GEO[placeId] : null,
+        placeId: placeId && GEO[placeId] ? placeId : null,
         sunsetNote: late > 0 && day ? `Sunset ${clock(day.sunset.slice(11))}` : null,
       },
     ];
@@ -68,6 +69,12 @@ export default async function WeatherPage({ params }: PageProps<"/t/[slug]/weath
     lat: GEO[id][0],
     lon: GEO[id][1],
     home: id === homeId,
+    kind:
+      id === homeId
+        ? "home"
+        : (["golf", "dining"] as const).find((type) =>
+            events.some((e) => e.type === type && placeFor(e.title, e.venue) === id),
+          ) ?? "other",
     // Two places a short walk apart: the western one carries its label on the left.
     side: placeIds.some(
       (other) =>
