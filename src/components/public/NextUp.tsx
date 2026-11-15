@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { directionsUrl } from "@/lib/links";
 import { monthDay, weekday } from "@/lib/time";
-import { eventTimes, type PublicEvent } from "@/lib/trip";
+import { eventTimes, teeLabel, type PublicEvent } from "@/lib/trip";
 import type { DayWeather } from "@/lib/weather";
 import { Countdown } from "./Countdown";
 import { eventSummary } from "./EventList";
@@ -106,11 +105,6 @@ export function NextUp({
       <div className="flex items-center justify-between border-b border-rule-light pl-5 @md:pl-7">
         <p className="figures text-label text-mist" aria-live="polite">
           <span className="font-semibold text-limestone">{index + 1}</span> of {slides.length}
-          {index !== initial && (
-            <button type="button" onClick={() => go(initial)} className="ml-3 min-h-11 font-semibold text-limestone underline decoration-copper-light decoration-1 underline-offset-4">
-              Back to what&rsquo;s next
-            </button>
-          )}
         </p>
         <div className="flex">
           <button type="button" className={button} aria-label="Previous event" disabled={index === 0} onClick={() => go(index - 1)}>
@@ -164,7 +158,7 @@ export function NextUp({
                     <li className="flex items-start gap-3 font-semibold">
                       <span className="mt-0.5">{icon.time}</span>
                       <span>
-                        {golf && <span className="mr-2 font-medium text-mist">Tee times</span>}
+                        {golf && <span className="mr-2 font-medium text-mist">{teeLabel(event)}</span>}
                         {eventTimes(event)}
                       </span>
                     </li>
@@ -180,9 +174,6 @@ export function NextUp({
                 <Link className="action" href={`/t/${slug}/schedule?day=${event.date}`}>
                   {weekday(event.date)}&rsquo;s schedule
                 </Link>
-                <a className="action" href={directionsUrl(event)} target="_blank" rel="noreferrer">
-                  Directions
-                </a>
               </div>
             </article>
           );
