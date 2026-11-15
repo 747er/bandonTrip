@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { monthDayShort, weekday, weekdayShort } from "@/lib/time";
+import { monthDay, weekday } from "@/lib/time";
 import { eventTimes, type PublicEvent } from "@/lib/trip";
 import type { DayWeather } from "@/lib/weather";
 import { Countdown } from "./Countdown";
-import { WeatherGlyph, WindGlyph } from "./Glyphs";
+import { Conditions } from "./features";
 
 export type MobileStop = {
   event: PublicEvent;
@@ -19,10 +19,24 @@ const Arrow = ({ back = false }: { back?: boolean }) => (
   </svg>
 );
 
+const line = {
+  width: 19,
+  height: 19,
+  viewBox: "0 0 18 18",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.3,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true,
+  className: "shrink-0 text-mist",
+};
+
 /**
- * Phones only. A dark panel that rides up over the foot of the hero photograph, saying
- * what is on, when, and what the weather is doing. It opens on whatever is next, and
- * its arrows step through every event on the trip in order.
+ * Phones only. A field of deep green that rises over the foot of the hero photograph
+ * along a curve, as the panel does on wide screens. It says what is on, when, and what
+ * the weather is doing; it opens on whatever is next, and its arrows step through every
+ * event on the trip in order.
  */
 export function MobileDay({
   stops,
@@ -48,33 +62,56 @@ export function MobileDay({
   start: string | null;
 }) {
   const [index, setIndex] = useState(initial);
-  const { event, weather: w } = stops[index];
+  const { event, weather } = stops[index];
   const isNext = live && index === initial;
   const button =
     "flex h-11 w-10 items-center justify-center text-limestone transition-colors enabled:active:bg-limestone/10 disabled:opacity-25";
 
   return (
-    <div className="relative z-10 bg-forest-deep pb-6 text-limestone md:hidden">
-      {/* Pulled up over the photograph, so picture and plan read as one. */}
-      <section
-        aria-roledescription="carousel"
-        aria-label="Trip events, in order"
-        className="relative mx-4 -mt-16 overflow-hidden bg-forest px-5 pb-5 pt-2 shadow-[0_18px_40px_-18px_rgb(0_0_0/0.7)]"
+    <section
+      aria-roledescription="carousel"
+      aria-label="Trip events, in order"
+      className="on-forest relative z-10 -mt-px text-limestone md:hidden"
+      style={{ background: "linear-gradient(to bottom, #1b3d31 0%, #17332b 40%, #10261f 100%)" }}
+    >
+      {/* The top edge: a curve cut into the photograph, with a fine copper line along it. */}
+      <svg
+        aria-hidden="true"
+        className="absolute inset-x-0 bottom-full block h-[4.5rem] w-full"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
       >
-        <svg aria-hidden="true" className="absolute -right-10 -top-12 h-52 w-52 opacity-[0.09]" viewBox="0 0 200 200" fill="none" stroke="#e9e7e0" strokeWidth="1">
-          {[22, 38, 54, 70, 86, 98].map((r, k) => (
-            <ellipse key={r} cx="120" cy="80" rx={r} ry={r * 0.84} transform={`rotate(${k * 9} 120 80)`} />
-          ))}
-        </svg>
+        <path d="M0 101 L0 92 C 28 62 62 78 100 0 L100 101 Z" fill="#1b3d31" />
+        <path d="M0 92 C 28 62 62 78 100 0" fill="none" stroke="#d99a6c" strokeWidth="1.25" opacity="0.65" vectorEffect="non-scaling-stroke" />
+      </svg>
+      {/* Contour lines, like a course map. */}
+      <svg aria-hidden="true" className="absolute inset-0 h-full w-full opacity-[0.1]" viewBox="0 0 400 420" preserveAspectRatio="xMidYMid slice" fill="none" stroke="#e9e7e0" strokeWidth="1">
+        {[0, 1, 2, 3, 4].map((k) => (
+          <path key={k} d={`M${170 + k * 44} -10 C ${250 + k * 36} ${34 + k * 14}, ${330 + k * 22} ${60 + k * 34}, 410 ${92 + k * 52}`} vectorEffect="non-scaling-stroke" />
+        ))}
+        {[0, 1, 2, 3].map((k) => (
+          <path key={`b${k}`} d={`M-10 ${330 + k * 26} C ${70 + k * 12} ${318 + k * 20}, ${150 + k * 20} ${352 + k * 18}, ${220 + k * 34} 430`} vectorEffect="non-scaling-stroke" />
+        ))}
+      </svg>
 
-        <div className="relative flex items-center justify-between">
-          <p className="flex items-baseline gap-2.5" aria-live="polite">
-            <span className="text-[11.5px] font-bold uppercase tracking-[0.16em] text-copper-light">
-              {isNext ? (underway ? "Happening now" : event.type === "golf" ? "Next round" : "Next up") : weekday(event.date)}
+      <div className="relative px-6 pb-6 pt-1">
+        <div className="flex items-center justify-between">
+          <p className="flex items-center gap-3 text-meta text-mist" aria-live="polite">
+            <span>
+              {isNext ? (
+                underway ? (
+                  <span className="font-semibold text-copper-light">Happening now</span>
+                ) : (
+                  <>
+                    Next up{" "}
+                    {start && <Countdown className="font-semibold text-limestone" target={start} initialNow={now} timeZone={timeZone} />}
+                  </>
+                )
+              ) : (
+                weekday(event.date)
+              )}
             </span>
-            {isNext && !underway && start && (
-              <Countdown className="text-label text-mist" target={start} initialNow={now} timeZone={timeZone} />
-            )}
+            <span aria-hidden="true" className="h-px w-9 bg-copper-light" />
           </p>
           <div className="-mr-3 flex">
             <button type="button" className={button} aria-label="Previous event" disabled={index === 0} onClick={() => setIndex(index - 1)}>
@@ -86,42 +123,36 @@ export function MobileDay({
           </div>
         </div>
 
-        <div key={event.id} className="day-panel relative">
-          <h2 className="display text-[2.375rem]">{event.title}</h2>
-          <p className="figures mt-2.5 flex flex-wrap gap-x-3 text-ui">
-            <span className="text-mist">
-              {weekdayShort(event.date)}, {monthDayShort(event.date)}
-            </span>
-            {event.startTime && <span className="font-semibold">{eventTimes(event)}</span>}
-          </p>
-          <div className="mt-5 flex items-end justify-between gap-4">
-            {w ? (
-              <p className="figures flex items-center gap-3.5 text-meta">
-                <span className="inline-flex items-center gap-1.5 font-semibold">
-                  <WeatherGlyph kind={w.kind} size={20} className="text-mist" />
-                  {w.high}°
-                </span>
-                <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                  <WindGlyph size={17} className="text-mist" />
-                  <span className="font-semibold">{w.gust !== null ? `${w.wind}–${w.gust}` : w.wind}</span>
-                  <span className="text-mist">mph</span>
-                </span>
-              </p>
-            ) : (
-              <span />
-            )}
-            <Link
-              href={`/t/${slug}/schedule?day=${event.date}`}
-              className="-mb-1.5 -mr-1 inline-flex min-h-11 shrink-0 items-center gap-2 bg-limestone px-4 text-meta font-semibold text-pine active:bg-paper"
-            >
-              Schedule
-              <svg width="7" height="12" viewBox="0 0 8 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M1 1l6 6-6 6" />
+        <div key={event.id} className="day-panel">
+          <h2 className="display mt-1 text-[2.75rem]">{event.title}</h2>
+          <ul className="figures mt-4 space-y-2.5 text-ui">
+            <li className="flex items-center gap-3 font-medium">
+              <svg {...line}>
+                <rect x="2.5" y="3.5" width="13" height="12" rx="1" />
+                <path d="M2.5 7.5h13M6 2v3M12 2v3" />
               </svg>
-            </Link>
-          </div>
+              {weekday(event.date)}, {monthDay(event.date)}
+            </li>
+            {event.startTime && (
+              <li className="flex items-center gap-3 font-semibold">
+                <svg {...line}>
+                  <circle cx="9" cy="9" r="6.5" />
+                  <path d="M9 5.5V9l2.5 1.5" />
+                </svg>
+                <span>
+                  {event.type === "golf" && <span className="mr-2 font-medium text-mist">Tee times</span>}
+                  {eventTimes(event)}
+                  {event.partySize && <span className="ml-2 font-medium text-mist">party of {event.partySize}</span>}
+                </span>
+              </li>
+            )}
+          </ul>
+          {weather && <Conditions weather={weather} className="mt-5 border-y border-rule-light py-4" />}
+          <Link className="action mt-1" href={`/t/${slug}/schedule?day=${event.date}`}>
+            Schedule
+          </Link>
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
   );
 }
