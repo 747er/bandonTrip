@@ -13,11 +13,10 @@ const icons = {
   ),
   schedule: <path d="M4 6.5h14M4 11.5h14M4 16.5h9" />,
   scores: <path d="M5 18V11M11 18V5M17 18v-9" />,
-  crew: (
+  packing: (
     <>
-      <circle cx="8" cy="8" r="3" />
-      <path d="M2.5 18c.6-3 2.7-4.6 5.5-4.6s4.9 1.6 5.5 4.6" />
-      <path d="M14.5 5.2a3 3 0 010 5.6M16.5 13.8c1.6.6 2.7 2 3.1 4.2" />
+      <path d="M5 8.5h12v9.5a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 015 18z" />
+      <path d="M8.5 8.5V6a2.5 2.5 0 015 0v2.5M5 13h12" />
     </>
   ),
 };
@@ -37,7 +36,7 @@ export function TabNav({
     { href: base, label: "Home", icon: icons.home },
     { href: `${base}/schedule`, label: "Schedule", icon: icons.schedule },
     { href: `${base}/scores`, label: "Scores", icon: icons.scores },
-    { href: `${base}/crew`, label: "Crew", icon: icons.crew },
+    { href: `${base}/packing`, label: "Packing", icon: icons.packing },
   ];
   const isActive = (href: string) => (href === base ? pathname === base : pathname.startsWith(href));
   // The home page opens on a photograph, so its masthead is set in light type.
@@ -53,7 +52,7 @@ export function TabNav({
 
         <nav aria-label="Trip" className="hidden md:block">
           <ul className="flex gap-8">
-            {[...tabs, { href: `${base}/packing`, label: "Packing", icon: null }].map((tab) => {
+            {tabs.map((tab) => {
               const active = isActive(tab.href);
               return (
                 <li key={tab.href}>
