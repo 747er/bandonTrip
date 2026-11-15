@@ -538,7 +538,6 @@ function Before(ctx: Ctx) {
   const { data, hero, weather } = ctx;
   const { trip, events } = data;
   const golf = events.filter((e) => e.type === "golf");
-  const first = events.find((e) => e.startTime) ?? events[0];
   const { card, cardDate } = nextUp(ctx);
 
   return (
@@ -570,7 +569,7 @@ function Before(ctx: Ctx) {
       <Stay {...ctx} />
       <Courses {...ctx} heading={golf.length === 1 ? "The course" : "The courses"} />
       <Forecast data={data} weather={weather} />
-      <ComingUp {...ctx} list={events.filter((e) => e.id !== first?.id).slice(0, 3)} heading="Coming up" />
+      <ComingUp {...ctx} list={events.slice(0, 4)} heading="Coming up" />
     </>
   );
 }
