@@ -117,7 +117,7 @@ export function WhoSheet({
 
         <div className="relative mx-auto flex min-h-full w-full max-w-6xl flex-col px-5 pb-10 pt-4 md:px-10 md:pb-14 md:pt-7">
           <div className="flex items-center justify-between">
-            <p className="serif text-[17px] italic">BandonTrip</p>
+            <p className="serif text-[17px] italic">Broken Top Members Trip 2026</p>
             {viewer && (
               <button
                 type="button"
@@ -134,8 +134,7 @@ export function WhoSheet({
 
           <div className="my-auto py-8 md:py-12">
             <h2 className="display text-[clamp(3rem,11vw,6rem)]">Who&rsquo;s playing?</h2>
-            {viewer && <p className="mt-4 text-meta text-copper-light">Currently viewing as {viewer.firstName}</p>}
-            <p className="mt-3 max-w-md text-meta text-mist md:text-ui">
+            <p className="mt-4 max-w-md text-meta text-mist md:text-ui">
               Choose your name for your tee times, your foursomes and where you&rsquo;re staying.
             </p>
 
