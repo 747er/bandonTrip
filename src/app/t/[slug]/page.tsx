@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Carousel } from "@/components/public/Carousel";
+import { contours } from "@/components/public/contours";
 import { eventSummary } from "@/components/public/EventList";
 import {
   CourseCard,
@@ -9,6 +10,7 @@ import {
   ForecastStrip,
   type RoundInfo,
 } from "@/components/public/features";
+import { WindGlyph } from "@/components/public/Glyphs";
 import { MobileDay, type MobileStop } from "@/components/public/MobileDay";
 import { NextUp, type NextUpSlide } from "@/components/public/NextUp";
 import { Photo, PhotoCredit, type PhotoData } from "@/components/public/Photo";
@@ -16,8 +18,6 @@ import { HERO_SLOT, photoFor, photosForEvents, slotFor, slotName } from "@/lib/p
 import {
   addDays,
   dateRange,
-  dayCount,
-  daysBetween,
   eachDay,
   monthDay,
   weekday,
@@ -82,18 +82,6 @@ const HERO_SHORT = "md:h-[64svh] md:min-h-[600px] lg:h-[70svh]";
 const PANEL_W = "md:w-[max(34%,18.5rem)]";
 const PANEL_GAP = "md:right-[max(34%,18.5rem)]";
 
-/** Contour lines, like a course map: rings around a point, each with a slow wobble. */
-function contours(cx: number, cy: number, rings: number, gap: number, phase: number) {
-  return Array.from({ length: rings }, (_, k) => {
-    const r = (k + 1) * gap;
-    const points = Array.from({ length: 73 }, (_, n) => {
-      const a = (n / 72) * Math.PI * 2;
-      const w = 1 + 0.09 * Math.sin(3 * a + k * 0.6 + phase) + 0.05 * Math.sin(5 * a + k * 1.1 + phase * 2);
-      return `${(cx + Math.cos(a) * r * w).toFixed(1)},${(cy + Math.sin(a) * r * w * 0.86).toFixed(1)}`;
-    });
-    return points.join(" ");
-  });
-}
 const CONTOURS = [...contours(360, 70, 9, 34, 0.4), ...contours(40, 760, 7, 38, 2.1)];
 
 /**
@@ -118,7 +106,7 @@ function Cover({
   /** Phones get their own day tabs and summary in place of the strip and the panel */
   phone?: React.ReactNode;
 }) {
-  const photoHeight = tall ? "h-[50svh] min-h-[360px]" : "h-[44svh] min-h-[330px]";
+  const photoHeight = tall ? "h-[48svh] min-h-[340px]" : "h-[42svh] min-h-[310px]";
   const heroHeight = tall ? HERO_TALL : HERO_SHORT;
   return (
     <section className="relative">
@@ -143,19 +131,11 @@ function Cover({
               "radial-gradient(120% 85% at 0% 100%, rgb(13 33 27 / 0.9) 0%, rgb(13 33 27 / 0.5) 42%, rgb(13 33 27 / 0) 72%)",
           }}
         />
-        {phone && (
-          <div
-            aria-hidden="true"
-            className="absolute inset-x-0 bottom-0 h-1/2 md:hidden"
-            style={{
-              background:
-                "linear-gradient(to top, #0d211b 0%, rgb(13 33 27 / 0.8) 30%, rgb(13 33 27 / 0) 100%)",
-            }}
-          />
-        )}
         <PhotoCredit photo={hero} className="absolute right-4 top-16 md:bottom-3 md:left-10 md:right-auto md:top-auto" />
         <div
-          className={`hero-copy absolute inset-x-0 bottom-0 px-6 ${phone ? "pb-[4.75rem]" : "pb-6"} text-paper md:px-10 md:pb-12 lg:pb-14 xl:pl-[max(2.5rem,calc((100vw-72rem)/2+2.5rem))] ${
+          className={`hero-copy absolute inset-x-0 px-5 text-paper ${
+            phone ? "top-0 pt-3 md:bottom-0 md:top-auto md:pt-0" : "bottom-0 pb-6"
+          } md:px-10 md:pb-12 lg:pb-14 xl:pl-[max(2.5rem,calc((100vw-72rem)/2+2.5rem))] ${
             panel ? "md:pr-[calc(max(34%,18.5rem)+6rem)] lg:pr-[calc(max(34%,18.5rem)+9rem)]" : ""
           }`}
         >
@@ -328,12 +308,14 @@ function Forecast({
         <div className="mt-7 md:mt-10">
           <ForecastStrip days={days} weather={weather} today={today} playing={playing} />
         </div>
-        <div className="on-forest mt-4 text-limestone">
-          <Link className="action" href={`/t/${data.trip.slug}/weather`}>
-            Hour by hour on the live wind map
-          </Link>
-        </div>
-        <p className="mt-2 text-fine text-mist">
+        <Link
+          href={`/t/${data.trip.slug}/weather`}
+          className="mt-6 inline-flex min-h-11 items-center gap-2 bg-limestone px-4 text-meta font-semibold text-pine transition-colors hover:bg-paper"
+        >
+          <WindGlyph size={17} />
+          Wind map
+        </Link>
+        <p className="mt-4 text-fine text-mist">
           Forecast by{" "}
           <a
             className="underline underline-offset-2"
@@ -404,10 +386,11 @@ function Courses({ data, photos, weather, roundOf, heading }: Ctx & { heading: s
   );
 }
 
-/** The next few things on the schedule, in order, each leading to its day. */
+/** The next few things on the schedule, in order and grouped by day, each leading to its day. */
 function ComingUp({ data, photos, list, heading }: Ctx & { list: PublicEvent[]; heading: string }) {
   if (list.length === 0) return null;
   const { trip } = data;
+  const dates = [...new Set(list.map((e) => e.date))];
   return (
     <section aria-labelledby="coming-up" className={`${WIDE} pt-12 md:pt-20`}>
       <div className="grid gap-x-12 md:grid-cols-[14rem_1fr]">
@@ -415,61 +398,34 @@ function ComingUp({ data, photos, list, heading }: Ctx & { list: PublicEvent[]; 
           {heading}
         </h2>
         <div>
-          <ul className="mt-3 divide-y divide-rule border-y border-rule md:mt-0">
-            {list.map((e) => (
-              <EventRow
-                key={e.id}
-                event={e}
-                photo={photos[e.id]}
-                slot={slotFor(e)}
-                showDay
-                summary={
-                  e.type === "dining"
-                    ? [e.partySize && `Party of ${e.partySize}`, e.group].filter(Boolean).join(", ")
-                    : eventSummary(e)
-                }
-                note={e.reservationNote}
-                href={scheduleHref(trip.slug, e.date)}
-              />
-            ))}
-          </ul>
-          <Link className="action" href={scheduleHref(trip.slug)}>
+          {dates.map((date) => (
+            <div key={date} className="mt-5 first:mt-4 md:first:mt-1">
+              <h3 className="text-[11.5px] font-bold uppercase tracking-[0.16em] text-copper">{weekday(date)}</h3>
+              <ul className="mt-2.5 divide-y divide-rule border-y border-rule">
+                {list
+                  .filter((e) => e.date === date)
+                  .map((e) => (
+                    <EventRow
+                      key={e.id}
+                      event={e}
+                      photo={photos[e.id]}
+                      slot={slotFor(e)}
+                      summary={
+                        e.type === "dining"
+                          ? [e.partySize && `Party of ${e.partySize}`, e.group].filter(Boolean).join(", ")
+                          : eventSummary(e)
+                      }
+                      note={e.reservationNote}
+                      href={scheduleHref(trip.slug, e.date)}
+                    />
+                  ))}
+              </ul>
+            </div>
+          ))}
+          <Link className="action mt-1" href={scheduleHref(trip.slug)}>
             The full schedule
           </Link>
         </div>
-      </div>
-    </section>
-  );
-}
-
-/** The other pages, as plain rows: what each is for, and that it can be opened. */
-function Essentials({ slug }: { slug: string }) {
-  const links = [
-    { href: scheduleHref(slug), name: "Schedule", detail: "Day by day, with the resort map" },
-    { href: `/t/${slug}/weather`, name: "Wind map", detail: "Hour by hour, with daylight" },
-    { href: `/t/${slug}/packing`, name: "Packing list", detail: "The resort's advice as a checklist" },
-  ];
-  return (
-    <section aria-labelledby="essentials" className={`${WIDE} pb-14 pt-12 md:pb-20 md:pt-20`}>
-      <div className="grid gap-x-12 md:grid-cols-[14rem_1fr]">
-        <h2 id="essentials" className="display text-[34px] md:text-[40px]">
-          Trip essentials
-        </h2>
-        <ul className="mt-3 divide-y divide-rule border-y border-rule md:mt-0">
-          {links.map((link) => (
-            <li key={link.href}>
-              <Link href={link.href} className="group flex min-h-[4.25rem] items-center gap-4 py-3.5">
-                <span className="min-w-0 flex-1">
-                  <span className="serif block text-[22px] leading-tight group-hover:text-forest">{link.name}</span>
-                  <span className="mt-0.5 block text-meta text-moss">{link.detail}</span>
-                </span>
-                <svg width="9" height="16" viewBox="0 0 8 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-copper" aria-hidden="true">
-                  <path d="M1 1l6 6-6 6" />
-                </svg>
-              </Link>
-            </li>
-          ))}
-        </ul>
       </div>
     </section>
   );
@@ -490,14 +446,14 @@ function Before(ctx: Ctx) {
         tall
         title={
           <>
-            {/* Phones: the photograph does the talking. The trip's name and year are in the
-                masthead, and the dates are in the panel right below. */}
+            {/* Phones: the trip's name takes the masthead's place at the top of the picture,
+                and the dates are in the panel below. */}
             <p className="hidden text-fact font-semibold md:block" style={{ "--i": 0 } as React.CSSProperties}>
               {dateRange(trip.startDate, trip.endDate)}
               {trip.location && <span className="ml-3 font-medium text-paper/85">{trip.location}</span>}
             </p>
             <h1
-              className="title sr-only md:not-sr-only md:mt-2 md:text-[clamp(4rem,9vw,8.5rem)]"
+              className="title text-[2.875rem] md:mt-2 md:text-[clamp(4rem,9vw,8.5rem)]"
               style={{ "--i": 1 } as React.CSSProperties}
             >
               {trip.title}
@@ -512,7 +468,6 @@ function Before(ctx: Ctx) {
       <Courses {...ctx} heading={golf.length === 1 ? "The course" : "The courses"} />
       <Forecast data={data} weather={weather} />
       <ComingUp {...ctx} list={events.filter((e) => e.id !== first?.id).slice(0, 3)} heading="Coming up" />
-      <Essentials slug={trip.slug} />
     </>
   );
 }
@@ -530,8 +485,6 @@ function During(ctx: Ctx) {
   const tomorrowDate = addDays(now.date, 1);
   const tomorrow = events.filter((e) => e.date === tomorrowDate);
   const tomorrowGolf = tomorrow.find((e) => e.type === "golf");
-  const dayNumber = daysBetween(trip.startDate, now.date) + 1;
-  const totalDays = daysBetween(trip.startDate, trip.endDate) + 1;
 
   const row = (e: PublicEvent) => (
     <EventRow key={e.id} event={e} photo={photos[e.id]} slot={slotFor(e)} summary={eventSummary(e)} />
@@ -548,9 +501,6 @@ function During(ctx: Ctx) {
           <>
             <p className="text-meta font-semibold md:text-fact" style={{ "--i": 0 } as React.CSSProperties}>
               {weekday(now.date)}, {monthDay(now.date)}
-              <span className="ml-3 font-medium text-paper/85">
-                Day {dayCount(dayNumber)} of {dayCount(totalDays)}
-              </span>
             </p>
             <h1
               className="title mt-1 text-[clamp(2.5rem,12vw,3.5rem)] md:mt-2 md:text-[clamp(3.5rem,8vw,7rem)]"
@@ -616,7 +566,6 @@ function During(ctx: Ctx) {
         </section>
       )}
 
-      <Essentials slug={trip.slug} />
     </>
   );
 }
@@ -642,7 +591,6 @@ function After(ctx: Ctx) {
       />
 
       <Courses {...ctx} weather={{}} heading="Where we played" />
-      <Essentials slug={trip.slug} />
     </>
   );
 }
