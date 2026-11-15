@@ -16,8 +16,8 @@ export type WindEvent = {
   end: number;
   label: string;
   place: [number, number] | null;
-  /** Minutes this runs past sunset, when it does */
-  pastSunset: number | null;
+  /** Set when the sun goes down while this is still going: "Sunset 4:49 PM" */
+  sunsetNote: string | null;
 };
 
 export type WindPlace = {
@@ -302,191 +302,289 @@ export function WindExplorer({
     setT(+e.start.toFixed(2));
     if (e.place) map.current?.flyTo({ center: [e.place[1], e.place[0]], zoom: 15.6, duration: 1600 });
   };
+  const scrub = (value: number) => {
+    setPlaying(false);
+    setT(value);
+  };
   const zoom = (by: number) => map.current?.easeTo({ zoom: map.current.getZoom() + by, duration: 300 });
+  const reset = () => map.current?.flyTo({ center, zoom: 13.4, duration: 1200 });
   const control =
     "flex h-11 w-11 items-center justify-center bg-forest-deep/85 text-limestone backdrop-blur-md transition-colors hover:bg-forest";
 
-  return (
-    <section aria-label="Wind map" className="relative isolate h-[100svh] min-h-[620px] overflow-hidden bg-forest-deep text-limestone">
-      {/* The map library sets its own positioning on its container, so it gets a plain box inside ours. */}
-      <div className="absolute inset-0">
-        <div ref={mapBox} className="h-full w-full" />
-      </div>
-      <canvas ref={canvas} aria-hidden="true" className={`pointer-events-none absolute inset-0 h-full w-full transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`} />
-      {/* Type sits over the top and bottom of the picture: shade only those. */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to bottom, rgb(13 33 27 / 0.75) 0%, rgb(13 33 27 / 0) 20%, rgb(13 33 27 / 0) 62%, rgb(13 33 27 / 0.8) 100%)" }} />
-
-      {/* Readout */}
-      <div className="absolute left-5 top-16 w-[min(21rem,calc(100%-5.5rem))] bg-forest-deep/85 p-4 backdrop-blur-md md:left-10 md:top-24 md:p-5">
-        <p className="text-meta text-mist">
-          {dayLabel(date)}, <span className="figures font-semibold text-limestone">{hourLabel(local)}</span>
-        </p>
-        <div className="mt-2 flex items-center gap-4">
-          <svg width="52" height="52" viewBox="0 0 52 52" className="shrink-0" role="img" aria-label={`Wind from the ${compass(direction[h])}`}>
-            <circle cx="26" cy="26" r="24" fill="none" stroke="rgb(233 231 224 / 0.25)" strokeWidth="1.5" />
-            <text x="26" y="9.5" textAnchor="middle" fontSize="7" fill="rgb(195 208 205)">N</text>
-            {/* The arrow points the way the wind is going */}
-            <g transform={`rotate(${direction[h] + 180} 26 26)`} style={{ transition: "transform 300ms" }}>
-              <path d="M26 12 L32.5 31 L26 27 L19.5 31 Z" fill="#d99a6c" />
-            </g>
-          </svg>
-          <div>
-            <p className="display figures text-[52px] leading-none md:text-[60px]">
-              {speed[h]}
-              <span className="ml-1.5 font-sans text-ui font-semibold tracking-normal">mph</span>
-            </p>
-            <p className="mt-1 text-meta font-medium">From the {compass(direction[h])}</p>
-          </div>
-        </div>
-        <dl className="mt-3 grid grid-cols-3 gap-x-3 border-t border-rule-light pt-3">
-          {(
-            [
-              ["Gusts", gust[h] > speed[h] ? `${gust[h]} mph` : "None"],
-              ["Temp", `${temp[h]}°`],
-              ["Rain", rainChance[h] === null ? "n/a" : `${rainChance[h]}%`],
-            ] as const
-          ).map(([name, value]) => (
-            <div key={name} className="flex flex-col-reverse">
-              <dt className="text-label text-mist">{name}</dt>
-              <dd className="figures text-ui font-semibold">{value}</dd>
-            </div>
+  const dayIndex = Math.max(0, dates.indexOf(date));
+  const stats: [string, string][] = [
+    ["Gusts", gust[h] > speed[h] ? `${gust[h]} mph` : "None"],
+    ["Temp", `${temp[h]}°`],
+    ["Rain", rainChance[h] === null ? "n/a" : `${rainChance[h]}%`],
+  ];
+  const arrow = (size: number) => (
+    <svg width={size} height={size} viewBox="0 0 52 52" className="shrink-0" role="img" aria-label={`Wind from the ${compass(direction[h])}`}>
+      <circle cx="26" cy="26" r="24" fill="none" stroke="rgb(233 231 224 / 0.25)" strokeWidth="1.5" />
+      <text x="26" y="9.5" textAnchor="middle" fontSize="7" fill="rgb(195 208 205)">N</text>
+      {/* The arrow points the way the wind is going */}
+      <g transform={`rotate(${direction[h] + 180} 26 26)`} style={{ transition: "transform 300ms" }}>
+        <path d="M26 12 L32.5 31 L26 27 L19.5 31 Z" fill="#d99a6c" />
+      </g>
+    </svg>
+  );
+  const playButton = (className: string) => (
+    <button
+      type="button"
+      aria-pressed={playing}
+      aria-label={playing ? "Pause" : "Play through the trip"}
+      onClick={() => setPlaying(!playing)}
+      className={`flex shrink-0 items-center justify-center bg-limestone text-pine transition-colors hover:bg-paper ${className}`}
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        {playing ? <path d="M3.5 2.5h3.2v11H3.5zM9.3 2.5h3.2v11H9.3z" /> : <path d="M4 2.2l9.5 5.8L4 13.8z" />}
+      </svg>
+    </button>
+  );
+  /** The wind chart for hours [from, to), with a slider laid over it for scrubbing. */
+  const chart = (from: number, to: number, className: string) => (
+    <div className={`relative ${className}`}>
+      <svg className="absolute inset-0 h-full w-full" viewBox={`${from} 0 ${to - from} 100`} preserveAspectRatio="none" aria-hidden="true">
+        {nights.map(([a, b]) => (
+          <rect key={a} x={a} y="0" width={Math.max(0, b - a)} height="100" fill="rgb(0 0 0 / 0.38)" />
+        ))}
+        {events
+          .filter((e) => e.type === "golf" || e.sunsetNote !== null)
+          .map((e) => (
+            <rect key={e.id} x={e.start} y="0" width={Math.max(0.6, e.end - e.start)} height="7" fill={e.type === "golf" ? "#e9e7e0" : "#d99a6c"} />
           ))}
-        </dl>
-        {light && (
-          <p className={`mt-3 border-t border-rule-light pt-3 text-meta font-medium ${dark ? "text-copper-light" : "text-limestone"}`}>
-            {light}
-          </p>
-        )}
-      </div>
+        {gust.map((g, i) => (
+          <rect key={`g${i}`} x={i + 0.12} y={100 - (Math.max(g, speed[i]) / peak) * 84} width="0.76" height={(Math.max(g, speed[i]) / peak) * 84} fill="rgb(195 208 205 / 0.28)" />
+        ))}
+        {speed.map((sp, i) => (
+          <rect key={`s${i}`} x={i + 0.12} y={100 - (sp / peak) * 84} width="0.76" height={(sp / peak) * 84} fill={i === h ? "#d99a6c" : "rgb(233 231 224 / 0.8)"} />
+        ))}
+        {dates.slice(1).map((d, i) => (
+          <line key={d} x1={(i + 1) * 24} x2={(i + 1) * 24} y1="0" y2="100" stroke="rgb(233 231 224 / 0.35)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+        ))}
+        <line x1={t + 0.5} x2={t + 0.5} y1="0" y2="100" stroke="#d99a6c" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+      </svg>
+      <input
+        type="range"
+        min={from}
+        max={to - 1}
+        step={0.25}
+        value={Math.min(to - 1, Math.max(from, t))}
+        onChange={(e) => scrub(Number(e.target.value))}
+        aria-label="Hour"
+        aria-valuetext={`${dayLabel(date)} ${hourLabel(local)}`}
+        className="absolute inset-0 h-full w-full cursor-ew-resize touch-pan-y opacity-0"
+      />
+    </div>
+  );
+  const chip = (e: WindEvent, showDay: boolean) => {
+    const on = t >= e.start - 0.01 && t <= Math.max(e.end, e.start + 1);
+    return (
+      <li key={e.id} className="shrink-0">
+        <button
+          type="button"
+          onClick={() => jump(e)}
+          className={`flex min-h-11 flex-col justify-center px-3 py-1.5 text-left transition-colors ${
+            on ? "bg-limestone text-pine" : "bg-forest/90 text-limestone hover:bg-forest md:bg-forest-deep/85 md:backdrop-blur-md"
+          }`}
+        >
+          <span className="text-label font-semibold">{e.title}</span>
+          <span className={`figures text-fine ${on ? "text-moss" : "text-mist"}`}>
+            {showDay ? e.label : e.label.replace(/^\S+ /, "")}
+            {e.sunsetNote && <span className={`ml-1.5 font-semibold ${on ? "text-copper" : "text-copper-light"}`}>{e.sunsetNote}</span>}
+          </span>
+        </button>
+      </li>
+    );
+  };
+  const legend = (
+    <>
+      <span>Calm</span>
+      <span
+        className="h-1.5 w-28"
+        style={{
+          background: `linear-gradient(to right, ${SPEED_STOPS.map(([sp, c]) => `rgb(${c.join(" ")}) ${(sp / 35) * 100}%`).join(", ")})`,
+        }}
+      />
+      <span>35 mph</span>
+    </>
+  );
+  const credits = (
+    <>
+      Imagery USDA NAIP via USGS. Wind{" "}
+      <a className="underline underline-offset-2" href="https://open-meteo.com/" target="_blank" rel="noreferrer">
+        Open-Meteo
+      </a>
+      . Places © OpenStreetMap.
+    </>
+  );
+  const todays = events.filter((e) => Math.floor(e.start / 24) === dayIndex);
 
-      {/* Map controls */}
-      <div className="absolute right-5 top-16 flex flex-col gap-1.5 md:right-10 md:top-24">
-        <button type="button" className={control} aria-label="Zoom in" onClick={() => zoom(1)}>
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M9 3v12M3 9h12" /></svg>
-        </button>
-        <button type="button" className={control} aria-label="Zoom out" onClick={() => zoom(-1)}>
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M3 9h12" /></svg>
-        </button>
-        <button type="button" className={control} aria-label="Back to the whole resort" onClick={() => map.current?.flyTo({ center, zoom: 13.4, duration: 1200 })}>
+  return (
+    <>
+      <section aria-label="Wind map" className="relative isolate h-[100svh] min-h-[560px] overflow-hidden bg-forest-deep text-limestone">
+        {/* The map library sets its own positioning on its container, so it gets a plain box inside ours. */}
+        <div className="absolute inset-0">
+          <div ref={mapBox} className="h-full w-full" />
+        </div>
+        <canvas ref={canvas} aria-hidden="true" className={`pointer-events-none absolute inset-0 h-full w-full transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`} />
+        {/* Type sits over the top and bottom of the picture: shade only those. */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to bottom, rgb(13 33 27 / 0.75) 0%, rgb(13 33 27 / 0) 20%, rgb(13 33 27 / 0) 62%, rgb(13 33 27 / 0.8) 100%)" }} />
+
+        {/* ---------- Phones: a slim readout on top, the controls docked below, the map in between ---------- */}
+        <div className="absolute inset-x-3 top-14 bg-forest-deep/88 px-3.5 py-2.5 backdrop-blur-md md:hidden">
+          <div className="flex items-center gap-3">
+            {arrow(40)}
+            <p className="display figures text-[38px] leading-none">
+              {speed[h]}
+              <span className="ml-1 font-sans text-meta font-semibold tracking-normal">mph</span>
+            </p>
+            <p className="min-w-0 flex-1 text-right text-meta leading-tight">
+              <span className="block font-semibold">From the {compass(direction[h])}</span>
+              <span className="figures block text-mist">
+                {dayLabel(date, "short")} {hourLabel(local)}
+              </span>
+            </p>
+          </div>
+          <p className="figures mt-2 flex flex-wrap justify-between gap-x-3 border-t border-rule-light pt-2 text-label">
+            {stats.map(([name, value]) => (
+              <span key={name}>
+                <span className="text-mist">{name} </span>
+                <span className="font-semibold">{value}</span>
+              </span>
+            ))}
+          </p>
+          {light && <p className={`mt-1 text-label font-medium ${dark ? "text-copper-light" : "text-mist"}`}>{light}</p>}
+        </div>
+
+        <button
+          type="button"
+          className={`${control} absolute right-3 top-[11.5rem] md:hidden`}
+          aria-label="Back to the whole resort"
+          onClick={reset}
+        >
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V3h4M15 7V3h-4M3 11v4h4M15 11v4h-4" /></svg>
         </button>
-      </div>
 
-      {/* Timeline */}
-      <div className="absolute inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] px-5 md:bottom-8 md:px-10">
-        <div className="mx-auto max-w-6xl">
-          <ul className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-3 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden">
-            {events.map((e) => {
-              const on = t >= e.start - 0.01 && t <= Math.max(e.end, e.start + 1);
-              return (
-                <li key={e.id} className="shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => jump(e)}
-                    className={`flex min-h-11 flex-col justify-center px-3 py-1.5 text-left backdrop-blur-md transition-colors ${
-                      on ? "bg-limestone text-pine" : "bg-forest-deep/85 text-limestone hover:bg-forest"
-                    }`}
-                  >
-                    <span className="text-label font-semibold">{e.title}</span>
-                    <span className={`figures text-fine ${on ? "text-moss" : "text-mist"}`}>
-                      {e.label}
-                      {e.pastSunset !== null && <span className="ml-1.5 font-semibold text-copper-light">{e.pastSunset} min past sunset</span>}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-
-          <div className="flex items-stretch gap-2 bg-forest-deep/85 p-3 backdrop-blur-md md:p-4">
-            <button
-              type="button"
-              aria-pressed={playing}
-              aria-label={playing ? "Pause" : "Play through the trip"}
-              onClick={() => setPlaying(!playing)}
-              className="flex w-11 shrink-0 items-center justify-center self-stretch bg-limestone text-pine transition-colors hover:bg-paper"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                {playing ? <path d="M3.5 2.5h3.2v11H3.5zM9.3 2.5h3.2v11H9.3z" /> : <path d="M4 2.2l9.5 5.8L4 13.8z" />}
-              </svg>
-            </button>
+        <div className="absolute inset-x-0 bottom-[calc(61px+env(safe-area-inset-bottom))] bg-forest-deep/94 backdrop-blur-md md:hidden">
+          <div role="group" aria-label="Day" className="grid" style={{ gridTemplateColumns: `repeat(${dates.length}, minmax(0, 1fr))` }}>
+            {dates.map((d, i) => (
+              <button
+                key={d}
+                type="button"
+                aria-pressed={i === dayIndex}
+                // Keep the hour of day when changing day.
+                onClick={() => scrub(Math.min(hours - 1, i * 24 + (t - dayIndex * 24)))}
+                className={`figures min-h-11 text-meta font-semibold transition-colors ${
+                  i === dayIndex ? "bg-limestone text-pine" : "text-mist"
+                }`}
+              >
+                {dayLabel(d, "short")} {Number(d.slice(8))}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-stretch gap-2.5 px-3 pt-3">
+            {playButton("w-11 self-stretch")}
             <div className="min-w-0 flex-1">
-              <div className="relative h-16 md:h-20">
-                <svg className="absolute inset-0 h-full w-full" viewBox={`0 0 ${hours} 100`} preserveAspectRatio="none" aria-hidden="true">
-                  {nights.map(([a, b]) => (
-                    <rect key={a} x={a} y="0" width={Math.max(0, b - a)} height="100" fill="rgb(0 0 0 / 0.38)" />
-                  ))}
-                  {events
-                    .filter((e) => e.type === "golf" || e.pastSunset !== null)
-                    .map((e) => (
-                      <rect key={e.id} x={e.start} y="0" width={Math.max(0.6, e.end - e.start)} height="7" fill={e.type === "golf" ? "#e9e7e0" : "#d99a6c"} />
-                    ))}
-                  {gust.map((g, i) => (
-                    <rect key={`g${i}`} x={i + 0.12} y={100 - (Math.max(g, speed[i]) / peak) * 84} width="0.76" height={(Math.max(g, speed[i]) / peak) * 84} fill="rgb(195 208 205 / 0.28)" />
-                  ))}
-                  {speed.map((s, i) => (
-                    <rect key={`s${i}`} x={i + 0.12} y={100 - (s / peak) * 84} width="0.76" height={(s / peak) * 84} fill={i === h ? "#d99a6c" : "rgb(233 231 224 / 0.8)"} />
-                  ))}
-                  {dates.slice(1).map((d, i) => (
-                    <line key={d} x1={(i + 1) * 24} x2={(i + 1) * 24} y1="0" y2="100" stroke="rgb(233 231 224 / 0.35)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-                  ))}
-                  <line x1={t + 0.5} x2={t + 0.5} y1="0" y2="100" stroke="#d99a6c" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-                </svg>
-                <input
-                  type="range"
-                  min={0}
-                  max={hours - 1}
-                  step={0.25}
-                  value={t}
-                  onChange={(e) => {
-                    setPlaying(false);
-                    setT(Number(e.target.value));
-                  }}
-                  aria-label="Hour of the trip"
-                  aria-valuetext={`${dayLabel(date)} ${hourLabel(local)}`}
-                  className="absolute inset-0 h-full w-full cursor-ew-resize opacity-0"
-                />
-              </div>
-              <div className="mt-1.5 flex">
-                {dates.map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => {
-                      setPlaying(false);
-                      setT(dates.indexOf(d) * 24 + 10);
-                    }}
-                    className={`figures min-h-8 flex-1 text-left text-label ${d === date ? "font-semibold text-limestone" : "text-mist hover:text-limestone"}`}
-                  >
-                    {dayLabel(d, "short")} {Number(d.slice(8))}
-                  </button>
-                ))}
+              {chart(dayIndex * 24, Math.min(hours, dayIndex * 24 + 24), "h-[4.5rem]")}
+              <div className="figures mt-1 grid grid-cols-4 text-fine text-mist" aria-hidden="true">
+                <span>12 AM</span>
+                <span>6 AM</span>
+                <span>Noon</span>
+                <span>6 PM</span>
               </div>
             </div>
           </div>
+          {todays.length > 0 ? (
+            <ul className="flex gap-2 overflow-x-auto px-3 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {todays.map((e) => chip(e, false))}
+            </ul>
+          ) : (
+            <p className="px-3 py-3 text-label text-mist">Nothing scheduled this day.</p>
+          )}
+        </div>
 
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-1 text-fine text-mist">
-            <p className="flex items-center gap-2">
-              <span>Calm</span>
-              <span
-                className="h-1.5 w-28"
-                style={{
-                  background: `linear-gradient(to right, ${SPEED_STOPS.map(([s, c]) => `rgb(${c.join(" ")}) ${(s / 35) * 100}%`).join(", ")})`,
-                }}
-              />
-              <span>35 mph</span>
-              <span className="ml-3 hidden sm:inline">Bars: wind each hour, gusts behind. Shaded: night.</span>
+        {/* ---------- Wider screens: a readout card, map controls and the whole trip on one timeline ---------- */}
+        <div className="absolute left-10 top-24 hidden w-[21rem] bg-forest-deep/85 p-5 backdrop-blur-md md:block">
+          <p className="text-meta text-mist">
+            {dayLabel(date)}, <span className="figures font-semibold text-limestone">{hourLabel(local)}</span>
+          </p>
+          <div className="mt-2 flex items-center gap-4">
+            {arrow(52)}
+            <div>
+              <p className="display figures text-[60px] leading-none">
+                {speed[h]}
+                <span className="ml-1.5 font-sans text-ui font-semibold tracking-normal">mph</span>
+              </p>
+              <p className="mt-1 text-meta font-medium">From the {compass(direction[h])}</p>
+            </div>
+          </div>
+          <dl className="mt-3 grid grid-cols-3 gap-x-3 border-t border-rule-light pt-3">
+            {stats.map(([name, value]) => (
+              <div key={name} className="flex flex-col-reverse">
+                <dt className="text-label text-mist">{name}</dt>
+                <dd className="figures text-ui font-semibold">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          {light && (
+            <p className={`mt-3 border-t border-rule-light pt-3 text-meta font-medium ${dark ? "text-copper-light" : "text-limestone"}`}>
+              {light}
             </p>
-            <p>
-              Imagery USDA NAIP via USGS. Wind{" "}
-              <a className="underline underline-offset-2" href="https://open-meteo.com/" target="_blank" rel="noreferrer">
-                Open-Meteo
-              </a>
-              . Places © OpenStreetMap.
-            </p>
+          )}
+        </div>
+
+        <div className="absolute right-10 top-24 hidden flex-col gap-1.5 md:flex">
+          <button type="button" className={control} aria-label="Zoom in" onClick={() => zoom(1)}>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M9 3v12M3 9h12" /></svg>
+          </button>
+          <button type="button" className={control} aria-label="Zoom out" onClick={() => zoom(-1)}>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M3 9h12" /></svg>
+          </button>
+          <button type="button" className={control} aria-label="Back to the whole resort" onClick={reset}>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V3h4M15 7V3h-4M3 11v4h4M15 11v4h-4" /></svg>
+          </button>
+        </div>
+
+        <div className="absolute inset-x-0 bottom-8 hidden px-10 md:block">
+          <div className="mx-auto max-w-6xl">
+            <ul className="flex gap-2 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {events.map((e) => chip(e, true))}
+            </ul>
+            <div className="flex items-stretch gap-2 bg-forest-deep/85 p-4 backdrop-blur-md">
+              {playButton("w-11 self-stretch")}
+              <div className="min-w-0 flex-1">
+                {chart(0, hours, "h-20")}
+                <div className="mt-1.5 flex">
+                  {dates.map((d, i) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => scrub(i * 24 + 10)}
+                      className={`figures min-h-8 flex-1 text-left text-label ${d === date ? "font-semibold text-limestone" : "text-mist hover:text-limestone"}`}
+                    >
+                      {dayLabel(d, "short")} {Number(d.slice(8))}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-1 text-fine text-mist">
+              <p className="flex items-center gap-2">
+                {legend}
+                <span className="ml-3">White bars: wind each hour. Faint bars behind: gusts. Shaded: night. Marks along the top: tee times.</span>
+              </p>
+              <p>{credits}</p>
+            </div>
           </div>
         </div>
+      </section>
+
+      {/* Phones: the key and credits sit under the map, out of its way. */}
+      <div className="space-y-2 bg-forest-deep px-5 py-5 text-fine text-mist md:hidden">
+        <p className="flex items-center gap-2">{legend}</p>
+        <p>White bars: wind each hour. Faint bars behind: gusts. Shaded: night. Marks along the top: tee times.</p>
+        <p>{credits}</p>
       </div>
-    </section>
+    </>
   );
 }
