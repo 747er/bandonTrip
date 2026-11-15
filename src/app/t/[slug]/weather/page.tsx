@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { WindExplorer, type WindEvent, type WindPlace } from "@/components/public/wind/WindExplorer";
+import { STAY } from "@/data/trip";
 import { GEO, PLACES, placeFor } from "@/lib/resortMap";
 import { clock, weekdayShort } from "@/lib/time";
 import { eventTimes, getTripNow } from "@/lib/trip";
@@ -53,6 +54,9 @@ export default async function WeatherPage({ params, searchParams }: PageProps<"/
         type: e.type,
         start,
         end: Math.max(start, end),
+        // How long the player is taken to be there: four hours for a round from their
+        // tee time, two for a dinner, otherwise the listed end or an hour and a half.
+        until: start + (e.type === "golf" ? 4 : e.type === "dining" ? 2 : end > start ? end - start : 1.5),
         label: `${weekdayShort(e.date)} ${eventTimes(e)}`,
         place: placeId && GEO[placeId] ? GEO[placeId] : null,
         placeId: placeId && GEO[placeId] ? placeId : null,
@@ -112,6 +116,7 @@ export default async function WeatherPage({ params, searchParams }: PageProps<"/
         places={places}
         center={[trip.longitude, trip.latitude]}
         initialHour={initialHour}
+        stay={[hourOf(trip.startDate, STAY.checkIn), hourOf(trip.endDate, STAY.checkOut)]}
       />
     </>
   );
