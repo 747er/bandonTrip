@@ -88,6 +88,7 @@ export function SiteFooter({ slug, viewer }: { slug: string; viewer: string | nu
             Made by golfers for their own trip. An independent site, not affiliated with or
             endorsed by Bandon Dunes Golf Resort.
           </p>
+          <p className="mt-2 max-w-md">Contact Cody Wilson for site issues, requests, and feedback.</p>
         </div>
       </div>
     </footer>
