@@ -1,0 +1,19 @@
+{
+  "files": [
+    "activities/punchbowl.jpg?v=e13ae1341e",
+    "activities/shortys.jpg?v=f57c7e1621",
+    "courses/bandon-dunes.jpg?v=e98a8a695a",
+    "courses/bandon-trails.jpg?v=125dd77506",
+    "courses/old-macdonald.jpg?v=2d6b6b95ce",
+    "courses/pacific-dunes.jpg?v=17de3c8d90",
+    "dining/ghost-tree.jpg?v=b992238d0c",
+    "dining/pacific-grill.jpg?v=f621183a05",
+    "dining/trails-end.jpg?v=5c489bc779",
+    "hero/bandon-coast.jpg?v=9902cb7771"
+  ],
+  "meta": {
+    "courses/bandon-dunes": {
+      "position": "50% 38%"
+    }
+  }
+}
