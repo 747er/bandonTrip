@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { WindExplorer, type WindEvent, type WindPlace } from "@/components/public/wind/WindExplorer";
 import { GEO, PLACES, placeFor } from "@/lib/resortMap";
-import { clockRange, weekdayShort } from "@/lib/time";
+import { clock, clockRange, weekdayShort } from "@/lib/time";
 import { getTrip, getTripNow } from "@/lib/trip";
 import { getWind } from "@/lib/wind";
 import { hourIndex, minutesFromStart } from "@/lib/windMath";
@@ -40,7 +40,7 @@ export default async function WeatherPage({ params }: PageProps<"/t/[slug]/weath
     if (start < 0) return [];
     const end = e.endTime ? hourOf(e.date, e.endTime) : start;
     const placeId = placeFor(e.title, e.venue);
-    // Only time outdoors is worth a daylight warning, and only when it has a stated end.
+    // Time outdoors that is still going when the sun sets gets the sunset time beside it.
     const day = wind.days.find((d) => d.date === e.date);
     const sunset = day ? minutesFromStart(wind.times, day.sunset) : -1;
     const late = e.type !== "dining" && e.endTime && sunset >= 0 ? Math.round(end * 60 - sunset) : 0;
@@ -53,7 +53,7 @@ export default async function WeatherPage({ params }: PageProps<"/t/[slug]/weath
         end: Math.max(start, end),
         label: `${weekdayShort(e.date)} ${clockRange(e.startTime, e.endTime)}`,
         place: placeId && GEO[placeId] ? GEO[placeId] : null,
-        pastSunset: late > 0 ? late : null,
+        sunsetNote: late > 0 && day ? `Sunset ${clock(day.sunset.slice(11))}` : null,
       },
     ];
   });
