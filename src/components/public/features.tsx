@@ -173,109 +173,35 @@ export function CourseFeature({ event, photo, slot, round, weather, href, classN
   );
 }
 
-/**
- * The forecast for each trip day. Phones get one row per day to read down; wider screens
- * get one column per day to read across. Days without a forecast say so rather than guess.
- */
-export function ForecastStrip({
-  days,
-  weather,
-  today,
-  playing = {},
-}: {
-  days: string[];
-  weather: Record<string, DayWeather>;
-  today?: string;
-  /** Course being played, by date */
-  playing?: Record<string, string>;
+/** Daily temperature ranges share a scale; the forecast remains readable without the graphic. */
+export function ForecastStrip({ days, weather, today, playing = {}, slug }: {
+  days: string[]; weather: Record<string, DayWeather>; today?: string;
+  playing?: Record<string, string>; slug: string;
 }) {
-  const dayName = (date: string) => (date === today ? "Today" : weekdayShort(date));
-  return (
-    <>
-      <ol className="divide-y divide-rule-light border-y border-rule-light md:hidden">
-        {days.map((date) => {
-          const w = weather[date];
-          return (
-            <li key={date} className="grid grid-cols-[3.25rem_1fr_auto] items-center gap-x-4 py-4">
-              <p className={`text-meta font-semibold ${date === today ? "text-copper-light" : "text-limestone"}`}>
-                {dayName(date)}
-                <span className="figures block font-normal text-mist">{Number(date.slice(8))}</span>
-              </p>
-              {w ? (
-                <>
-                  <div className="flex items-center gap-3 text-limestone">
-                    <WeatherGlyph kind={w.kind} size={30} />
-                    <p className="figures">
-                      <span className="display text-[34px]">{w.high}°</span>
-                      <span className="ml-1.5 text-meta text-mist">{w.low}°</span>
-                    </p>
-                  </div>
-                  <p className="figures text-right text-meta text-limestone">
-                    <span className="flex items-center justify-end gap-1.5 font-semibold">
-                      <WindGlyph size={16} />
-                      {w.wind} mph
-                    </span>
-                    <span className="block text-mist">
-                      {[w.gust !== null && `Gusts ${w.gust}`, w.rainChance !== null && `Rain ${w.rainChance}%`]
-                        .filter(Boolean)
-                        .join(", ")
-                        .replace(", R", ", r")}
-                    </span>
-                  </p>
-                </>
-              ) : (
-                <p className="col-span-2 text-meta text-mist">No forecast yet</p>
-              )}
-            </li>
-          );
-        })}
-      </ol>
-
-      <ol
-        className="hidden divide-x divide-rule-light md:grid"
-        style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}
-      >
-        {days.map((date) => {
-          const w = weather[date];
-          return (
-            <li key={date} className="px-6 first:pl-0 last:pr-0 lg:px-8">
-              <p className={`text-ui font-semibold ${date === today ? "text-copper-light" : "text-limestone"}`}>
-                {dayName(date)}, {monthDayShort(date)}
-              </p>
-              <p className="min-h-[1.45em] text-meta text-mist">{playing[date] ?? ""}</p>
-              {w ? (
-                <>
-                  <div className="mt-5 flex items-center gap-3 text-limestone">
-                    <WeatherGlyph kind={w.kind} size={36} />
-                    <p className="display figures text-[64px]">{w.high}°</p>
-                  </div>
-                  <p className="mt-2 text-meta text-limestone">
-                    {w.label}, low {w.low}°
-                  </p>
-                  <dl className="figures mt-5 divide-y divide-rule-light border-y border-rule-light text-limestone">
-                    {(
-                      [
-                        ["Wind", `${w.wind} mph`],
-                        ...(w.gust !== null ? [["Gusts", `${w.gust} mph`]] : []),
-                        ...(w.rainChance !== null ? [["Rain", `${w.rainChance}%`]] : []),
-                      ] as [string, string][]
-                    ).map(([name, value]) => (
-                      <div key={name} className="flex items-baseline justify-between gap-3 py-2.5">
-                        <dt className="text-label text-mist">{name}</dt>
-                        <dd className="text-ui font-semibold">{value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </>
-              ) : (
-                <p className="mt-5 text-meta text-mist">No forecast yet</p>
-              )}
-            </li>
-          );
-        })}
-      </ol>
-    </>
-  );
+  const available = days.map(date => weather[date]).filter(Boolean);
+  const low = Math.min(...available.map(w => w.low)) - 2;
+  const high = Math.max(...available.map(w => w.high)) + 2;
+  const extent = Math.max(1, high - low);
+  return <ol className="forecast-board" style={{ "--days": days.length } as React.CSSProperties}>
+    {days.map(date => {
+      const w = weather[date];
+      return <li key={date}>
+        <Link className="forecast-day" href={`/t/${slug}/weather?day=${date}`}>
+          <span className="sr-only">Explore hourly wind for </span><div className="forecast-day-heading"><strong className={date === today ? "text-copper-light" : ""}>{date === today ? "Today" : weekdayShort(date)}, {monthDayShort(date)}</strong><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14" /></svg></div>
+          <p className="forecast-course">{playing[date]}</p>
+          {w ? <>
+            <div className="forecast-temperature"><WeatherGlyph kind={w.kind} size={32} /><span className="display figures">{w.high}°</span><span className="text-mist">{w.label}</span></div>
+            <div className="forecast-range"><span>{w.low}°</span><div aria-hidden="true"><i style={{ left: `${(w.low - low) / extent * 100}%`, width: `${(w.high - w.low) / extent * 100}%` }} /></div><span>{w.high}°</span></div>
+            <dl className="forecast-measures">
+              <div><dt>Wind</dt><dd>{w.wind} <span>mph</span></dd></div>
+              {w.gust !== null && <div><dt>Gusts</dt><dd>{w.gust} <span>mph</span></dd></div>}
+              {w.rainChance !== null && <div><dt>Rain</dt><dd>{w.rainChance}<span>%</span></dd></div>}
+            </dl>
+          </> : <p className="py-8 text-mist">No forecast yet</p>}
+        </Link>
+      </li>;
+    })}
+  </ol>;
 }
 
 /** What marks an event's kind when it has no photograph, or beside one. */
