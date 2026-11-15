@@ -48,6 +48,8 @@ export async function seed(db: Db) {
       startDate: "2026-11-19",
       endDate: "2026-11-22",
       timezone: "America/Los_Angeles",
+      latitude: 43.188,
+      longitude: -124.39,
       visibility: "public",
     })
     .returning();
@@ -108,6 +110,17 @@ export async function seed(db: Db) {
       address: resort,
       groupId: five.id,
       partySize: 5,
+    },
+    {
+      tripId: trip.id,
+      type: "activity",
+      date: "2026-11-19",
+      startTime: "16:00",
+      endTime: "17:30",
+      title: "Punchbowl",
+      venue: "The Punchbowl",
+      address: resort,
+      description: "The putting course beside the Pacific Dunes clubhouse.",
     },
     {
       tripId: trip.id,
