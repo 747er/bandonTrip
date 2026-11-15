@@ -53,6 +53,8 @@ async function loadTrip(slug: string) {
       endDate: s.trips.endDate,
       timezone: s.trips.timezone,
       visibility: s.trips.visibility,
+      latitude: s.trips.latitude,
+      longitude: s.trips.longitude,
       heroImageUrl: s.trips.heroImageUrl,
       heroImageCredit: s.trips.heroImageCredit,
     })
@@ -238,7 +240,4 @@ export function isUnderway(e: PublicEvent, now: ZonedNow): boolean {
   );
 }
 
-export function directionsUrl(e: Pick<PublicEvent, "venue" | "address" | "title">): string {
-  const query = [e.venue || e.title, e.address].filter(Boolean).join(", ");
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-}
+export { directionsUrl } from "./links";
