@@ -5,7 +5,8 @@ import { Photo, PhotoCredit } from "@/components/public/Photo";
 import { COURSES, courseById } from "@/data/courses";
 import { photoFor, slotFor, slotName } from "@/lib/photos";
 import { clock, monthDay, weekday } from "@/lib/time";
-import { directionsUrl, getTrip, roundNumbers } from "@/lib/trip";
+import { roundNumbers } from "@/lib/trip";
+import { getTrip } from "@/lib/viewer";
 import { getWind } from "@/lib/wind";
 import { compass, hourIndex } from "@/lib/windMath";
 
@@ -91,7 +92,7 @@ export default async function CoursePage({ params }: PageProps<"/t/[slug]/course
           {round && (
             <section aria-labelledby="our-round" className="mt-12">
               <h2 id="our-round" className="display text-[34px] md:text-[40px]">
-                Our round
+                Your round
               </h2>
               <p className="figures mt-3 text-fact font-semibold">
                 {weekday(round.date)}, {monthDay(round.date)}
@@ -134,9 +135,6 @@ export default async function CoursePage({ params }: PageProps<"/t/[slug]/course
                 <Link className="action" href={`/t/${trip.slug}/weather?day=${round.date}`}>
                   Wind that day
                 </Link>
-                <a className="action" href={directionsUrl(round)} target="_blank" rel="noreferrer">
-                  Directions
-                </a>
               </div>
             </section>
           )}
