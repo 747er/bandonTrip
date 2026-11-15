@@ -10,6 +10,7 @@ import { eventSummary } from "./EventList";
 import { Conditions, TypeMark, type RoundInfo } from "./features";
 import { WeatherGlyph, WindGlyph } from "./Glyphs";
 import { Photo, PhotoCredit, type PhotoData } from "./Photo";
+import { TripHeading } from "./TripHeading";
 
 export type ScheduleProps = {
   trip: { slug: string; title: string; location: string; dates: string };
@@ -65,20 +66,27 @@ export function ScheduleView(props: ScheduleProps) {
     window.history.replaceState(null, "", url);
   };
 
+  const selectEvent = (id: string | null, target: "event" | "map" = "event") => {
+    setActiveStop(id);
+    if (!id) return;
+    const element = document.getElementById(target === "map" ? "schedule-map" : `schedule-event-${id}`);
+    if (target === "event" || window.matchMedia("(max-width: 1023px)").matches) {
+      element?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
+    }
+  };
+
   return (
-    <div className="mx-auto max-w-6xl px-5 pb-16 pt-20 md:px-10 md:pt-32">
-      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
-        <h1 className="display text-[clamp(2.75rem,11vw,4.5rem)]">Schedule</h1>
-        <p className="pb-1.5 text-meta text-moss">
-          {trip.dates}
-        </p>
-      </div>
+    <div className="schedule-page mx-auto max-w-6xl px-5 pb-16 pt-20 md:px-10 md:pt-32">
+      <TripHeading title="Schedule" dates={trip.dates}>
+        <p>Tee times, pairings, and everything in between.</p>
+        <span>{trip.location} · All times Pacific</span>
+      </TripHeading>
 
       {/* Day picker: stays within reach while the day's events scroll. */}
       <div
         role="tablist"
         aria-label="Trip days"
-        className="sticky top-0 z-20 -mx-5 mt-6 flex gap-1.5 overflow-x-auto bg-limestone/95 px-5 py-3 backdrop-blur-sm [scrollbar-width:none] md:mx-0 md:gap-2 md:px-0 [&::-webkit-scrollbar]:hidden"
+        className="schedule-days sticky top-0 z-20 -mx-5 mt-6 flex gap-1.5 overflow-x-auto bg-limestone/95 px-5 py-3 backdrop-blur-sm [scrollbar-width:none] md:mx-0 md:gap-2 md:px-0 [&::-webkit-scrollbar]:hidden"
       >
         {days.map((date) => {
           const selected = date === day;
@@ -90,6 +98,16 @@ export function ScheduleView(props: ScheduleProps) {
               type="button"
               role="tab"
               aria-selected={selected}
+              id={`day-tab-${date}`}
+              tabIndex={selected ? 0 : -1}
+              onKeyDown={event => {
+                const at = days.indexOf(date);
+                const next = event.key === "ArrowRight" ? (at + 1) % days.length : event.key === "ArrowLeft" ? (at - 1 + days.length) % days.length : event.key === "Home" ? 0 : event.key === "End" ? days.length - 1 : -1;
+                if (next < 0) return;
+                event.preventDefault();
+                choose(days[next]);
+                document.getElementById(`day-tab-${days[next]}`)?.focus();
+              }}
               aria-controls="day-panel"
               onClick={() => choose(date)}
               className={`group relative flex min-h-[4.25rem] min-w-[4.6rem] flex-1 items-center justify-between gap-2 px-3.5 py-2.5 text-left transition-colors duration-200 md:px-5 md:py-3.5 ${
@@ -125,8 +143,15 @@ export function ScheduleView(props: ScheduleProps) {
         })}
       </div>
 
+      <nav className="day-route" aria-label={`${weekday(day)} at a glance`}>
+        {dayEvents.map((e, i) => <button key={e.id} type="button" aria-pressed={activeStop === e.id} onClick={() => selectEvent(e.id)}>
+          <span className="route-number">{i + 1}</span><span><strong>{e.startTime ? clock(e.startTime) : "All day"}</strong><span>{e.title}</span></span>
+        </button>)}
+        {dayEvents.length === 0 && <p>No events planned.</p>}
+      </nav>
+
       <div className="mt-8 grid gap-x-14 gap-y-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)]">
-        <section id="day-panel" role="tabpanel" aria-label={weekday(day)} key={day} className="day-panel min-w-0">
+        <section id="day-panel" role="tabpanel" aria-labelledby={`day-tab-${day}`} tabIndex={0} key={day} className="day-panel min-w-0">
           <header className="flex items-end justify-between gap-4">
             <h2 className="display text-[44px] md:text-[60px]">{weekday(day)}</h2>
             <p className="pb-1.5 text-right text-meta font-medium text-moss">
@@ -135,7 +160,7 @@ export function ScheduleView(props: ScheduleProps) {
           </header>
 
           {/* The selected day's conditions, right where the day begins. */}
-          <div className="mt-4 border-y border-pine py-4">
+          <div className="schedule-conditions mt-4 border-y border-pine py-4">
             {dayWeather ? (
               <>
                 <Conditions weather={dayWeather} tone="light" className="sm:justify-start sm:gap-x-12" />
@@ -171,9 +196,9 @@ export function ScheduleView(props: ScheduleProps) {
             <ol className="mt-6 space-y-3">
               {dayEvents.map((e) =>
                 e.type === "golf" ? (
-                  <GolfEvent key={e.id} event={e} {...props} />
+                  <GolfEvent key={e.id} event={e} {...props} selected={activeStop === e.id} onLocate={() => selectEvent(e.id, "map")} />
                 ) : (
-                  <PlainEvent key={e.id} event={e} {...props} />
+                  <PlainEvent key={e.id} event={e} {...props} selected={activeStop === e.id} onLocate={() => selectEvent(e.id, "map")} />
                 ),
               )}
             </ol>
@@ -183,18 +208,20 @@ export function ScheduleView(props: ScheduleProps) {
         {/* A slim rail on wide screens; on phones it closes the day as a short footer. */}
         <aside className="lg:sticky lg:top-24 lg:self-start">
           {stops.length > 0 && (
-            <section aria-labelledby="day-map" className="mb-8">
-              <h2 id="day-map" className="display mb-3 text-[30px] lg:sr-only">
+            <section id="schedule-map" aria-labelledby="day-map" className="schedule-map mb-8">
+              <h2 id="day-map" className="display mb-3 text-[30px]">
                 Where we&rsquo;ll be
               </h2>
+              <p className="mb-4 text-meta text-moss">Select a stop to connect the map and your day.</p>
               <DayMap
+                key={day}
                 stops={stops}
                 homeId={props.homePlace}
                 homeLabel={props.homeLabel}
                 otherPlaceIds={otherPlaces}
                 dayName={weekday(day)}
                 activeEventId={activeStop}
-                onSelect={setActiveStop}
+                onSelect={id => selectEvent(id)}
               />
             </section>
           )}
@@ -204,7 +231,11 @@ export function ScheduleView(props: ScheduleProps) {
   );
 }
 
-type EventProps = ScheduleProps & { event: PublicEvent };
+type EventProps = ScheduleProps & { event: PublicEvent; selected: boolean; onLocate: () => void };
+
+function LocateEvent({ onLocate }: { onLocate: () => void }) {
+  return <button type="button" className="locate-event" onClick={onLocate}><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><path d="M15.5 8c0 4-5.5 9-5.5 9S4.5 12 4.5 8a5.5 5.5 0 1 1 11 0Z"/><circle cx="10" cy="8" r="2"/></svg>Show on map</button>;
+}
 
 function Actions({ course }: { course?: string }) {
   if (!course) return null;
@@ -282,11 +313,11 @@ const Toggle = () => (
 );
 
 /** Golf leads the day: the course's photograph, round and tee times up front. */
-function GolfEvent({ event: e, photos, slots, rounds, states, atStart, courses }: EventProps) {
+function GolfEvent({ event: e, photos, slots, rounds, states, atStart, courses, places, selected, onLocate }: EventProps) {
   const round = rounds[e.id];
   const state = states[e.id];
   return (
-    <li className={state === "past" ? "opacity-60" : ""}>
+    <li id={`schedule-event-${e.id}`} className="schedule-event" data-selected={selected} data-past={state === "past"}>
       {/* The photograph carries only the name. Times and conditions sit below it in dark
           type on paper, where they can be read in any light. */}
       <div className="relative isolate aspect-[16/10] overflow-hidden bg-forest-deep text-paper sm:aspect-[16/7]">
@@ -327,8 +358,9 @@ function GolfEvent({ event: e, photos, slots, rounds, states, atStart, courses }
             </p>
           )}
         </div>
-        <div className="px-5 md:px-7">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 px-5 md:px-7">
           <Actions course={courses[e.id]} />
+          {places[e.id] && <LocateEvent onLocate={onLocate} />}
         </div>
         <details className="event border-t border-rule" open={e.teeTimes.length > 0}>
           <summary className="flex min-h-14 items-center justify-between gap-4 px-5 text-ui font-semibold md:px-7">
@@ -347,12 +379,12 @@ function GolfEvent({ event: e, photos, slots, rounds, states, atStart, courses }
 }
 
 /** Meals and everything else: a compact row that opens for details. */
-function PlainEvent({ event: e, photos, slots, states, atStart, lateNote }: EventProps) {
+function PlainEvent({ event: e, photos, slots, states, atStart, lateNote, places, selected, onLocate }: EventProps) {
   const state = states[e.id];
   const photo = photos[e.id];
   return (
-    <li className={state === "past" ? "opacity-60" : ""}>
-      <details className={`event border-l-[3px] bg-paper ${e.type === "dining" ? "border-copper" : "border-moss"}`}>
+    <li id={`schedule-event-${e.id}`} className="schedule-event" data-selected={selected} data-past={state === "past"}>
+      <details className="event bg-paper" open={selected}>
         <summary className="flex min-h-[5rem] items-center gap-4 p-4 md:px-5">
           {photo ? (
             <span className="relative block h-14 w-14 shrink-0 overflow-hidden bg-forest-deep">
@@ -390,6 +422,7 @@ function PlainEvent({ event: e, photos, slots, states, atStart, lateNote }: Even
               </p>
             )}
             <Details event={e} />
+            {places[e.id] && <LocateEvent onLocate={onLocate} />}
           </div>
           {photo && (
             <div className="relative aspect-[4/3] w-full overflow-hidden md:w-56">
