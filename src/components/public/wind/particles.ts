@@ -66,9 +66,13 @@ export class WindParticles {
       return shader;
     };
     const program = gl.createProgram()!;
-    gl.attachShader(program, compile(gl.VERTEX_SHADER, VERT));
-    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FRAG));
+    const vertex = compile(gl.VERTEX_SHADER, VERT);
+    const fragment = compile(gl.FRAGMENT_SHADER, FRAG);
+    gl.attachShader(program, vertex);
+    gl.attachShader(program, fragment);
     gl.linkProgram(program);
+    gl.deleteShader(vertex);
+    gl.deleteShader(fragment);
     gl.useProgram(program);
     this.program = program;
     this.aPos = gl.getAttribLocation(program, "a_pos");
@@ -193,9 +197,11 @@ export class WindParticles {
     gl.drawArrays(gl.TRIANGLES, 0, n / STRIDE);
   }
 
-  /** Nothing to release by hand: the context goes with the canvas. (Forcing it lost
-   *  would also kill it for a remount onto the same canvas.) */
+  /** Release GPU resources on navigation and development remounts without losing the canvas context. */
   destroy() {
     this.clear();
+    this.gl.deleteBuffer(this.buffer);
+    this.gl.deleteBuffer(this.quad);
+    this.gl.deleteProgram(this.program);
   }
 }
