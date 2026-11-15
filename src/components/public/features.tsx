@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { CourseFacts } from "@/lib/catalog";
-import { clockRange, monthDay, monthDayShort, weekday, weekdayShort } from "@/lib/time";
-import type { PublicEvent } from "@/lib/trip";
+import { monthDay, monthDayShort, weekday, weekdayShort } from "@/lib/time";
+import { eventTimes, type PublicEvent } from "@/lib/trip";
 import type { DayWeather } from "@/lib/weather";
 import { TypeGlyph, WeatherGlyph, WindGlyph } from "./Glyphs";
 import { Photo, PhotoCredit, type PhotoData } from "./Photo";
@@ -125,7 +125,7 @@ export function CourseCard({ event, photo, slot, round, weather, href, className
           <span>
             {weekday(event.date)}, {monthDay(event.date)}
           </span>
-          {event.startTime && <span>{clockRange(event.startTime, event.endTime)}</span>}
+          {event.startTime && <span>{eventTimes(event)}</span>}
         </p>
         <PhotoCredit photo={photo} className="mt-2 block" />
       </div>
@@ -136,7 +136,7 @@ export function CourseCard({ event, photo, slot, round, weather, href, className
 /** The lead course, given room: a large photograph beside its details. Desktop only. */
 export function CourseFeature({ event, photo, slot, round, facts, weather, href, className = "", sizes }: CourseProps) {
   const rows: [string, string][] = [["Day", `${weekday(event.date)}, ${monthDay(event.date)}`]];
-  if (event.startTime) rows.push(["Tee times", clockRange(event.startTime, event.endTime)]);
+  if (event.startTime) rows.push(["Tee times", eventTimes(event)]);
   if (round) rows.push(["Par", String(round.par)]);
   if (facts) rows.push(["Design", `${facts.designer}, ${facts.opened}`]);
   return (
@@ -330,14 +330,14 @@ export function EventRow({
         <span className="serif block text-[22px] leading-tight">{event.title}</span>
         <span className="figures mt-1 block text-ui font-semibold sm:hidden">
           {showDay && <span className="mr-1.5 text-copper">{weekdayShort(event.date)}</span>}
-          {event.startTime ? clockRange(event.startTime, event.endTime) : "All day"}
+          {event.startTime ? eventTimes(event) : "All day"}
         </span>
         {summary && <span className="mt-0.5 block text-meta text-moss sm:mt-1">{summary}</span>}
         {note && <span className="block text-meta text-moss">{note}</span>}
       </span>
       <span className="figures hidden shrink-0 text-right text-ui font-semibold sm:block">
         {showDay && <span className="block text-meta font-medium text-copper">{weekdayShort(event.date)}</span>}
-        {event.startTime ? clockRange(event.startTime, event.endTime) : "All day"}
+        {event.startTime ? eventTimes(event) : "All day"}
       </span>
     </>
   );
