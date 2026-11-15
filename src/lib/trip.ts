@@ -1,5 +1,5 @@
-import { EVENTS, TRIP, type EventType } from "@/data/trip";
-import { tripPhase, zonedNow, type Phase, type ZonedNow } from "./time";
+import { EVENTS, GROUP, TRIP, type EventType } from "@/data/trip";
+import { clockList, clockRange, tripPhase, zonedNow, type Phase, type ZonedNow } from "./time";
 
 // The pages read the trip through this file. The trip itself is src/data/trip.ts.
 
@@ -19,7 +19,8 @@ export type PublicEvent = {
   partySize: number | null;
   group: string | null;
   reservationNote: string;
-  teeTimes: { time: string; players: string[]; note: string }[];
+  /** Tee times our group is in. `ours` marks the players who are in our group. */
+  teeTimes: { time: string; players: { name: string; ours: boolean }[]; note: string }[];
 };
 
 const slugify = (text: string) =>
@@ -39,7 +40,11 @@ const events: PublicEvent[] = EVENTS.map((e) => ({
   partySize: e.partySize ?? null,
   group: e.group ?? null,
   reservationNote: e.reservationNote ?? "",
-  teeTimes: (e.teeTimes ?? []).map((t) => ({ time: t.time, players: t.players ?? [], note: t.note ?? "" })),
+  teeTimes: (e.teeTimes ?? []).map((t) => ({
+    time: t.time,
+    players: (t.players ?? []).map((name) => ({ name, ours: GROUP.includes(name) })),
+    note: t.note ?? "",
+  })),
 })).sort(
   (a, b) =>
     a.date.localeCompare(b.date) ||
@@ -73,6 +78,12 @@ export function roundNumbers(all: PublicEvent[]): Record<string, { number: numbe
 }
 
 // ---- Small helpers shared by the pages ----
+
+/** When an event is, as text: our own tee times for a round, otherwise its start and end. */
+export function eventTimes(e: Pick<PublicEvent, "startTime" | "endTime" | "teeTimes">): string {
+  if (e.teeTimes.length > 0) return clockList(e.teeTimes.map((t) => t.time));
+  return e.startTime ? clockRange(e.startTime, e.endTime) : "";
+}
 
 /** The moment an event stops being "upcoming": its end, or a sensible default length. */
 export function eventEnd(e: Pick<PublicEvent, "type" | "startTime" | "endTime">): string {
