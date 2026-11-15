@@ -1,28 +1,29 @@
 // The resort map and where things sit on it. Positions are pixels on
-// public/images/map/resort.jpg (the resort's own printed map, cropped to the map area),
-// read off its clubhouse stars and numbered dots.
+// public/images/map/resort.jpg (a clean redrawing of the resort's printed map, cropped to
+// the map area by scripts/clean-map.mjs), placed where the printed map's stars and
+// numbered dots sit.
 
-export const RESORT_MAP = { src: "/images/map/resort.jpg", width: 1483, height: 1668 };
+export const RESORT_MAP = { src: "/images/map/resort.jpg", width: 1045, height: 1173 };
 
 export type MapPlace = { id: string; name: string; x: number; y: number };
 
 const place = (id: string, name: string, x: number, y: number): MapPlace => ({ id, name, x, y });
 
 export const PLACES: Record<string, MapPlace> = {
-  "sheep-ranch": place("sheep-ranch", "Sheep Ranch clubhouse", 713, 177),
-  "old-macdonald": place("old-macdonald", "Old Macdonald clubhouse", 804, 690),
-  "ghost-tree": place("ghost-tree", "Ghost Tree Grill", 841, 642),
-  "practice-center": place("practice-center", "Practice Center", 810, 866),
-  "pacific-dunes": place("pacific-dunes", "Pacific Dunes clubhouse", 731, 960),
-  "bandon-dunes": place("bandon-dunes", "Bandon Dunes clubhouse", 657, 1101),
-  "main-lodge": place("main-lodge", "Main Lodge", 662, 1140),
-  "the-inn": place("the-inn", "The Inn", 697, 1161),
-  "lily-pond": place("lily-pond", "Lily Pond Cottages", 721, 1185),
-  "round-lake": place("round-lake", "Round Lake", 741, 1245),
-  "grove-cottages": place("grove-cottages", "Grove Cottages", 855, 1190),
-  "chrome-lake": place("chrome-lake", "Chrome Lake Cottages", 878, 1133),
-  "bandon-trails": place("bandon-trails", "Bandon Trails clubhouse", 645, 1236),
-  shortys: place("shortys", "Shorty's", 626, 1524),
+  "sheep-ranch": place("sheep-ranch", "Sheep Ranch clubhouse", 500, 96),
+  "old-macdonald": place("old-macdonald", "Old Macdonald clubhouse", 570, 494),
+  "ghost-tree": place("ghost-tree", "Ghost Tree Grill", 597, 459),
+  "practice-center": place("practice-center", "Practice Center", 570, 598),
+  "pacific-dunes": place("pacific-dunes", "Pacific Dunes clubhouse", 513, 667),
+  "bandon-dunes": place("bandon-dunes", "Bandon Dunes clubhouse", 459, 769),
+  "main-lodge": place("main-lodge", "Main Lodge", 463, 798),
+  "the-inn": place("the-inn", "The Inn", 488, 813),
+  "lily-pond": place("lily-pond", "Lily Pond Cottages", 505, 831),
+  "round-lake": place("round-lake", "Round Lake", 520, 874),
+  "grove-cottages": place("grove-cottages", "Grove Cottages", 603, 834),
+  "chrome-lake": place("chrome-lake", "Chrome Lake Cottages", 619, 793),
+  "bandon-trails": place("bandon-trails", "Bandon Trails clubhouse", 450, 868),
+  shortys: place("shortys", "Shorty's", 450, 1078),
 };
 
 /** Names a schedule or lodging entry might use, and the place each one is at. */
