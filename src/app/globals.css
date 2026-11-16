@@ -289,8 +289,15 @@ details.event[open] .event-body {
 .wind-hole-tip-wind em { font-style: normal; font-weight: 600; color: #e7a77a; }
 
 /* Playback: a round button floating just above the dock's left shoulder. */
-.wind-play { position: absolute; z-index: 4; left: max(40px, calc(50% - 450px)); bottom: calc(28px + 276px - 48px + 14px); display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: rgb(13 33 27 / .78); color: #eceee8; box-shadow: 0 8px 20px -10px rgb(0 0 0 / .7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transition: color 200ms; }
-.wind-play:hover { color: #fff; }
+/* Above the dock: its box reaches up past its shoulders to the top of the hump. */
+.wind-play, .wind-holes-toggle { position: absolute; z-index: 5; bottom: calc(28px + 276px - 48px + 14px); display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: rgb(13 33 27 / .78); color: #eceee8; box-shadow: 0 8px 20px -10px rgb(0 0 0 / .7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transition: color 200ms; }
+.wind-play { left: max(40px, calc(50% - 450px)); }
+.wind-play:hover, .wind-holes-toggle:hover { color: #fff; }
+/* The holes button, mirroring play on the dock's right shoulder: copper while the holes show. */
+.wind-holes-toggle { right: max(40px, calc(50% - 450px)); color: #a7b6b1; }
+.wind-holes-ring { stroke: var(--color-copper-light); opacity: 0; transition: opacity 200ms; }
+.wind-holes-toggle.is-on { color: var(--color-copper-light); }
+.wind-holes-toggle.is-on .wind-holes-ring { opacity: 1; }
 .wind-play-ring { stroke: var(--color-copper-light); opacity: 0; transition: opacity 200ms; }
 .wind-play.is-running .wind-play-ring { opacity: 1; }
 .wind-play.is-running { color: var(--color-copper-light); }
@@ -303,7 +310,7 @@ details.event[open] .event-body {
 .wind-dock-edge { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
 
 .wind-dock-reading { position: absolute; inset: 4px 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 122px minmax(0, 1fr); }
-.wind-dock-side { position: relative; display: flex; align-items: center; justify-content: center; gap: 36px; height: 56px; margin-top: 52px; }
+.wind-dock-side { position: relative; display: flex; align-items: center; justify-content: center; gap: 30px; height: 56px; margin-top: 52px; }
 .wind-dock-side::after { content: ""; position: absolute; top: 8px; width: 1px; height: 40px; background: rgb(233 231 224 / .18); }
 .wind-dock-side:first-child::after { right: 0; }
 .wind-dock-side:last-child::after { left: 0; }
@@ -311,17 +318,21 @@ details.event[open] .event-body {
 .wind-stat > svg { flex-shrink: 0; }
 .wind-stat-name { font-size: 12px; color: #a7b6b1; white-space: nowrap; }
 .wind-stat-value { margin-top: 2px; font-size: 18px; font-weight: 500; color: #eceee8; white-space: nowrap; }
-.wind-stat-value.is-dark { color: #e7a77a; }
+.wind-stat-name.is-dark { color: #e7a77a; }
+.wind-stat-name .is-short { display: none; }
+/* The time ticks through playback: wide enough for "12:00 PM", so nothing beside it shifts. */
+.wind-stat-value.is-time { display: inline-block; min-width: 4.6em; }
 
 .wind-dock-compass { position: relative; justify-self: center; width: 112px; height: 112px; }
 .wind-dock-compass > svg { position: absolute; inset: 0; }
 .wind-dock-needle { transform-origin: 56px 56px; transition: transform 600ms cubic-bezier(.2, .7, .2, 1); }
-.wind-dock-speed { pointer-events: none; position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 6px; }
-.wind-dock-speed p:first-child { display: flex; align-items: baseline; gap: 3px; font-variant-numeric: tabular-nums lining-nums; }
-.wind-dock-speed strong { font-size: 36px; font-weight: 500; letter-spacing: -.03em; line-height: 1; }
-.wind-dock-speed span { font-size: 13px; font-weight: 600; }
-.wind-dock-speed p + p { margin-top: 3px; font-size: 13.5px; color: var(--color-mist); white-space: nowrap; }
-.wind-dock-speed b { font-weight: 700; color: #e7a77a; }
+/* The speed in the very centre of the circle, its unit small above it and where the wind
+   comes from below, each placed from the centre so the number never drifts. */
+.wind-dock-speed { pointer-events: none; position: absolute; inset: 0; }
+.wind-dock-speed > * { position: absolute; left: 0; right: 0; text-align: center; line-height: 1; white-space: nowrap; }
+.wind-dock-speed strong { top: 50%; transform: translateY(-50%); font-size: 36px; font-weight: 500; letter-spacing: -.03em; font-variant-numeric: tabular-nums lining-nums; }
+.wind-dock-speed span { bottom: calc(50% + 16px); font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--color-mist); }
+.wind-dock-speed b { top: calc(50% + 17px); font-size: 14px; font-weight: 700; letter-spacing: .02em; color: #e7a77a; }
 
 .wind-dock-days { position: absolute; top: 126px; inset-inline: 10px; display: grid; gap: 4px; padding: 3px; border-radius: 18px; background: rgb(10 26 21 / .4); }
 .wind-dock-days button { display: flex; align-items: baseline; justify-content: center; gap: 5px; min-height: 40px; padding-top: 11px; border-radius: 15px; font-size: 14px; font-weight: 600; color: var(--color-mist); transition: background 220ms, color 220ms; }
@@ -354,16 +365,26 @@ details.event[open] .event-body {
   .wind-speed-key { display: none; }
   .wind-probe { max-width: 220px; }
 
-  .wind-play { left: 16px; bottom: calc(76px + env(safe-area-inset-bottom) + 276px - 48px + 14px); }
+  .wind-play, .wind-holes-toggle { bottom: calc(76px + env(safe-area-inset-bottom) + 276px - 48px + 14px); }
+  .wind-play { left: 16px; }
+  .wind-holes-toggle { right: 16px; }
   /* Over the tab bar, a phone's width less a margin each side. */
   .wind-dock { inset-inline: 10px; width: auto; bottom: calc(76px + env(safe-area-inset-bottom)); }
-  .wind-dock-side { gap: 8px; }
-  .wind-dock-side:first-child { justify-content: flex-start; padding-left: 16px; }
-  .wind-dock-side:last-child { flex-direction: column; align-items: flex-start; justify-content: center; padding-left: 12px; }
-  /* Daylight is left to the dimmed night hours; the sky and rain go without names. */
-  .wind-stat.is-wide { display: none; }
-  .wind-stat.is-quiet .wind-stat-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-  .wind-stat.is-quiet .wind-stat-value { margin: 0; font-size: 17px; }
+  /* Phones: each side is a small table, a name and its value per row, the two sides
+     mirroring each other either side of the compass. Words stand in for the icons. */
+  .wind-dock-side { display: grid; grid-template-columns: auto auto; align-content: center; justify-content: center; align-items: baseline; column-gap: 9px; row-gap: 5px; }
+  .wind-stat, .wind-stat > div { display: contents; }
+  .wind-stat > svg { display: none; }
+  .wind-stat-name { font-size: 11.5px; }
+  .wind-stat-name .is-short { display: inline; }
+  .wind-stat-name .is-long { display: none; }
+  .wind-stat-value { margin: 0; font-size: 16px; }
+}
+/* The narrowest phones: a touch smaller, so "10:20 AM" stays clear of the divider. */
+@media (max-width: 380px) {
+  .wind-dock-side { column-gap: 6px; }
+  .wind-stat-name { font-size: 11px; }
+  .wind-stat-value { font-size: 15px; }
 }
 
 /* Shared interaction finish: stable figures, visible focus and a quiet press response. */
