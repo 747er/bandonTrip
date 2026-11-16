@@ -1,12 +1,14 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Map as MapLibre, Marker, setWorkerUrl } from "maplibre-gl";
+import { Map as MapLibre, Marker, setWorkerUrl, type GeoJSONSource } from "maplibre-gl";
+import type { ExpressionSpecification } from "@maplibre/maplibre-gl-style-spec";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { WindData } from "@/lib/wind";
 import coast from "@/lib/coast.json";
+import { courseFor, HOLES } from "@/lib/holes";
 import { describe } from "@/lib/weatherCodes";
-import { compass, interpolate, interpolateDirection, timelineLocal, minutesFromStart, SPEED_STOPS } from "@/lib/windMath";
+import { compass, interpolate, interpolateDirection, timelineLocal, minutesFromStart, SPEED_STOPS, windOnHole } from "@/lib/windMath";
 import { WeatherGlyph, WindGlyph } from "../Glyphs";
 import { WindParticles } from "./particles";
 
@@ -127,6 +129,64 @@ const dockPath = (w: number, h: number) => {
   return `M0 ${RISE + 26} Q0 ${RISE} 26 ${RISE} L${c - 127} ${RISE} C${c - 87} ${RISE} ${c - 77} 0 ${c} 0 C${c + 77} 0 ${c + 87} ${RISE} ${c + 127} ${RISE} L${w - 26} ${RISE} Q${w} ${RISE} ${w} ${RISE + 26} L${w} ${h - 26} Q${w} ${h} ${w - 26} ${h} L26 ${h} Q0 ${h} 0 ${h - 26} Z`;
 };
 
+/** A hole on the map: its course and number. */
+type HoleRef = { course: string; n: number };
+const holeKey = (h: HoleRef | null | undefined) => (h ? `${h.course}/${h.n}` : "");
+/** Where a hole's reading sits: halfway along its line of play. */
+const holeMiddle = ({ course, n }: HoleRef): [number, number] | null => {
+  const line = HOLES[course]?.holes.find((h) => h.n === n)?.line;
+  if (!line) return null;
+  const a = line[Math.floor((line.length - 1) / 2)];
+  const b = line[Math.ceil((line.length - 1) / 2)];
+  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+};
+
+/**
+ * Every hole as map features: its line of play, its green, and a numbered badge at the
+ * tee. `today` marks the courses being played on the chosen day, which show at any zoom;
+ * the rest come in as the map is zoomed in. `on` is the hole whose reading is open.
+ */
+function holeFeatures(today: string[], on: string): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = [];
+  for (const [course, { holes }] of Object.entries(HOLES)) {
+    for (const hole of holes) {
+      const properties = { course, n: hole.n, today: today.includes(course), on: holeKey({ course, n: hole.n }) === on };
+      if (hole.green) features.push({ type: "Feature", properties, geometry: { type: "Polygon", coordinates: [hole.green] } });
+      features.push({ type: "Feature", properties, geometry: { type: "LineString", coordinates: hole.line } });
+      features.push({ type: "Feature", properties, geometry: { type: "Point", coordinates: hole.line[0] } });
+    }
+  }
+  return { type: "FeatureCollection", features };
+}
+/** Opacity for a hole feature: `near` on today's courses (or the open hole), and other courses fading in from zoom 14.8. */
+const HOLES_FROM_ZOOM = 14.8;
+const holeOpacity = (near: number, far: number): ExpressionSpecification => [
+  "interpolate", ["linear"], ["zoom"],
+  HOLES_FROM_ZOOM, ["case", ["any", ["get", "today"], ["get", "on"]], near, 0],
+  HOLES_FROM_ZOOM + 0.7, ["case", ["any", ["get", "today"], ["get", "on"]], near, far],
+];
+/** A hole's number in a small round badge, drawn at twice the size for sharp screens. */
+function holeBadge(n: number, on: boolean, font: string): ImageData {
+  const k = 2;
+  const size = 22 * k;
+  const cv = document.createElement("canvas");
+  cv.width = cv.height = size;
+  const ctx = cv.getContext("2d")!;
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, size / 2 - 1.5 * k, 0, Math.PI * 2);
+  ctx.fillStyle = on ? "#b8703f" : "rgba(13, 33, 27, 0.92)";
+  ctx.fill();
+  ctx.lineWidth = 1.5 * k;
+  ctx.strokeStyle = on ? "#f4d9c4" : "rgba(236, 238, 232, 0.9)";
+  ctx.stroke();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `600 ${11 * k}px ${font}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(String(n), size / 2, size / 2 + 0.75 * k);
+  return ctx.getImageData(0, 0, size, size);
+}
+
 /** Compass ticks every 6°, longer every 30°; the top one gives way to the N. */
 const TICKS = Array.from({ length: 60 }, (_, i) => i * 6).filter((a) => a !== 0);
 
@@ -163,7 +223,8 @@ export function WindExplorer({
   const live = useRef({ t: initialHour, dirty: true });
   const pins = useRef(new Map<string, HTMLElement>());
   // A point the user has touched on the map, and where it currently is on screen.
-  const [probe, setProbe] = useState<{ lng: number; lat: number } | null>(null);
+  // A hole tapped on the map carries the hole, and its reading says how the wind plays there.
+  const [probe, setProbe] = useState<{ lng: number; lat: number; hole?: HoleRef } | null>(null);
   const [probeAt, setProbeAt] = useState<{ x: number; y: number } | null>(null);
   const probeRef = useRef(probe);
   useEffect(() => {
@@ -194,6 +255,10 @@ export function WindExplorer({
   const groupPlace = happening ? happening.placeId : checkedIn ? (places.find((p) => p.home)?.id ?? null) : null;
   const dayOf = Math.max(0, Math.floor(t / 24));
   const dayEvents = useMemo(() => events.filter((e) => Math.floor(e.start / 24) === dayOf), [events, dayOf]);
+  // The courses played that day (Shorty's too, though it is down as an outing), plus the
+  // course of a hole someone has opened, have their holes drawn at any zoom.
+  const playing = [...new Set([...dayEvents.map((e) => courseFor(e.title)), probe?.hole?.course])].filter((c): c is string => !!c && !!HOLES[c]).join(",");
+  const openHole = holeKey(probe?.hole);
   // Each of the day's pins names what is on there: the event happening at that place, or
   // its next one that day, or its first. Several things share a pin (Punchbowl and Pacific
   // Grill are both at the Pacific Dunes clubhouse). The lodging, with nothing on there,
@@ -260,6 +325,19 @@ export function WindExplorer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupPlace, pinned, pinText]);
 
+  // Pins carry their labels in the day's overview. Zoomed in past it, or with a hole's
+  // reading open, the labels fold away to the badges so the holes underneath can be read.
+  const framedZoom = useRef(Infinity);
+  const showLabels = useRef(() => {});
+
+  // The holes layer is redrawn when the day's courses or the open hole change.
+  const holesShown = useRef({ today: playing.split(","), on: openHole });
+  useEffect(() => {
+    holesShown.current = { today: playing.split(","), on: openHole };
+    map.current?.getSource<GeoJSONSource>("holes")?.setData(holeFeatures(holesShown.current.today, openHole));
+    showLabels.current();
+  }, [playing, openHole]);
+
   useEffect(() => {
     live.current.t = t;
     live.current.dirty = true;
@@ -274,14 +352,24 @@ export function WindExplorer({
     const boundsOf = (day: number): [[number, number], [number, number]] => {
       const ids = new Set(events.filter((e) => Math.floor(e.start / 24) === day).map((e) => e.placeId));
       const shown = places.filter((p) => p.home || ids.has(p.id));
-      if (!shown.length) return [[center[0] - 0.02, center[1] - 0.02], [center[0] + 0.02, center[1] + 0.02]];
-      const lons = shown.map((p) => p.lon);
-      const lats = shown.map((p) => p.lat);
+      // A day with a round takes in the whole course, not just its clubhouse.
+      const holes = events
+        .filter((e) => Math.floor(e.start / 24) === day && e.type === "golf")
+        .flatMap((e) => HOLES[courseFor(e.title) ?? ""]?.holes.flatMap((h) => h.line) ?? []);
+      if (!shown.length && !holes.length) return [[center[0] - 0.02, center[1] - 0.02], [center[0] + 0.02, center[1] + 0.02]];
+      const lons = [...shown.map((p) => p.lon), ...holes.map((p) => p[0])];
+      const lats = [...shown.map((p) => p.lat), ...holes.map((p) => p[1])];
       return [[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]];
     };
     const firstDay = Math.max(0, Math.floor(live.current.t / 24));
     frameDay.current = (day, animate) => {
-      m.stop().fitBounds(boundsOf(day), { padding: padding(), maxZoom: 15, duration: animate && !reduce.matches ? 750 : 0 });
+      const options = { padding: padding(), maxZoom: 15 };
+      framedZoom.current = m.cameraForBounds(boundsOf(day), options)?.zoom ?? framedZoom.current;
+      m.stop().fitBounds(boundsOf(day), { ...options, duration: animate && !reduce.matches ? 750 : 0 });
+    };
+    showLabels.current = () => {
+      const off = m.getZoom() > framedZoom.current + 0.35 || !!holesShown.current.on;
+      section.current?.setAttribute("data-labels", off ? "off" : "on");
     };
     // The library's worker script is copied into public/ at build time (scripts/photos.mjs).
     setWorkerUrl("/maplibre-worker.mjs");
@@ -340,6 +428,7 @@ export function WindExplorer({
       setTimeout(() => setMapFailed(true), 0);
       return;
     }
+    framedZoom.current = m.getZoom();
     m.touchZoomRotate.disableRotation();
     m.keyboard.disableRotation();
     map.current = m;
@@ -464,9 +553,23 @@ export function WindExplorer({
     };
 
     // Touch the map anywhere for the wind at that spot. The reading follows the map.
+    // A hole under the touch (one that is showing) opens that hole's reading instead.
+    const holeAt = (x: number, y: number): HoleRef | null => {
+      if (!m.getLayer("holes-number")) return null;
+      const far = m.getZoom() >= HOLES_FROM_ZOOM + 0.3;
+      const hit = m
+        .queryRenderedFeatures([[x - 10, y - 10], [x + 10, y + 10]], { layers: ["holes-number", "holes-line", "holes-green"] })
+        .find((f) => far || f.properties.today || f.properties.on);
+      return hit ? { course: String(hit.properties.course), n: Number(hit.properties.n) } : null;
+    };
     m.on("click", (e) => {
       setSelectedPlace(null);
-      setProbe({ lng: e.lngLat.lng, lat: e.lngLat.lat });
+      const hole = holeAt(e.point.x, e.point.y);
+      const middle = hole && holeMiddle(hole);
+      setProbe(hole && middle ? { lng: middle[0], lat: middle[1], hole } : { lng: e.lngLat.lng, lat: e.lngLat.lat });
+    });
+    m.on("mousemove", (e) => {
+      m.getCanvas().style.cursor = holeAt(e.point.x, e.point.y) ? "pointer" : "";
     });
     m.on("move", () => {
       const p = probeRef.current;
@@ -476,15 +579,48 @@ export function WindExplorer({
       moving = true;
       particles.clear();
     });
+    m.on("zoom", () => showLabels.current());
     m.on("moveend", () => {
       moving = false;
       locate();
       fitLabels();
     });
-    m.on("load", () => {
+    m.on("load", async () => {
       size();
       setReady(true);
       raf = requestAnimationFrame(tick);
+      // The holes, under the wind. Badges are drawn once the page's typeface has loaded.
+      await document.fonts.ready;
+      if (map.current !== m) return;
+      const font = getComputedStyle(mapBox.current ?? document.body).fontFamily;
+      for (let n = 1; n <= 19; n++) {
+        m.addImage(`hole-${n}`, holeBadge(n, false, font), { pixelRatio: 2 });
+        m.addImage(`hole-on-${n}`, holeBadge(n, true, font), { pixelRatio: 2 });
+      }
+      m.addSource("holes", { type: "geojson", data: holeFeatures(holesShown.current.today, holesShown.current.on) });
+      m.addLayer({
+        id: "holes-green", type: "fill", source: "holes", filter: ["==", ["geometry-type"], "Polygon"],
+        paint: { "fill-color": "#eceee8", "fill-opacity": holeOpacity(0.24, 0.14) },
+      });
+      m.addLayer({
+        id: "holes-line", type: "line", source: "holes", filter: ["==", ["geometry-type"], "LineString"],
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": ["case", ["get", "on"], "#d99a6c", "#eceee8"],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 14, ["case", ["get", "on"], 2.5, 1.2], 17, ["case", ["get", "on"], 4, 2]],
+          "line-opacity": holeOpacity(0.8, 0.5),
+        },
+      });
+      m.addLayer({
+        id: "holes-number", type: "symbol", source: "holes", filter: ["==", ["geometry-type"], "Point"],
+        layout: {
+          "icon-image": ["concat", ["case", ["get", "on"], "hole-on-", "hole-"], ["to-string", ["get", "n"]]],
+          // The open hole and today's courses win when badges crowd each other.
+          "symbol-sort-key": ["case", ["get", "on"], 0, ["get", "today"], 1, 2],
+          "icon-padding": 1,
+        },
+        paint: { "icon-opacity": holeOpacity(1, 0.85) },
+      });
     });
     const observer = new ResizeObserver(() => {
       m.resize();
@@ -613,7 +749,8 @@ export function WindExplorer({
 
   const go = (time: number) => {
     setSelectedPlace(null);
-    setProbe(null);
+    // An open hole stays open through the day's hours, so its wind can be followed.
+    setProbe((p) => (p?.hole && Math.floor(time / 24) === dayOf ? p : null));
     setT(Math.max(0, Math.min(hours - 1, time)));
   };
   const chooseDay = (i: number) => {
@@ -630,7 +767,7 @@ export function WindExplorer({
   const icon = (path: string, size = 18) => <svg width={size} height={size} viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={path} /></svg>;
 
   return (
-    <section ref={section} aria-label="Wind map" className="wind-instrument">
+    <section ref={section} aria-label="Wind map" className="wind-instrument" data-labels="on">
       <div className="absolute inset-0"><div ref={mapBox} className="h-full w-full" /></div>
       <canvas ref={canvas} aria-hidden="true" className={`wind-canvas ${ready ? "is-ready" : ""}`} />
       <div className="wind-map-shade" aria-hidden="true" />
@@ -648,9 +785,16 @@ export function WindExplorer({
         <span className="wind-attribution">Imagery USDA NAIP / USGS · Wind <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a> · Places © OpenStreetMap</span>
       </div>
 
-      {probe && probeAt && reading && <div className="wind-probe" style={{left: probeAt.x, top: probeAt.y}}>
+      {probe && probeAt && reading && <div className={`wind-probe ${probe.hole ? "is-hole" : ""}`} style={{left: probeAt.x, top: probeAt.y}}>
         <span className="wind-probe-dot" />
-        <div><span className="wind-probe-label">{places.find(p => p.id === selectedPlace)?.name ?? "At this point"}</span><p><strong>{reading.mph} mph</strong> from {compass(reading.from)}</p></div>
+        {probe.hole ? (() => {
+          const course = HOLES[probe.hole.course];
+          const hole = course?.holes.find((h) => h.n === probe.hole!.n);
+          return <div>
+            <span className="wind-probe-label">{course?.name} · Hole {probe.hole.n}{hole?.par ? ` · Par ${hole.par}` : ""}</span>
+            <p><strong>{reading.mph} mph</strong> {hole ? windOnHole(hole.line, reading.from).toLowerCase() : `from ${compass(reading.from)}`}</p>
+          </div>;
+        })() : <div><span className="wind-probe-label">{places.find(p => p.id === selectedPlace)?.name ?? "At this point"}</span><p><strong>{reading.mph} mph</strong> from {compass(reading.from)}</p></div>}
         <button type="button" aria-label="Close the reading" onClick={() => setProbe(null)}>{icon("M5 5l8 8M13 5l-8 8")}</button>
       </div>}
 
