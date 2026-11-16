@@ -468,21 +468,12 @@ details.event[open] .event-body {
 
 /* Schedule: the same selected stop is legible in the route, event and map. */
 .schedule-days { margin-top: 20px; }
-.day-route { display: flex; overflow-x: auto; border-bottom: 1px solid var(--color-rule); padding: 16px 0; gap: 24px; }
-.day-route button { display: flex; align-items: center; gap: 10px; text-align: left; min-height: 48px; flex: 1 0 auto; padding: 4px 8px 4px 0; }
-.route-number { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--color-moss); border-radius: 50%; color: var(--color-moss); font-size: 12px; }
-.day-route button > span:last-child { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
-.day-route strong { font-weight: 600; font-variant-numeric: tabular-nums; }
-.day-route button[aria-pressed=true] .route-number { background: var(--color-forest); color: var(--color-paper); border-color: var(--color-forest); }
-.day-route button:hover { color: var(--color-copper); }
 .schedule-event { scroll-margin-top: 130px; outline: 1px solid transparent; outline-offset: 4px; transition: outline-color 220ms; }
 .schedule-event[data-selected=true] { outline-color: var(--color-copper); }
 .schedule-event[data-past=true] > div { border-bottom-color: var(--color-moss); }
 .schedule-conditions { background: var(--color-paper); padding: 20px; border-color: var(--color-rule); }
 .schedule-conditions .text-fine { font-size: 12px; }
 .schedule-map { scroll-margin-top: 130px; }
-.locate-event { min-height: 44px; display: inline-flex; gap: 6px; align-items: center; font-size: 14px; color: var(--color-moss); }
-.locate-event:hover { color: var(--color-copper); }
 .day-map-figure { border-top: 1px solid var(--color-pine); padding-top: 10px; }
 .day-map-figure ol button[aria-pressed=true] { background: var(--color-paper); }
 
@@ -578,8 +569,6 @@ details.event[open] .event-body {
   .forecast-temperature > svg { width: 26px; }
   .forecast-temperature > span:last-child { font-size: 13px; }
   .forecast-measures { margin-top: 16px; }
-  .day-route { gap: 18px; padding-block: 12px; }
-  .day-route button { max-width: 210px; }
   .schedule-conditions { padding: 16px; }
   .schedule-event { scroll-margin-top: 110px; }
   .course-back { top: 70px; left: 20px; font-size: 13px; }
