@@ -82,3 +82,31 @@ export function timelineLocal(times: string[], time: number): string {
 export function timelineLabel(times: string[], time: number): string {
   return new Intl.DateTimeFormat("en-US", {weekday: "long", hour: "numeric", minute: "2-digit", timeZone: "UTC"}).format(new Date(`${timelineLocal(times, time)}Z`));
 }
+
+/** Degrees clockwise from north that a hole plays toward, from its tee to its green. */
+export function heading(line: [number, number][]): number {
+  const [x1, y1] = line[0];
+  const [x2, y2] = line[line.length - 1];
+  const east = (x2 - x1) * Math.cos((y1 * Math.PI) / 180);
+  const north = y2 - y1;
+  return ((Math.atan2(east, north) * 180) / Math.PI + 360) % 360;
+}
+
+/**
+ * How the wind plays on a hole whose line of play (tee to green, as [longitude,
+ * latitude]) is `line`, the way golfers say it: "Into the wind", "Downwind",
+ * "Left to right", or a mix such as "Into, right to left". `from` is where the wind
+ * blows from, in degrees.
+ */
+export function windOnHole(line: [number, number][], from: number): string {
+  // Angle between the way the wind blows and the way the hole plays: 0 is straight
+  // behind the player, 180 straight in their face, positive toward their right.
+  const a = ((((from + 180 - heading(line)) % 360) + 540) % 360) - 180;
+  const across = a > 0 ? "Left to right" : "Right to left";
+  const off = Math.abs(a);
+  if (off <= 25) return "Downwind";
+  if (off >= 155) return "Into the wind";
+  if (off < 65) return `Helping, ${across.toLowerCase()}`;
+  if (off > 115) return `Into, ${across.toLowerCase()}`;
+  return across;
+}
