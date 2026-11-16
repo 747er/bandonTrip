@@ -3,14 +3,15 @@ import { notFound } from "next/navigation";
 import type { RoundInfo } from "@/components/public/features";
 import { ScheduleView } from "@/components/public/ScheduleView";
 import { courseById } from "@/data/courses";
+import { PEOPLE, TEE_SHEET } from "@/data/trip";
 import { photosForEvents, slotFor, slotName } from "@/lib/photos";
-import { placeFor } from "@/lib/resortMap";
+import { PLACES, placeFor } from "@/lib/resortMap";
 import { clock, dateRange, eachDay } from "@/lib/time";
-import { getTripNow, isPast, isUnderway, roundNumbers } from "@/lib/trip";
+import { getTripNow, isPast, isUnderway, personId, roundNumbers } from "@/lib/trip";
 import { getTrip } from "@/lib/viewer";
 import { getForecast } from "@/lib/weather";
 import { getWind } from "@/lib/wind";
-import { forecastSummary, minutesFromStart } from "@/lib/windMath";
+import { forecastAt, minutesFromStart, type ForecastAt } from "@/lib/windMath";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Schedule" };
@@ -21,6 +22,8 @@ export default async function SchedulePage({
   const { day } = await searchParams;
   const data = await getTrip();
   if (!data) notFound();
+  // The layout shows only the name sheet until a player is chosen; send nothing else.
+  if (!data.viewer) return null;
   const { trip, events, viewer } = data;
   const [{ now, phase }, weather, wind] = await Promise.all([
     getTripNow(trip),
@@ -54,16 +57,16 @@ export default async function SchedulePage({
 
   // Hour-by-hour: what it is forecast to be doing when each event starts, the day's
   // daylight, and a note on anything outdoors that runs past sunset.
-  const atStart: Record<string, string> = {};
+  const atStart: Record<string, ForecastAt> = {};
   const lateNote: Record<string, string> = {};
-  const daylight: Record<string, { sunrise: string; sunset: string }> = {};
+  const daylight: Record<string, { sunrise: string; sunset: string; rise: string; set: string }> = {};
   if (wind) {
-    for (const d of wind.days) daylight[d.date] = { sunrise: clock(d.sunrise.slice(11)), sunset: clock(d.sunset.slice(11)) };
+    for (const d of wind.days) daylight[d.date] = { sunrise: clock(d.sunrise.slice(11)), sunset: clock(d.sunset.slice(11)), rise: d.sunrise.slice(11, 16), set: d.sunset.slice(11, 16) };
     for (const e of events) {
       if (!e.startTime) continue;
       const minute = minutesFromStart(wind.times, `${e.date}T${e.startTime}`);
       if (minute < 0) continue;
-      atStart[e.id] = forecastSummary(wind.point, minute / 60);
+      atStart[e.id] = forecastAt(wind.point, minute / 60);
       const day = wind.days.find((d) => d.date === e.date);
       if (day && e.endTime && e.type !== "dining") {
         const late =
@@ -98,6 +101,26 @@ export default async function SchedulePage({
       places={places}
       homePlace={homePlace}
       homeLabel={viewer?.room ?? null}
+      where={Object.fromEntries(
+        events.map((e) => {
+          const spot = places[e.id] ? PLACES[places[e.id]].name : "";
+          // "Trails End Restaurant, Bandon Trails clubhouse"; a clubhouse alone for a round.
+          const venue = e.venue && e.venue !== e.title ? e.venue : "";
+          return [e.id, [venue, spot].filter(Boolean).join(", ") || e.title];
+        }),
+      )}
+      party={Object.fromEntries(
+        events
+          .filter((e) => e.type !== "golf")
+          .map((e) => [e.id, PEOPLE.filter((p) => p.core && personId(p.key) !== viewer?.id).map((p) => p.name)]),
+      )}
+      firstTee={Object.fromEntries(
+        events.flatMap((e) => {
+          const first = e.type === "golf" ? TEE_SHEET[e.title]?.[0]?.[0] : undefined;
+          return first ? [[e.id, clock(first)]] : [];
+        }),
+      )}
+      viewerName={viewer?.name ?? null}
       initialDay={requested ?? today ?? days[0]}
       today={today}
     />
