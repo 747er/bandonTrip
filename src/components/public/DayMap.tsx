@@ -41,15 +41,22 @@ function frame(points: { x: number; y: number }[], cw: number, ch: number): View
 const MOVE = "transform 800ms cubic-bezier(0.2, 0.7, 0.2, 1)";
 
 /**
+ * A pin that was not on the map a moment ago waits for the map to travel most of the way
+ * to its new frame, then fades in where it belongs. (Given as a ref, so it runs once.)
+ */
+const arrive = (el: HTMLElement | null) => {
+  if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.55 }, { opacity: 1 }], { duration: 800, easing: "ease-out" });
+};
+
+/**
  * The resort map for one day: home base, the day's stops in order, and a line joining
- * them. It frames the day on its own; "Whole resort" pulls back to show everything.
+ * them, framed to the day.
  */
 export function DayMap({
   stops,
   homeId,
   homeLabel,
-  otherPlaceIds,
-  dayName,
   activeEventId,
   onSelect,
 }: {
@@ -57,23 +64,26 @@ export function DayMap({
   homeId: string | null;
   /** The viewer's room, by name */
   homeLabel: string | null;
-  /** Places used on other days: "Whole resort" pulls back far enough to take them in */
-  otherPlaceIds: string[];
-  dayName: string;
   activeEventId: string | null;
   onSelect: (eventId: string | null) => void;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
-  const [whole, setWhole] = useState(false);
+  // The first frame is placed, not travelled to: movement starts only once the map has
+  // been drawn in position.
+  const [settled, setSettled] = useState(false);
 
   useEffect(() => {
     const el = box.current;
     if (!el) return;
     const measure = () => setSize({ w: el.clientWidth, h: el.clientHeight });
+    const settle = setTimeout(() => setSettled(true), 120);
     const observer = new ResizeObserver(measure);
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      clearTimeout(settle);
+    };
   }, []);
 
   const home = homeId ? PLACES[homeId] : null;
@@ -82,20 +92,18 @@ export function DayMap({
     place: PLACES[placeId],
     stops: stops.filter((s) => s.placeId === placeId),
   }));
-  const dayPoints = [...pins.map((p) => p.place), ...(home ? [home] : [])];
-  const others = otherPlaceIds
-    .filter((id) => id !== homeId && !pins.some((p) => p.place.id === id))
-    .map((id) => PLACES[id]);
   const active = stops.find((s) => s.eventId === activeEventId) ?? null;
 
+  // The lodging's label sits to its right, so the frame keeps room for it there.
+  const homeRoom = home ? [home, { x: Math.min(W, home.x + 120), y: home.y }] : [];
   const view = size
-    ? frame(whole ? [...dayPoints, ...others] : active ? [PLACES[active.placeId], ...(home ? [home] : [])] : dayPoints, size.w, size.h)
+    ? frame(active ? [PLACES[active.placeId], ...homeRoom] : [...pins.map((p) => p.place), ...homeRoom], size.w, size.h)
     : null;
   const at = (p: { x: number; y: number }) =>
     view ? `translate(${p.x * view.scale + view.x}px, ${p.y * view.scale + view.y}px)` : undefined;
 
   // Keep labels within the instrument, including clubhouses shared by several events.
-  const labelAt = (p: { x: number; y: number }, text: string) => {
+  const labelAt = (p: { x: number; y: number }, text: string, prefer: "left" | "right" = "left") => {
     if (!size || !view) return {};
     const x = p.x * view.scale + view.x;
     const width = Math.min(220, text.length * 7 + 16, size.w - 48);
@@ -103,7 +111,7 @@ export function DayMap({
     const fitsRight = x + width + 30 < size.w;
     return {
       width,
-      left: fitsLeft ? -width - 24 : fitsRight ? 24 : Math.max(8 - x, Math.min(-width / 2, size.w - x - width - 8)),
+      left: (prefer === "right" ? fitsRight : !fitsLeft && fitsRight) ? 24 : fitsLeft ? -width - 24 : Math.max(8 - x, Math.min(-width / 2, size.w - x - width - 8)),
       top: fitsLeft || fitsRight ? 0 : -38,
     };
   };
@@ -120,7 +128,7 @@ export function DayMap({
             width: W,
             height: H,
             transform: view ? `translate(${view.x}px, ${view.y}px) scale(${view.scale})` : undefined,
-            transition: MOVE,
+            transition: settled ? MOVE : "none",
             opacity: view ? 1 : 0,
           }}
         >
@@ -164,13 +172,13 @@ export function DayMap({
         {view && (
           <>
             {home && (
-              <span className="absolute left-0 top-0" style={{ transform: at(home), transition: MOVE }}>
+              <span className="absolute left-0 top-0" style={{ transform: at(home), transition: settled ? MOVE : "none" }}>
                 <span className="absolute -left-4 -top-4 flex h-8 w-8 items-center justify-center rounded-full border-2 border-paper bg-forest text-limestone shadow-md">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden="true">
                     <path d="M2.5 7.5L8 3l5.5 4.5V13h-11z" />
                   </svg>
                 </span>
-                <span style={labelAt(home, home.name.replace(/ clubhouse$/, ""))} className="absolute -translate-y-1/2 bg-forest px-2 py-1 text-center text-[12px] font-semibold text-limestone shadow-md">
+                <span style={labelAt(home, home.name.replace(/ clubhouse$/, ""), "right")} className="absolute -translate-y-1/2 bg-forest px-2 py-1 text-center text-[12px] font-semibold text-limestone shadow-md">
                   {home.name.replace(/ clubhouse$/, "")}
                 </span>
               </span>
@@ -185,9 +193,10 @@ export function DayMap({
                   type="button"
                   aria-pressed={on}
                   aria-label={`${here.map((s) => s.title).join(" and ")}, ${place.name}`}
-                  onClick={() => { setWhole(false); onSelect(on ? null : here[0].eventId); }}
+                  onClick={() => onSelect(on ? null : here[0].eventId)}
+                  ref={arrive}
                   className="group absolute left-0 top-0 z-10"
-                  style={{ transform: at(place), transition: MOVE }}
+                  style={{ transform: at(place), transition: settled ? MOVE : "none" }}
                 >
                   {/* A 44px target around a smaller dot */}
                   <span className="absolute left-0 top-0 flex h-11 min-w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center">
@@ -216,18 +225,6 @@ export function DayMap({
             })}
           </>
         )}
-
-        <button
-          type="button"
-          aria-pressed={whole}
-          onClick={() => {
-            setWhole(!whole);
-            onSelect(null);
-          }}
-          className="absolute bottom-3 right-3 z-20 flex min-h-11 items-center bg-paper px-4 text-label font-semibold text-pine shadow-md transition-colors hover:bg-limestone"
-        >
-          {whole ? `Back to ${dayName}` : "Whole resort"}
-        </button>
       </div>
 
       <ol className="divide-y divide-rule border-b border-rule">
@@ -250,7 +247,6 @@ export function DayMap({
                 type="button"
                 aria-pressed={on}
                 onClick={() => {
-                  setWhole(false);
                   onSelect(on ? null : s.eventId);
                 }}
                 className={`flex min-h-12 w-full items-center gap-3 py-2 text-left transition-colors ${on ? "text-forest" : "hover:text-forest"}`}
