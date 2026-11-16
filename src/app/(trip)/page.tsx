@@ -488,7 +488,6 @@ function Before(ctx: Ctx) {
             </h1>
             <p className="mt-4 text-[13px] font-medium md:mt-5 md:text-ui" style={{ "--i": 2 } as React.CSSProperties}>
               {dateRange(trip.startDate, trip.endDate)}
-              {trip.location && <span className="ml-3 font-medium text-paper/85">{trip.location}</span>}
             </p>
           </>
         }
