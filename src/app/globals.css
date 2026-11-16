@@ -257,6 +257,44 @@ details.event[open] .event-body {
 .wind-probe button:hover { color: var(--color-pine); }
 .wind-probe-dot { position: absolute; left: calc(50% - 5px); bottom: -14px; width: 10px; height: 10px; background: var(--color-copper); border: 2px solid var(--color-paper); border-radius: 50%; }
 
+/* An open hole's card, beside its line of play. The element sits on the point on the line;
+   a dot marks it, a hairline runs out `--gap` to the card. */
+.wind-hole-tip { --gap: 18px; position: absolute; z-index: 3; width: 0; height: 0; pointer-events: none; }
+.wind-hole-tip-dot { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50%; background: #0d211b; border: 2px solid var(--color-copper-light); }
+.wind-hole-tip-line { position: absolute; background: rgb(236 238 232 / .55); }
+.wind-hole-tip.is-right .wind-hole-tip-line { left: 5px; top: -.5px; width: calc(var(--gap) - 5px); height: 1px; }
+.wind-hole-tip.is-left .wind-hole-tip-line { right: 5px; top: -.5px; width: calc(var(--gap) - 5px); height: 1px; }
+.wind-hole-tip.is-top .wind-hole-tip-line { left: -.5px; bottom: 5px; width: 1px; height: calc(var(--gap) - 5px); }
+.wind-hole-tip.is-bottom .wind-hole-tip-line { left: -.5px; top: 5px; width: 1px; height: calc(var(--gap) - 5px); }
+.wind-hole-tip-card { position: absolute; pointer-events: auto; width: 272px; height: 98px; color: #eceee8; }
+.wind-hole-tip.is-right .wind-hole-tip-card { left: var(--gap); top: 0; transform: translateY(calc(-50% + var(--shift, 0px))); }
+.wind-hole-tip.is-left .wind-hole-tip-card { right: var(--gap); top: 0; transform: translateY(calc(-50% + var(--shift, 0px))); }
+.wind-hole-tip.is-top .wind-hole-tip-card { left: 0; bottom: var(--gap); transform: translateX(calc(-50% + var(--shift, 0px))); }
+.wind-hole-tip.is-bottom .wind-hole-tip-card { left: 0; top: var(--gap); transform: translateX(calc(-50% + var(--shift, 0px))); }
+/* Clipped glass with a crisp edge, like the dock: no blurred shadow around it. */
+.wind-hole-tip-glass { position: absolute; inset: 0; background: linear-gradient(180deg, rgb(40 69 58 / .86) 0%, rgb(16 38 31 / .92) 60%); backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2); }
+.wind-hole-tip-edge { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+/* In the hump: the number in a copper badge, as on the map, between its arrows. */
+.wind-hole-tip-number { position: absolute; left: 50%; top: 5px; display: grid; place-items: center; width: 34px; height: 34px; margin-left: -17px; border-radius: 50%; border: 2px solid #f4d9c4; background: linear-gradient(180deg, #c27a4a 0%, #9a5530 100%); color: #fff; font-size: 15px; font-weight: 700; font-variant-numeric: lining-nums; box-shadow: 0 4px 10px -4px rgb(0 0 0 / .6); }
+.wind-hole-tip-step { position: absolute; top: 9px; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: #eceee8; transition: background 160ms, color 160ms; }
+.wind-hole-tip-step.is-back { left: calc(50% - 50px); }
+.wind-hole-tip-step.is-on { left: calc(50% + 22px); }
+.wind-hole-tip-step:hover { background: rgb(233 231 224 / .1); color: #fff; }
+.wind-hole-tip-close { position: absolute; top: 28px; right: 6px; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; color: #a7b6b1; transition: background 160ms, color 160ms; }
+.wind-hole-tip-close:hover { background: rgb(233 231 224 / .08); color: #eceee8; }
+.wind-hole-tip-text { position: absolute; inset: 44px 12px 0; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.wind-hole-tip-name { font-size: 11.5px; color: #a7b6b1; white-space: nowrap; font-variant-numeric: lining-nums; }
+.wind-hole-tip-wind { margin-top: 2px; font-size: 16px; line-height: 1.25; white-space: nowrap; font-variant-numeric: lining-nums; }
+.wind-hole-tip-wind strong { font-weight: 600; }
+.wind-hole-tip-wind em { font-style: normal; font-weight: 600; color: #e7a77a; }
+
+/* Playback: a round button floating just above the dock's left shoulder. */
+.wind-play { position: absolute; z-index: 4; left: max(40px, calc(50% - 450px)); bottom: calc(28px + 276px - 48px + 14px); display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: rgb(13 33 27 / .78); color: #eceee8; box-shadow: 0 8px 20px -10px rgb(0 0 0 / .7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transition: color 200ms; }
+.wind-play:hover { color: #fff; }
+.wind-play-ring { stroke: var(--color-copper-light); opacity: 0; transition: opacity 200ms; }
+.wind-play.is-running .wind-play-ring { opacity: 1; }
+.wind-play.is-running { color: var(--color-copper-light); }
+
 /* The dock. Its glass is clipped to the outline, and the edge is two hairlines: a light
    one on it and a dark one just outside. No blurred shadow, so nothing smudges the map
    around the hump. */
@@ -315,8 +353,8 @@ details.event[open] .event-body {
   .wind-key > * { padding: 2px 5px; }
   .wind-speed-key { display: none; }
   .wind-probe { max-width: 220px; }
-  .wind-probe.is-hole { max-width: calc(100vw - 20px); }
 
+  .wind-play { left: 16px; bottom: calc(76px + env(safe-area-inset-bottom) + 276px - 48px + 14px); }
   /* Over the tab bar, a phone's width less a margin each side. */
   .wind-dock { inset-inline: 10px; width: auto; bottom: calc(76px + env(safe-area-inset-bottom)); }
   .wind-dock-side { gap: 8px; }
