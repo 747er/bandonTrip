@@ -129,6 +129,11 @@ const dockPath = (w: number, h: number) => {
   return `M0 ${RISE + 26} Q0 ${RISE} 26 ${RISE} L${c - 127} ${RISE} C${c - 87} ${RISE} ${c - 77} 0 ${c} 0 C${c + 77} 0 ${c + 87} ${RISE} ${c + 127} ${RISE} L${w - 26} ${RISE} Q${w} ${RISE} ${w} ${RISE + 26} L${w} ${h - 26} Q${w} ${h} ${w - 26} ${h} L26 ${h} Q0 ${h} 0 ${h - 26} Z`;
 };
 
+/** Every layer that draws the holes, shown or hidden together by the holes button. */
+const HOLE_LAYERS = ["holes-outline-fill", "holes-outline", "holes-green", "holes-line", "holes-number", "holes-number-on"];
+/** Where this device remembers whether the holes are shown. */
+const HOLES_KEY = "wind-holes";
+
 /** A hole on the map: its course and number. */
 type HoleRef = { course: string; n: number };
 const holeKey = (h: HoleRef | null | undefined) => (h ? `${h.course}/${h.n}` : "");
@@ -300,6 +305,16 @@ export function WindExplorer({
   const [flowing, setFlowing] = useState(true);
   // Playback: steps through the chosen day's hours, the map's wind moving with them.
   const [running, setRunning] = useState(false);
+  // The holes can be hidden to leave just the places; the choice is kept on this device.
+  const [holesOn, setHolesOn] = useState(true);
+  const holesOnRef = useRef(true);
+  useEffect(() => {
+    let saved: string | null = null;
+    try { saved = window.localStorage.getItem(HOLES_KEY); } catch {}
+    // Deferred a tick, like the other values only the browser knows.
+    const apply = setTimeout(() => { if (saved === "off") setHolesOn(false); }, 0);
+    return () => clearTimeout(apply);
+  }, []);
   const flow = useRef(true);
   const [mapFailed, setMapFailed] = useState(false);
   useEffect(() => { flow.current = flowing; }, [flowing]);
@@ -651,7 +666,7 @@ export function WindExplorer({
     // Touch the map anywhere for the wind at that spot. The reading follows the map.
     // A hole under the touch (one that is showing) opens that hole's reading instead.
     const holeAt = (x: number, y: number): HoleRef | null => {
-      if (!m.getLayer("holes-number")) return null;
+      if (!holesOnRef.current || !m.getLayer("holes-number")) return null;
       const far = m.getZoom() >= HOLES_FROM_ZOOM + 0.3;
       const hit = m
         .queryRenderedFeatures([[x - 10, y - 10], [x + 10, y + 10]], { layers: ["holes-number-on", "holes-number", "holes-line", "holes-green"] })
@@ -740,6 +755,7 @@ export function WindExplorer({
         id: "holes-number-on", type: "symbol", source: "holes", filter: ["all", ["==", ["geometry-type"], "Point"], ["get", "on"]],
         layout: { "icon-image": ["concat", "hole-on-", ["to-string", ["get", "n"]]], "icon-allow-overlap": true, "icon-ignore-placement": true },
       });
+      if (!holesOnRef.current) for (const id of HOLE_LAYERS) m.setLayoutProperty(id, "visibility", "none");
     });
     const observer = new ResizeObserver(() => {
       m.resize();
@@ -758,6 +774,13 @@ export function WindExplorer({
     // The map is built once; later changes reach it through refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Showing or hiding the holes.
+  useEffect(() => {
+    holesOnRef.current = holesOn;
+    const m = map.current;
+    if (m?.getLayer("holes-number")) for (const id of HOLE_LAYERS) m.setLayoutProperty(id, "visibility", holesOn ? "visible" : "none");
+  }, [holesOn]);
 
   // A new day brings that day's places into view.
   const framedDay = useRef(dayOf);
@@ -895,6 +918,13 @@ export function WindExplorer({
     const stop = setTimeout(() => setRunning(false), 0);
     return () => clearTimeout(stop);
   }, [running, t, dayEnd]);
+  const toggleHoles = () => {
+    const next = !holesOn;
+    setHolesOn(next);
+    // Hiding the holes closes an open one.
+    if (!next) setProbe((p) => (p?.hole ? null : p));
+    try { window.localStorage.setItem(HOLES_KEY, next ? "on" : "off"); } catch {}
+  };
   const play = () => {
     if (running) return setRunning(false);
     setSelectedPlace(null);
@@ -1037,6 +1067,19 @@ export function WindExplorer({
         </svg>
       </button>
 
+      {/* The holes, shown or hidden, on the dock's right shoulder: play's opposite number. */}
+      <button type="button" className={`wind-holes-toggle ${holesOn ? "is-on" : ""}`} onClick={toggleHoles}
+        aria-label={holesOn ? "Hide holes" : "Show holes"} title={holesOn ? "Hide holes" : "Show holes"} aria-pressed={holesOn}>
+        <svg width="46" height="46" viewBox="0 0 46 46" aria-hidden="true">
+          <circle cx="23" cy="23" r="21" fill="none" stroke="rgb(233 231 224 / .16)" strokeWidth="2" />
+          <circle className="wind-holes-ring" cx="23" cy="23" r="21" fill="none" strokeWidth="2" />
+          <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 29V14l8 3.2-8 3.2" />
+            <path d="M16 29.5c2-.9 4.4-1.3 7-1.3s5 .4 7 1.3" />
+          </g>
+        </svg>
+      </button>
+
       {/* The dock: the wind for the chosen hour around a compass, the days, and the hours.
           Its outline is clipped glass with a crisp edge; nothing is blurred outside it. */}
       <div ref={dock} className="wind-dock" role="region" aria-label="Forecast">
@@ -1054,9 +1097,17 @@ export function WindExplorer({
         </svg>
 
         <div className="wind-dock-reading">
+          {/* Each stat has a short name for phones and, where it says more, a long one for
+              wider screens: the time's long name is the daylight ("Sunset 4:49 PM"). */}
           <div className="wind-dock-side">
+            <div className="wind-stat">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>
+              <div>
+                <p className={`wind-stat-name ${dark ? "is-dark" : ""}`}><span className="is-short">Time</span><span className="is-long">{daylight ?? "Time"}</span></p>
+                <p className="wind-stat-value is-time">{clockAt(t)}</p>
+              </div>
+            </div>
             <div className="wind-stat"><WindGlyph size={24} /><div><p className="wind-stat-name">Gusts</p><p className="wind-stat-value">{windGust} mph</p></div></div>
-            {daylight && <div className="wind-stat is-wide"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 18h18M7 18a5 5 0 0 1 10 0M12 7v2M5.6 10.6l1.4 1.4M18.4 10.6 17 12" /></svg><div><p className="wind-stat-name">Daylight</p><p className={`wind-stat-value ${dark ? "is-dark" : ""}`}>{daylight}</p></div></div>}
           </div>
 
           <div className="wind-dock-compass" role="img" aria-label={`${windSpeed} mph from the ${compass(windDirection)}`}>
@@ -1065,22 +1116,24 @@ export function WindExplorer({
               {TICKS.map((a) => (
                 <line key={a} x1="56" y1={a % 30 === 0 ? 14 : 11} x2="56" y2="8" stroke="#e9e7e0" strokeOpacity={a % 30 === 0 ? 0.6 : 0.25} strokeWidth={a % 30 === 0 ? 1.4 : 1} transform={`rotate(${a} 56 56)`} />
               ))}
-              <text x="56" y="25" textAnchor="middle" fontSize="10" fontWeight="700" fill="#eceee8">N</text>
               {/* The big mark sits on the side the wind comes from; the small one, where it goes. */}
               <g className="wind-dock-needle" style={{ transform: `rotate(${needle}deg)` }}>
                 <path d="M47.5 2.5 L64.5 2.5 L56 18 Z" fill="#d99a6c" />
                 <path d="M50.5 98 L61.5 98 L56 108 Z" fill="#d99a6c" fillOpacity=".85" />
               </g>
+              {/* The N sits in the ring, over the mark when the wind is from the north. */}
+              <text x="56" y="15.5" textAnchor="middle" fontSize="10" fontWeight="700" fill="#eceee8">N</text>
             </svg>
             <div className="wind-dock-speed" aria-hidden="true">
-              <p><strong>{windSpeed}</strong><span>mph</span></p>
-              <p>from <b>{compass(windDirection)}</b></p>
+              <span>mph</span>
+              <strong>{windSpeed}</strong>
+              <b>{compass(windDirection)}</b>
             </div>
           </div>
 
           <div className="wind-dock-side">
-            <div className="wind-stat is-quiet"><WeatherGlyph kind={sky.kind} size={22} /><div><p className="wind-stat-name">{sky.label}</p><p className="wind-stat-value">{temperature}°F</p></div></div>
-            <div className="wind-stat is-quiet"><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M8 2.2c2.4 2.9 3.8 5 3.8 6.9a3.8 3.8 0 0 1-7.6 0C4.2 7.2 5.6 5.1 8 2.2Z" /></svg><div><p className="wind-stat-name">Rain</p><p className="wind-stat-value">{chance === null ? "n/a" : `${chance}%`}</p></div></div>
+            <div className="wind-stat"><WeatherGlyph kind={sky.kind} size={22} /><div><p className="wind-stat-name"><span className="is-short">Temp</span><span className="is-long">{sky.label}</span></p><p className="wind-stat-value">{temperature}°F</p></div></div>
+            <div className="wind-stat"><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M8 2.2c2.4 2.9 3.8 5 3.8 6.9a3.8 3.8 0 0 1-7.6 0C4.2 7.2 5.6 5.1 8 2.2Z" /></svg><div><p className="wind-stat-name">Rain</p><p className="wind-stat-value">{chance === null ? "n/a" : `${chance}%`}</p></div></div>
           </div>
         </div>
 
