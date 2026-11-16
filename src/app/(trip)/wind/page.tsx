@@ -16,6 +16,8 @@ export default async function WeatherPage({ searchParams }: PageProps<"/wind">) 
   const { day } = await searchParams;
   const data = await getTrip();
   if (!data) notFound();
+  // The layout shows only the name sheet until a player is chosen; send nothing else.
+  if (!data.viewer) return null;
   const { trip, events, viewer } = data;
   const [wind, { now, phase }] = await Promise.all([getWind(trip), getTripNow(trip)]);
 
