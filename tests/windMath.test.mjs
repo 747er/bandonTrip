@@ -38,3 +38,17 @@ test("course and schedule briefings sample the exact tee-time minute", async () 
   assert.equal(forecastSummary(point, 0.5), "48°, wind 8 mph from the N, gusts 10");
   assert.equal(forecastSummary({ ...point, gust: [6, 10] }, 0.5), "48°, wind 8 mph from the N");
 });
+
+test('a hole reads the wind the way a golfer would', async () => {
+  const { heading, windOnHole } = await import('../src/lib/windMath.ts');
+  // Old Macdonald's 4th plays almost due south.
+  const south = [[-124.3872, 43.2059], [-124.3879, 43.2017]];
+  assert.ok(Math.abs(heading(south) - 187) < 3);
+  assert.equal(windOnHole(south, 0), 'Downwind'); // from the north, behind the player
+  assert.equal(windOnHole(south, 180), 'Into the wind');
+  // Facing south, east is on the player's left: an east wind blows left to right.
+  assert.equal(windOnHole(south, 90), 'Left to right');
+  assert.equal(windOnHole(south, 270), 'Right to left');
+  assert.equal(windOnHole(south, 45), 'Helping, left to right');
+  assert.equal(windOnHole(south, 135), 'Into, left to right');
+});
