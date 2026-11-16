@@ -13,6 +13,8 @@ export type DayWeather = {
   low: number;
   /** Sustained wind, mph */
   wind: number;
+  /** Where the day's wind mostly blows from, in degrees. Null when not forecast. */
+  windFrom: number | null;
   /** Peak gust, mph. Null when the forecast has none above the sustained wind. */
   gust: number | null;
   /** Chance of rain, percent. Null when the model doesn't provide it that far out. */
@@ -51,7 +53,7 @@ export async function getForecast(trip: {
     latitude: String(trip.latitude),
     longitude: String(trip.longitude),
     daily:
-      "weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_gusts_10m_max,precipitation_probability_max",
+      "weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,precipitation_probability_max",
     temperature_unit: "fahrenheit",
     wind_speed_unit: "mph",
     timezone: trip.timezone,
@@ -75,12 +77,14 @@ export async function getForecast(trip: {
       const low = daily.temperature_2m_min?.[i];
       if (typeof code !== "number" || typeof high !== "number" || typeof low !== "number") return;
       const rain = daily.precipitation_probability_max?.[i];
+      const from = daily.wind_direction_10m_dominant?.[i];
       out[String(date)] = {
         date: String(date),
         ...describe(code),
         high: Math.round(high),
         low: Math.round(low),
         wind: Math.round(Number(daily.wind_speed_10m_max?.[i] ?? 0)),
+        windFrom: typeof from === "number" ? from : null,
         gust: gustAbove(daily.wind_gusts_10m_max?.[i], daily.wind_speed_10m_max?.[i]),
         rainChance: typeof rain === "number" ? Math.round(rain) : null,
       };
