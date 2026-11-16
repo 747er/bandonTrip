@@ -467,7 +467,6 @@ details.event[open] .event-body {
 .forecast-measures dd { font-size: 16px; font-weight: 500; }
 
 /* Schedule: the same selected stop is legible in the route, event and map. */
-.schedule-days { margin-top: 20px; }
 .schedule-event { scroll-margin-top: 130px; outline: 1px solid transparent; outline-offset: 4px; transition: outline-color 220ms; }
 .schedule-event[data-selected=true] { outline-color: var(--color-copper); }
 .schedule-event[data-past=true] > div { border-bottom-color: var(--color-moss); }
@@ -640,3 +639,37 @@ details.event[open] .event-body {
 }
 #courses, #forecast { scroll-margin-top: 24px; }
 .forecast-board { color: var(--color-limestone); }
+
+/* Schedule: on phones your round and the day's forecast are forest-green cards. On wide
+   screens they open onto the page: the round sits on paper under a copper rule, as on
+   the course pages, and the forecast is set straight on the limestone between rules. */
+.sched-card {
+  --card-bg: var(--color-forest);
+  --card-ink: var(--color-limestone);
+  --card-muted: var(--color-mist);
+  --card-rule: var(--color-rule-light);
+  --card-accent: var(--color-copper-light);
+  --card-track: rgb(233 231 224 / .15);
+  --card-ring: var(--color-forest);
+  --mark-golf-bg: var(--color-paper);
+  --mark-golf-fg: var(--color-forest-deep);
+  background: var(--card-bg);
+  color: var(--card-ink);
+}
+@media (min-width: 1024px) {
+  .sched-card {
+    --card-bg: transparent;
+    --card-ink: var(--color-pine);
+    --card-muted: var(--color-moss);
+    --card-rule: var(--color-rule);
+    --card-accent: var(--color-copper);
+    --card-track: rgb(20 38 31 / .1);
+    --card-ring: var(--color-limestone);
+    --mark-golf-bg: var(--color-forest-deep);
+    --mark-golf-fg: var(--color-paper);
+  }
+  .sched-card.round-ticket { --card-bg: var(--color-paper); --card-ring: var(--color-paper); border-top: 1px solid var(--color-copper); }
+  .pub .sched-card :focus-visible { outline-color: var(--color-copper); }
+}
+/* On the day sheet's paper, the daylight bar's markers are ringed in paper too. */
+@media (min-width: 1024px) { .day-sheet .sched-card { --card-ring: var(--color-paper); } }
