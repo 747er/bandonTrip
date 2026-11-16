@@ -101,6 +101,8 @@ export function WhoSheet({
       <dialog
         ref={dialog}
         aria-label="Who's playing?"
+        // Drawn open by the server for a first visit, so the sheet is there before any script runs.
+        open={!viewer || undefined}
         tabIndex={-1}
         onCancel={event => { event.preventDefault(); if (viewer) setOpen(false); }}
         className="on-forest fixed inset-0 z-50 m-0 h-full max-h-none w-full max-w-none overflow-y-auto overscroll-contain border-0 p-0 text-limestone outline-none focus-visible:outline-none"
