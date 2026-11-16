@@ -3,10 +3,10 @@ import { notFound } from "next/navigation";
 import type { RoundInfo } from "@/components/public/features";
 import { ScheduleView } from "@/components/public/ScheduleView";
 import { courseById } from "@/data/courses";
-import { PEOPLE, TEE_SHEET } from "@/data/trip";
+import { PEOPLE, STAY, TEE_SHEET } from "@/data/trip";
 import { photosForEvents, slotFor, slotName } from "@/lib/photos";
 import { PLACES, placeFor } from "@/lib/resortMap";
-import { clock, dateRange, eachDay } from "@/lib/time";
+import { addDays, clock, eachDay, zonedToUtc } from "@/lib/time";
 import { getTripNow, isPast, isUnderway, personId, roundNumbers } from "@/lib/trip";
 import { getTrip } from "@/lib/viewer";
 import { getForecast } from "@/lib/weather";
@@ -76,13 +76,17 @@ export default async function SchedulePage({
     }
   }
 
+  // A countdown on your round, only when it is today or tomorrow.
+  const soon = phase === "after" ? [] : [now.date, addDays(now.date, 1)];
+  const teeStarts: Record<string, string> = {};
+  for (const e of events) {
+    if (e.type === "golf" && e.teeTime && soon.includes(e.date)) {
+      teeStarts[e.id] = zonedToUtc(e.date, e.teeTime, trip.timezone).toISOString();
+    }
+  }
+
   return (
     <ScheduleView
-      trip={{
-        title: trip.title,
-        location: trip.location,
-        dates: dateRange(trip.startDate, trip.endDate),
-      }}
       days={days}
       events={events}
       photos={photosForEvents(events)}
@@ -120,6 +124,16 @@ export default async function SchedulePage({
           return first ? [[e.id, clock(first)]] : [];
         }),
       )}
+      courseFacts={Object.fromEntries(
+        events.flatMap((e) => {
+          const course = e.type === "golf" ? courseById(slotName(e.title)) : null;
+          return course ? [[e.id, `Par ${course.par} · ${course.yards.toLocaleString("en-US")} yards`]] : [];
+        }),
+      )}
+      teeStarts={teeStarts}
+      now={now.instant.toISOString()}
+      timeZone={trip.timezone}
+      shuttle={STAY.shuttle}
       viewerName={viewer?.name ?? null}
       initialDay={requested ?? today ?? days[0]}
       today={today}
