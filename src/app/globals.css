@@ -236,12 +236,22 @@ details.event[open] .event-body {
 .wind-pin[data-active=true][data-side=left] .wind-pin-label { margin: 0 -22px 0 0; padding: 7px 30px 8px 16px; }
 .wind-pin[data-active=true] .wind-pin-time { font-size: 13px; color: #f8dcc6; }
 .wind-pin:hover .wind-pin-badge { border-color: #fff; }
+/* Zoomed in, the labels fold away to their badges (see showLabels), and the place the
+   group is at keeps a smaller copper badge without its ring. A badge pointed at or
+   focused shows its label again. */
+.wind-pin-label { transition: opacity 200ms; }
+.wind-instrument[data-labels=off] .wind-pin-label { opacity: 0; pointer-events: none; }
+.wind-instrument[data-labels=off] .wind-pin[data-active=true] { --b: 32px; }
+.wind-instrument[data-labels=off] .wind-pin[data-active=true]::before { opacity: 0; transform: scale(.5); }
+.wind-instrument[data-labels=off] .wind-pin[data-active=true] .wind-pin-badge svg { width: 14px; height: 14px; }
+.wind-instrument[data-labels=off] .wind-pin:is(:hover, :focus-visible) { z-index: 3 !important; }
+.wind-instrument[data-labels=off] .wind-pin:is(:hover, :focus-visible) .wind-pin-label { opacity: 1; }
 .wind-pin:focus-visible { outline: none; }
 .wind-pin:focus-visible .wind-pin-badge { outline: 2px solid var(--color-copper-light); outline-offset: 3px; }
 
 /* A reading at a touched point. */
 .wind-probe { position: absolute; z-index: 3; transform: translate(-50%, -100%); display: flex; align-items: center; gap: 10px; padding: 8px 4px 8px 12px; font-size: 13px; }
-.wind-probe-label { display: block; font-size: 11px; color: var(--color-moss); }
+.wind-probe-label { display: block; font-size: 11px; color: var(--color-moss); white-space: nowrap; }
 .wind-probe p { white-space: nowrap; }
 .wind-probe button { width: 36px; height: 36px; display: grid; place-items: center; color: var(--color-moss); }
 .wind-probe button:hover { color: var(--color-pine); }
@@ -305,6 +315,7 @@ details.event[open] .event-body {
   .wind-key > * { padding: 2px 5px; }
   .wind-speed-key { display: none; }
   .wind-probe { max-width: 220px; }
+  .wind-probe.is-hole { max-width: calc(100vw - 20px); }
 
   /* Over the tab bar, a phone's width less a margin each side. */
   .wind-dock { inset-inline: 10px; width: auto; bottom: calc(76px + env(safe-area-inset-bottom)); }
