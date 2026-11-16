@@ -22,6 +22,17 @@ export default async function TripLayout({ children }: LayoutProps<"/">) {
   if (!data) notFound();
   const { trip, viewer } = data;
 
+  const sheet = (
+    <WhoSheet
+      roster={ROSTER.map(({ id, name }) => ({ id, name }))}
+      viewer={viewer ? { id: viewer.id, firstName: viewer.firstName } : null}
+      cookie={VIEWER_COOKIE}
+    />
+  );
+  // Nobody chosen yet: the name sheet is the whole page. Nothing of the trip is drawn
+  // (or sent) until a player is picked.
+  if (!viewer) return <div className="pub relative min-h-svh bg-forest-deep">{sheet}</div>;
+
   return (
     <div className="pub relative">
       <header className="absolute inset-x-0 z-20">
@@ -30,15 +41,11 @@ export default async function TripLayout({ children }: LayoutProps<"/">) {
         </div>
       </header>
       {/* Outside the header, so the sheet can cover everything, the tab bar included. */}
-      <WhoSheet
-        roster={ROSTER.map(({ id, name }) => ({ id, name }))}
-        viewer={viewer ? { id: viewer.id, firstName: viewer.firstName } : null}
-        cookie={VIEWER_COOKIE}
-      />
+      {sheet}
 
       <main>{children}</main>
 
-      <SiteFooter viewer={viewer?.name ?? null} />
+      <SiteFooter viewer={viewer.name} />
     </div>
   );
 }
