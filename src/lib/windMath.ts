@@ -93,20 +93,21 @@ export function heading(line: [number, number][]): number {
 }
 
 /**
- * How the wind plays on a hole whose line of play (tee to green, as [longitude,
- * latitude]) is `line`, the way golfers say it: "Into the wind", "Downwind",
- * "Left to right", or a mix such as "Into, right to left". `from` is where the wind
- * blows from, in degrees.
+ * How the wind plays on a hole whose line of play (tee to green, as [longitude, latitude])
+ * is `line`, the way golfers say it, in two parts: along the hole ("helping", "into",
+ * "downwind", "into the wind") and across it ("left to right", "right to left"). Either
+ * can be missing: straight downwind has no across, a pure crosswind no along. `from` is
+ * where the wind blows from, in degrees.
  */
-export function windOnHole(line: [number, number][], from: number): string {
+export function windOnHole(line: [number, number][], from: number): { along: string | null; across: string | null } {
   // Angle between the way the wind blows and the way the hole plays: 0 is straight
   // behind the player, 180 straight in their face, positive toward their right.
   const a = ((((from + 180 - heading(line)) % 360) + 540) % 360) - 180;
-  const across = a > 0 ? "Left to right" : "Right to left";
+  const across = a > 0 ? "left to right" : "right to left";
   const off = Math.abs(a);
-  if (off <= 25) return "Downwind";
-  if (off >= 155) return "Into the wind";
-  if (off < 65) return `Helping, ${across.toLowerCase()}`;
-  if (off > 115) return `Into, ${across.toLowerCase()}`;
-  return across;
+  if (off <= 25) return { along: "downwind", across: null };
+  if (off >= 155) return { along: "into the wind", across: null };
+  if (off < 65) return { along: "helping", across };
+  if (off > 115) return { along: "into", across };
+  return { along: null, across };
 }
