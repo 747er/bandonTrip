@@ -9,6 +9,11 @@ export type Hole = {
   line: [number, number][];
   /** The green's outline, when OpenStreetMap has one near the end of the line */
   green: [number, number][] | null;
+  /**
+   * The hole as played, as polygons of rings: its fairway (trimmed to this hole where a
+   * links fairway is shared), tee boxes and green, joined along the line of play.
+   */
+  outline: [number, number][][][];
 };
 export type Course = { name: string; holes: Hole[] };
 
