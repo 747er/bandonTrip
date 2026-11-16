@@ -54,11 +54,20 @@ export function interpolateDirection(values: number[], time: number): number {
 }
 
 /** Course and schedule briefings use the same minute-level forecast as the map. */
+export type ForecastAt = { temp: number; speed: number; gust: number; direction: string };
+
+/** The forecast at one moment, rounded for display. */
+export function forecastAt(point: { temp: number[]; speed: number[]; gust: number[]; direction: number[] }, time: number): ForecastAt {
+  return {
+    temp: Math.round(interpolate(point.temp, time)),
+    speed: Math.round(interpolate(point.speed, time)),
+    gust: Math.round(interpolate(point.gust, time)),
+    direction: compass(interpolateDirection(point.direction, time)),
+  };
+}
+
 export function forecastSummary(point: { temp: number[]; speed: number[]; gust: number[]; direction: number[] }, time: number): string {
-  const temp = Math.round(interpolate(point.temp, time));
-  const speed = Math.round(interpolate(point.speed, time));
-  const gust = Math.round(interpolate(point.gust, time));
-  const direction = compass(interpolateDirection(point.direction, time));
+  const { temp, speed, gust, direction } = forecastAt(point, time);
   return `${temp}°, wind ${speed} mph from the ${direction}${gust > speed ? `, gusts ${gust}` : ""}`;
 }
 
