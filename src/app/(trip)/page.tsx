@@ -45,6 +45,8 @@ type Ctx = {
 export default async function TripHome() {
   const data = await getTrip();
   if (!data) notFound();
+  // The layout shows only the name sheet until a player is chosen; send nothing else.
+  if (!data.viewer) return null;
   const { trip, events } = data;
   const [{ now, phase }, weather] = await Promise.all([getTripNow(trip), getForecast(trip)]);
 
@@ -387,7 +389,7 @@ function Forecast({
           className="mt-6 inline-flex min-h-11 items-center gap-2 bg-limestone px-4 text-meta font-semibold text-pine transition-colors hover:bg-paper"
         >
           <WindGlyph size={17} />
-          Wind map
+          Hourly Wind Map
         </Link>
         <p className="mt-4 text-fine text-mist">
           Forecast by{" "}
