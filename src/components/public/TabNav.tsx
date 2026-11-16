@@ -44,6 +44,7 @@ export function TabNav({
   // The home page opens on a photograph, so its masthead is set in light type.
   const onCover = pathname === base || pathname === "/wind" || pathname.startsWith("/courses/");
   const ink = onCover ? "text-paper" : "text-forest-deep";
+  const dark = pathname === "/wind";
 
   return (
     <>
@@ -87,9 +88,14 @@ export function TabNav({
       </div>
 
       {/* Phones: a thumb-reach bar. */}
+      {/* Over the wind map it turns to the map's dark forest glass. */}
       <nav
         aria-label="Trip"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-rule bg-paper/88 backdrop-blur-lg md:hidden"
+        className={`fixed inset-x-0 bottom-0 z-30 border-t backdrop-blur-lg md:hidden ${
+          dark
+            ? "border-rule-light bg-[linear-gradient(180deg,rgb(16_38_31/.86),rgb(10_26_21/.95))]"
+            : "border-rule bg-paper/88"
+        }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <ul className="mx-auto grid max-w-md grid-cols-4">
@@ -101,14 +107,16 @@ export function TabNav({
                   href={tab.href}
                   aria-current={active ? "page" : undefined}
                   className={`relative flex h-[66px] flex-col items-center justify-center gap-1 text-[12.5px] transition-colors ${
-                    active ? "font-semibold text-forest-deep" : "font-medium text-moss"
+                    active
+                      ? dark ? "font-semibold text-limestone" : "font-semibold text-forest-deep"
+                      : dark ? "font-medium text-mist" : "font-medium text-moss"
                   }`}
                 >
                   <span
                     aria-hidden="true"
-                    className={`absolute top-0 h-[2px] w-7 bg-copper transition-transform duration-300 ${
-                      active ? "scale-x-100" : "scale-x-0"
-                    }`}
+                    className={`absolute transition-transform duration-300 ${
+                      dark ? "bottom-1 h-[3px] w-11 rounded-full bg-copper-light" : "top-0 h-[2px] w-7 bg-copper"
+                    } ${active ? "scale-x-100" : "scale-x-0"}`}
                   />
                   <svg
                     width="24"
