@@ -5,9 +5,10 @@ import { Map as MapLibre, Marker, setWorkerUrl } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { WindData } from "@/lib/wind";
 import coast from "@/lib/coast.json";
+import { describe } from "@/lib/weatherCodes";
 import { compass, interpolate, interpolateDirection, timelineLocal, minutesFromStart, SPEED_STOPS } from "@/lib/windMath";
+import { WeatherGlyph, WindGlyph } from "../Glyphs";
 import { WindParticles } from "./particles";
-import { ForecastTimeline } from "./ForecastTimeline";
 
 export type WindEvent = {
   id: string;
@@ -57,12 +58,6 @@ const WIDE_PAINT = { "raster-brightness-max": 0.46, "raster-saturation": -0.05, 
 const OCEAN: [number, number, number] = [18, 46, 54];
 const OCEAN_HEX = `#${OCEAN.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 
-/** Room the map leaves for the panels over it when it frames places. */
-const framePadding = (phone: boolean) =>
-  phone ? { top: 100, bottom: 320, left: 38, right: 150 } : { top: 110, bottom: 230, left: 340, right: 170 };
-const flyPadding = (phone: boolean) =>
-  phone ? { top: 96, bottom: 300, left: 36, right: 36 } : { top: 100, bottom: 220, left: 340, right: 80 };
-
 /**
  * A picture of "open ocean": transparent over land and the surf, fading to the map's
  * background colour a little way offshore. Laid over the imagery, it hides the ragged
@@ -100,12 +95,18 @@ function seaFade(): string {
 }
 const CELL = 18; // spacing of the on-screen wind grid, px
 
-const hourLabel = (local: string) => {
-  const h = Number(local.slice(11, 13));
-  return `${h % 12 || 12}:${local.slice(14, 16)} ${h < 12 ? "AM" : "PM"}`;
+/** The hours the dock's strip offers for each day: 6 AM to 9 PM. */
+const FIRST_HOUR = 6;
+const LAST_HOUR = 21;
+
+/** 10.3333 (hours, any day) → "10:20 AM" */
+const clockAt = (hours: number) => {
+  const m = Math.round((((hours % 24) + 24) % 24) * 60) % 1440;
+  return `${Math.floor(m / 60) % 12 || 12}:${String(m % 60).padStart(2, "0")} ${m < 720 ? "AM" : "PM"}`;
 };
-const dayLabel = (date: string, style: "long" | "short" = "long") =>
-  new Intl.DateTimeFormat("en-US", { weekday: style, timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
+const hourName = (h: number) => (h === 12 ? "Noon" : `${h % 12 || 12} ${h < 12 ? "AM" : "PM"}`);
+const weekday = (date: string) =>
+  new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
 
 /** The drawing inside a pin's badge, by what is there. */
 const ICONS = {
@@ -114,6 +115,20 @@ const ICONS = {
   dining: '<path d="M4 2v4.5a1.5 1.5 0 003 0V2M5.5 8v6M11.5 14V2c-1.6 1.2-2.2 3.2-2.2 5.5h2.2"/>',
   other: '<circle cx="8" cy="8" r="2.5" fill="currentColor"/>',
 };
+const kindOf = (type: string): keyof typeof ICONS => (type === "golf" ? "golf" : type === "dining" ? "dining" : "other");
+
+/**
+ * The dock's outline: a rounded panel whose top edge rises into a hump at the centre, where
+ * the compass sits. Drawn for the panel's measured size so the hump never stretches.
+ */
+const RISE = 48;
+const dockPath = (w: number, h: number) => {
+  const c = w / 2;
+  return `M0 ${RISE + 26} Q0 ${RISE} 26 ${RISE} L${c - 127} ${RISE} C${c - 87} ${RISE} ${c - 77} 0 ${c} 0 C${c + 77} 0 ${c + 87} ${RISE} ${c + 127} ${RISE} L${w - 26} ${RISE} Q${w} ${RISE} ${w} ${RISE + 26} L${w} ${h - 26} Q${w} ${h} ${w - 26} ${h} L26 ${h} Q0 ${h} 0 ${h - 26} Z`;
+};
+
+/** Compass ticks every 6°, longer every 30°; the top one gives way to the N. */
+const TICKS = Array.from({ length: 60 }, (_, i) => i * 6).filter((a) => a !== 0);
 
 export function WindExplorer({
   data,
@@ -134,16 +149,16 @@ export function WindExplorer({
   const hours = data.times.length;
   const [t, setT] = useState(Math.max(0, Math.min(hours - 1, initialHour)));
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
-  const [wholeTrip, setWholeTrip] = useState(false);
   const [flowing, setFlowing] = useState(true);
   const flow = useRef(true);
   const [mapFailed, setMapFailed] = useState(false);
   useEffect(() => { flow.current = flowing; }, [flowing]);
-  const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false);
+  const section = useRef<HTMLElement>(null);
   const mapBox = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
+  const dock = useRef<HTMLDivElement>(null);
+  const strip = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibre | null>(null);
   const live = useRef({ t: initialHour, dirty: true });
   const pins = useRef(new Map<string, HTMLElement>());
@@ -158,7 +173,17 @@ export function WindExplorer({
     const place = setTimeout(() => setProbeAt(probe && m ? m.project([probe.lng, probe.lat]) : null), 0);
     return () => clearTimeout(place);
   }, [probe]);
-  const home = useRef<() => void>(() => {});
+  /** Frames a day's places (and the lodging) in the map left clear by the dock. */
+  const frameDay = useRef<(day: number, animate: boolean) => void>(() => {});
+  /** Room the map leaves for the dock and the corners when it frames or flies to places. */
+  const padding = () => {
+    const box = section.current?.getBoundingClientRect();
+    const top = dock.current?.getBoundingClientRect().top;
+    const phone = (box?.width ?? 0) < 768;
+    const bottom = box && top ? Math.max(120, box.bottom - top + (phone ? 28 : 40)) : phone ? 380 : 340;
+    // Labels turn to whichever side has room (see fitLabels), so the sides stay even.
+    return phone ? { top: 100, bottom, left: 56, right: 56 } : { top: 150, bottom, left: 140, right: 160 };
+  };
 
   // Where the player is at the chosen hour: at an event from its start until it is taken
   // to be over, and otherwise at their lodging, but only between check-in and check-out.
@@ -167,42 +192,73 @@ export function WindExplorer({
   // Copper marks only where the player is at the chosen hour. A pin someone clicks to
   // look at is flown to, but stays as it is.
   const groupPlace = happening ? happening.placeId : checkedIn ? (places.find((p) => p.home)?.id ?? null) : null;
-  const activePlace = selectedPlace ?? groupPlace;
-  // Several things share a pin (Punchbowl and Pacific Grill are both at the Pacific Dunes
-  // clubhouse), so a pin takes the name and icon of the event chosen or happening there.
-  const shown = events.find((e) => e.id === selectedEvent) ?? (selectedPlace ? undefined : happening);
-  const shownAt = shown?.placeId ?? null;
-  const shownTitle = shown?.title ?? null;
-  const shownKind = shown ? (shown.type === "golf" ? "golf" : shown.type === "dining" ? "dining" : "other") : null;
-  // Looking at one day, only that day's places and the lodging are pinned; the whole
-  // trip shows them all.
-  const dayOf = Math.floor(t / 24);
-  const pinned = wholeTrip
-    ? "*"
-    : events.filter((e) => e.placeId && Math.floor(e.start / 24) === dayOf).map((e) => e.placeId).join(",");
+  const dayOf = Math.max(0, Math.floor(t / 24));
+  const dayEvents = useMemo(() => events.filter((e) => Math.floor(e.start / 24) === dayOf), [events, dayOf]);
+  // Each of the day's pins names what is on there: the event happening at that place, or
+  // its next one that day, or its first. Several things share a pin (Punchbowl and Pacific
+  // Grill are both at the Pacific Dunes clubhouse). The lodging, with nothing on there,
+  // carries no label until the player is there.
+  const pinText = places
+    .map((p) => {
+      const there = dayEvents.filter((e) => e.placeId === p.id);
+      const e = (happening?.placeId === p.id ? happening : undefined) ?? there.find((x) => x.until > t) ?? there[0];
+      return [p.id, e ? e.title : p.home ? p.name : "", e ? clockAt(e.start) : "", e ? kindOf(e.type) : p.kind].join("\u0001");
+    })
+    .join("\u0002");
+  const pinned = dayEvents.map((e) => e.placeId).filter(Boolean).join(",");
   const onMap = useRef(pinned);
   const active = useRef(groupPlace);
-  const guest = useRef<{ at: string; title: string; kind: keyof typeof ICONS } | null>(null);
-  const mark = () => pins.current.forEach((el, id) => {
-    el.setAttribute("data-active", String(id === active.current));
-    if (id === active.current) el.setAttribute("aria-current", "location");
-    else el.removeAttribute("aria-current");
-    const place = places.find((p) => p.id === id);
-    if (!place) return;
-    el.style.display = onMap.current === "*" || place.home || onMap.current.split(",").includes(id) ? "" : "none";
-    const here = guest.current?.at === id && !place.home ? guest.current : null;
-    (el.lastElementChild as HTMLElement).textContent = here?.title ?? place.name;
-    const svg = el.querySelector("svg");
-    if (svg) svg.innerHTML = ICONS[here?.kind ?? place.kind];
-  });
+  const labels = useRef(pinText);
+  const mark = () => {
+    const text = new Map(labels.current.split("\u0002").map((row) => {
+      const [id, title, time, kind] = row.split("\u0001");
+      return [id, { title, time, kind: kind as keyof typeof ICONS }];
+    }));
+    pins.current.forEach((el, id) => {
+      const on = id === active.current;
+      const place = places.find((p) => p.id === id);
+      const label = text.get(id);
+      if (!place || !label) return;
+      el.setAttribute("data-active", String(on));
+      if (on) el.setAttribute("aria-current", "location");
+      else el.removeAttribute("aria-current");
+      el.style.display = place.home || onMap.current.split(",").includes(id) ? "" : "none";
+      el.style.zIndex = on ? "2" : "1";
+      // The lodging on its own is just its badge, unless the player is there.
+      el.setAttribute("data-label", String(!!label.title && (!place.home || on || !!label.time)));
+      el.querySelector(".wind-pin-time")!.textContent = label.time;
+      el.querySelector(".wind-pin-name")!.textContent = label.title || place.name;
+      el.querySelector("svg")!.innerHTML = ICONS[label.kind];
+    });
+    fitLabels();
+  };
+  /** Each label runs to its place's usual side, or to the other one where it would leave the screen. */
+  const fitLabels = () => {
+    const m = map.current;
+    const width = mapBox.current?.clientWidth ?? 0;
+    if (!m || !width) return;
+    pins.current.forEach((el, id) => {
+      const place = places.find((p) => p.id === id);
+      const label = el.querySelector<HTMLElement>(".wind-pin-label");
+      if (!place || !label || el.style.display === "none") return;
+      const on = el.dataset.active === "true";
+      // From the place to the label's far end: half the badge, then the label less the
+      // part tucked under the badge.
+      const reach = (on ? 22 : 14) + label.offsetWidth - (on ? 22 : 8);
+      const { x } = m.project([place.lon, place.lat]);
+      const fits = { right: x + reach <= width - 6, left: x - reach >= 6 };
+      const other = place.side === "right" ? "left" : "right";
+      el.dataset.side = fits[place.side] || !fits[other] ? place.side : other;
+    });
+  };
   useEffect(() => {
     active.current = groupPlace;
     onMap.current = pinned;
-    guest.current = shownAt && shownTitle && shownKind ? { at: shownAt, title: shownTitle, kind: shownKind } : null;
+    labels.current = pinText;
     mark();
     // mark reads refs and the fixed list of places only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupPlace, shownAt, shownTitle, shownKind, pinned]);
+  }, [groupPlace, pinned, pinText]);
 
   useEffect(() => {
     live.current.t = t;
@@ -212,31 +268,20 @@ export function WindExplorer({
   // ---- The map, the wind grid and the particle loop ----
   useEffect(() => {
     if (!mapBox.current || !canvas.current) return;
-    // Open with every pin in view, clear of whatever sits over the map at this width.
     const pinElements = pins.current;
-    const phone = mapBox.current.clientWidth < 768;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const pinLons = places.map((p) => p.lon);
-    const pinLats = places.map((p) => p.lat);
-    const frame = {
-      bounds: (places.length
-        ? [
-            [Math.min(...pinLons), Math.min(...pinLats)],
-            [Math.max(...pinLons), Math.max(...pinLats)],
-          ]
-        : [
-            [center[0] - 0.02, center[1] - 0.02],
-            [center[0] + 0.02, center[1] + 0.02],
-          ]) as [[number, number], [number, number]],
-      options: {
-        // Labels run to the right of their pins, so that side needs the most room.
-        padding: framePadding(phone),
-        maxZoom: 14.4,
-      },
+    // A day's view: every place with something on that day, and the lodging.
+    const boundsOf = (day: number): [[number, number], [number, number]] => {
+      const ids = new Set(events.filter((e) => Math.floor(e.start / 24) === day).map((e) => e.placeId));
+      const shown = places.filter((p) => p.home || ids.has(p.id));
+      if (!shown.length) return [[center[0] - 0.02, center[1] - 0.02], [center[0] + 0.02, center[1] + 0.02]];
+      const lons = shown.map((p) => p.lon);
+      const lats = shown.map((p) => p.lat);
+      return [[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]];
     };
-    home.current = () => {
-      const phoneNow = (mapBox.current?.clientWidth ?? 0) < 768;
-      m.stop().fitBounds(frame.bounds, { ...frame.options, padding: framePadding(phoneNow), duration: reduce.matches ? 0 : 750 });
+    const firstDay = Math.max(0, Math.floor(live.current.t / 24));
+    frameDay.current = (day, animate) => {
+      m.stop().fitBounds(boundsOf(day), { padding: padding(), maxZoom: 15, duration: animate && !reduce.matches ? 750 : 0 });
     };
     // The library's worker script is copied into public/ at build time (scripts/photos.mjs).
     setWorkerUrl("/maplibre-worker.mjs");
@@ -278,8 +323,8 @@ export function WindExplorer({
           { id: "sea", type: "raster", source: "sea", paint: { "raster-fade-duration": 0 } },
         ],
       },
-      bounds: frame.bounds,
-      fitBoundsOptions: frame.options,
+      bounds: boundsOf(firstDay),
+      fitBoundsOptions: { padding: padding(), maxZoom: 15 },
       minZoom: 9.6,
       maxZoom: 19.5,
       maxBounds: [
@@ -300,28 +345,25 @@ export function WindExplorer({
     map.current = m;
 
     for (const p of places) {
-      // A badge with the place's icon, and its name. Whichever place the group is at for
-      // the chosen hour is marked data-active and turns copper (see the effect below).
+      // A badge with the place's icon, and a label with what is on there. Whichever place
+      // the group is at for the chosen hour is marked data-active and turns copper. The
+      // element itself has no size: it sits on the place, and its badge is centred there.
       const el = document.createElement("button");
       el.type = "button";
-      el.className = `wind-pin group flex cursor-pointer items-center gap-1.5 ${p.side === "left" ? "flex-row-reverse" : ""}`;
-      el.setAttribute("role", "button");
+      el.className = "wind-pin";
+      el.dataset.side = p.side;
       el.setAttribute("aria-label", `Zoom to ${p.name}`);
       el.addEventListener("click", (event) => {
         event.stopPropagation();
         // The pin names the place already, so no reading box opens over it.
         setSelectedPlace(p.id);
-        setSelectedEvent(null);
         setProbe(null);
-        m.stop().flyTo({ center: [p.lon, p.lat], zoom: 15.6, padding: flyPadding((mapBox.current?.clientWidth ?? 0) < 768), duration: reduce.matches ? 0 : 850 });
+        m.stop().flyTo({ center: [p.lon, p.lat], zoom: 15.6, padding: padding(), duration: reduce.matches ? 0 : 850 });
       });
-      el.innerHTML = `<span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-paper bg-forest-deep text-paper shadow-md transition-colors duration-300 group-data-[active=true]:bg-copper"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${
+      el.innerHTML = `<span class="wind-pin-body"><span class="wind-pin-badge"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${
         ICONS[p.kind]
-      }</svg></span><span class="whitespace-nowrap bg-paper/95 px-1.5 py-0.5 text-[13px] font-semibold text-pine shadow-md transition-colors duration-300 group-data-[active=true]:bg-copper group-data-[active=true]:text-paper"></span>`;
-      (el.lastElementChild as HTMLElement).textContent = p.name;
-      new Marker({ element: el, anchor: p.side === "left" ? "right" : "left", offset: [p.side === "left" ? 12 : -12, 0] })
-        .setLngLat([p.lon, p.lat])
-        .addTo(m);
+      }</svg></span><span class="wind-pin-label"><span class="wind-pin-time"></span><span class="wind-pin-name"></span></span></span>`;
+      new Marker({ element: el, anchor: "center" }).setLngLat([p.lon, p.lat]).addTo(m);
       pins.current.set(p.id, el);
     }
     mark();
@@ -437,6 +479,7 @@ export function WindExplorer({
     m.on("moveend", () => {
       moving = false;
       locate();
+      fitLabels();
     });
     m.on("load", () => {
       size();
@@ -461,23 +504,26 @@ export function WindExplorer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ---- Playback ----
+  // A new day brings that day's places into view.
+  const framedDay = useRef(dayOf);
   useEffect(() => {
-    if (!playing) return;
-    const timer = setInterval(() => {
-      if (!document.hidden) setT(now => Math.min(hours - 1, now + 1 / 30));
-    }, 50);
-    return () => clearInterval(timer);
-  }, [playing, hours]);
+    if (framedDay.current === dayOf) return;
+    framedDay.current = dayOf;
+    frameDay.current(dayOf, true);
+  }, [dayOf]);
 
+  // ---- The dock's outline, drawn for its size ----
+  const [dockSize, setDockSize] = useState({ w: 370, h: 276 });
   useEffect(() => {
-    if (playing && t >= hours - 1) {
-      const stop = setTimeout(() => setPlaying(false), 0);
-      return () => clearTimeout(stop);
-    }
-  }, [playing, t, hours]);
+    const el = dock.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => setDockSize({ w: el.offsetWidth, h: el.offsetHeight }));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  const outline = dockPath(dockSize.w, dockSize.h);
 
-  // ---- What the readout says for the chosen hour ----
+  // ---- What the dock says for the chosen hour ----
   // The wind at the touched point for the chosen hour, read from the same field the
   // particles follow.
   const reading = useMemo(() => {
@@ -513,101 +559,93 @@ export function WindExplorer({
   const minuteNow = Math.round(t * 60);
   const sunrise = day ? minutesFromStart(data.times, day.sunrise) : -1;
   const sunset = day ? minutesFromStart(data.times, day.sunset) : -1;
-  const light =
-    !day || sunrise < 0
-      ? null
-      : minuteNow < sunrise
-        ? `Dark until sunrise at ${hourLabel(day.sunrise)}`
-        : minuteNow >= sunset
-          ? `Dark. The sun set at ${hourLabel(day.sunset)}`
-          : sunset - minuteNow <= 90
-            ? `${sunset - minuteNow} min of daylight left`
-            : `Sunset at ${hourLabel(day.sunset)}`;
   const dark = day && sunrise >= 0 ? minuteNow < sunrise || minuteNow >= sunset : false;
-  const { speed, gust, direction, temp, rainChance } = data.point;
+  const daylight = !day || sunrise < 0
+    ? null
+    : dark
+      ? minuteNow < sunrise ? `Sunrise ${clockAt(sunrise / 60)}` : "After dark"
+      : sunset - minuteNow <= 90
+        ? `${sunset - minuteNow} min left`
+        : `Sunset ${clockAt(sunset / 60)}`;
+  const { speed, gust, direction, temp, rainChance, code } = data.point;
+  const hourNow = Math.min(hours - 1, Math.floor(t));
   const windSpeed = Math.round(interpolate(speed, t));
   const windGust = Math.round(interpolate(gust, t));
   const windDirection = interpolateDirection(direction, t);
   const temperature = Math.round(interpolate(temp, t));
-  const chance = rainChance[Math.min(hours - 1, Math.floor(t))];
+  const chance = rainChance[hourNow];
+  const sky = describe(code[hourNow] ?? 3);
   const dates = useMemo(() => [...new Set(data.times.map((x) => x.slice(0, 10)))], [data]);
-  const nights = useMemo(() => {
-    // Shade from each sunset to the next sunrise, plus the edges of the range.
-    const edges = data.days.flatMap((d) => [minutesFromStart(data.times, d.sunrise) / 60, minutesFromStart(data.times, d.sunset) / 60]);
-    const spans: [number, number][] = [];
-    let from = 0;
-    for (let i = 0; i < edges.length; i += 2) {
-      spans.push([from, edges[i]]);
-      from = edges[i + 1];
-    }
-    spans.push([from, hours]);
-    return data.days.length ? spans : [];
-  }, [data, hours]);
 
-  // Camera changes belong exclusively to explicit map/location actions.
-  const jump = (e: WindEvent) => {
-    setPlaying(false);
-    setSelectedEvent(e.id);
-    setSelectedPlace(e.placeId);
-    setT(Math.min(hours - 1, e.start));
-    setProbe(null);
-    if (e.place) {
-      map.current?.stop().flyTo({ center: [e.place[1], e.place[0]], zoom: 15.6,
-        padding: flyPadding((mapBox.current?.clientWidth ?? 0) < 768),
-        duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 850 });
-    }
-  };
-  const scrub = (value: number) => {
-    setPlaying(false);
+  // The compass needle turns the short way round: 350° to 10° is 20° clockwise, not 340°
+  // back. It keeps a running angle and adds each change to it.
+  const [needle, setNeedle] = useState(windDirection);
+  const turn = ((((windDirection - needle) % 360) + 540) % 360) - 180;
+  if (Math.abs(turn) > 0.01) setNeedle(needle + turn);
+
+  // The day's hours, each with its wind, and a badge where something starts.
+  const strand = Array.from({ length: LAST_HOUR - FIRST_HOUR + 1 }, (_, k) => {
+    const h = FIRST_HOUR + k;
+    const at = dayOf * 24 + h;
+    if (at >= hours) return null;
+    const stop = dayEvents.find((e) => Math.floor(e.start) === at);
+    return {
+      h,
+      at,
+      on: at === hourNow,
+      night: sunrise >= 0 && ((h + 1) * 60 <= sunrise - dayOf * 1440 || h * 60 >= sunset - dayOf * 1440),
+      speed: speed[at],
+      from: direction[at],
+      stop,
+    };
+  }).filter((x) => x !== null);
+
+  // Keep the chosen hour in the middle of the strip, where there is more than fits.
+  const centred = useRef(false);
+  useEffect(() => {
+    const box = strip.current;
+    const cell = box?.querySelector<HTMLElement>("[aria-pressed=true]");
+    if (!box || !cell) return;
+    const smooth = centred.current && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    box.scrollTo({ left: cell.offsetLeft + cell.offsetWidth / 2 - box.clientWidth / 2, behavior: smooth ? "smooth" : "auto" });
+    centred.current = true;
+  }, [hourNow]);
+
+  const go = (time: number) => {
     setSelectedPlace(null);
-    setSelectedEvent(null);
-    setT(Math.max(0, Math.min(hours - 1, value)));
+    setProbe(null);
+    setT(Math.max(0, Math.min(hours - 1, time)));
+  };
+  const chooseDay = (i: number) => {
+    // A day opens on its first event, or mid-morning; the day already open is re-framed.
+    const first = events.find((e) => Math.floor(e.start / 24) === i);
+    go(first ? first.start : i * 24 + 10);
+    if (i === dayOf) frameDay.current(i, true);
   };
   const zoom = (by: number) => {
     const m = map.current;
     if (m) m.stop().easeTo({ zoom: m.getZoom() + by, duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 220 });
   };
-  const reset = () => { setProbe(null); home.current(); };
-  const dayIndex = Math.max(0, dates.indexOf(date));
-  const activeName = (shownAt === activePlace && shownTitle) || places.find(p => p.id === activePlace)?.name;
-  // "Fri 8:30 AM" without its day: when the event named in the card starts.
-  // With the player nowhere yet (before check-in, ahead of the day's first event), the
-  // card looks ahead to what is next that day.
-  const next = !activePlace ? events.find((e) => e.start > t && Math.floor(e.start / 24) === dayOf) : undefined;
-  const carded = shown && shownAt === activePlace ? shown : next;
-  const activeTime = carded ? carded.label.replace(/^\S+\s/, "") : null;
-  const stats = [["Gusts", `${windGust} mph`], ["Temp", `${temperature}°F`], ["Rain", chance === null ? "n/a" : `${chance}%`]];
-  const arrow = (
-    <svg width="52" height="52" viewBox="0 0 52 52" className="wind-compass" role="img" aria-label={`Wind from the ${compass(windDirection)}`}>
-      <circle cx="26" cy="26" r="24" fill="none" stroke="currentColor" strokeOpacity=".22" />
-      <path d="M26 3v3M49 26h-3M26 49v-3M3 26h3" stroke="currentColor" strokeOpacity=".5" />
-      <text x="26" y="13" textAnchor="middle" fontSize="8" fontWeight="600" fill="currentColor" fillOpacity=".7">N</text>
-      <g className="wind-compass-needle" transform={`rotate(${windDirection + 180} 26 26)`}><path d="M26 16L32 34L26 30L20 34Z" fill="var(--color-copper)" /></g>
-    </svg>
-  );
+  const reset = () => { setProbe(null); setSelectedPlace(null); frameDay.current(dayOf, true); };
   const icon = (path: string, size = 18) => <svg width={size} height={size} viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={path} /></svg>;
+
   return (
-    <section aria-label="Wind map" className="wind-instrument">
+    <section ref={section} aria-label="Wind map" className="wind-instrument">
       <div className="absolute inset-0"><div ref={mapBox} className="h-full w-full" /></div>
       <canvas ref={canvas} aria-hidden="true" className={`wind-canvas ${ready ? "is-ready" : ""}`} />
       <div className="wind-map-shade" aria-hidden="true" />
-      {!ready && <p className="wind-map-status" role="status">{mapFailed ? "Map unavailable. Forecast and itinerary remain available below." : "Loading resort imagery…"}</p>}
-
-      <aside className="wind-readout" aria-label="Resort forecast">
-        <div className="wind-readout-heading"><h2>Resort forecast</h2><span>Pacific time</span></div>
-        <div className="wind-main-reading">
-          {arrow}<p className="wind-speed tabular">{windSpeed}<span>mph<small>from {compass(windDirection)}</small></span></p>
-          <dl className="wind-stats">{stats.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
-        </div>
-        <div className="wind-context"><span>{selectedPlace ? "Selected" : next ? "Next up" : "Itinerary"}</span><strong>{activeName ?? next?.title ?? "Resort overview"}</strong>{activeTime && <span className="wind-context-time">{activeTime}</span>}</div>
-        <p className={`wind-daylight ${dark ? "is-dark" : ""}`}><span className="wind-daylight-full">{light ?? "Daylight information unavailable"}</span><span className="wind-daylight-compact">{dark ? "After dark" : sunset > minuteNow && sunset - minuteNow <= 90 ? `${sunset - minuteNow} min of light` : day ? `Sunset ${hourLabel(day.sunset)}` : ""}</span></p>
-      </aside>
+      {!ready && <p className="wind-map-status" role="status">{mapFailed ? "Map unavailable. The forecast is still in the panel below." : "Loading resort imagery…"}</p>}
 
       <div className="wind-map-tools" role="group" aria-label="Map controls">
-        <button type="button" className="wind-zoom" title="Zoom in" aria-label="Zoom in" onClick={() => zoom(1)}>{icon("M9 3v12M3 9h12", 16)}</button>
-        <button type="button" className="wind-zoom" title="Zoom out" aria-label="Zoom out" onClick={() => zoom(-1)}>{icon("M3 9h12", 16)}</button>
-        <button type="button" title="Reset to resort overview" aria-label="Reset to resort overview" onClick={reset}>{icon("M3 7V3h4M15 7V3h-4M3 11v4h4M15 11v4h-4", 16)}</button>
+        <button type="button" title="Zoom in" aria-label="Zoom in" onClick={() => zoom(1)}>{icon("M9 3v12M3 9h12", 16)}</button>
+        <button type="button" title="Zoom out" aria-label="Zoom out" onClick={() => zoom(-1)}>{icon("M3 9h12", 16)}</button>
+        <button type="button" title="Back to the day's places" aria-label="Back to the day's places" onClick={reset}>{icon("M3 7V3h4M15 7V3h-4M3 11v4h4M15 11v4h-4", 16)}</button>
         <button type="button" title={flowing ? "Freeze wind particles" : "Animate wind particles"} aria-label={flowing ? "Freeze wind particles" : "Animate wind particles"} aria-pressed={flowing} onClick={() => setFlowing(!flowing)}>{icon("M2 6h9a2 2 0 1 0-2-2M2 10h12a2 2 0 1 1-2 2M2 14h4", 16)}</button>
+      </div>
+
+      <div className="wind-key" aria-label="Map key">
+        <span className="wind-speed-key"><span>0</span><i style={{background: `linear-gradient(to right, ${SPEED_STOPS.map(([sp,c]) => `rgb(${c.join(" ")}) ${sp / 35 * 100}%`).join(",")})`}} /><span>35+ mph</span></span>
+        <span className="wind-attribution">Imagery USDA NAIP / USGS · Wind <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a> · Places © OpenStreetMap</span>
       </div>
 
       {probe && probeAt && reading && <div className="wind-probe" style={{left: probeAt.x, top: probeAt.y}}>
@@ -616,28 +654,79 @@ export function WindExplorer({
         <button type="button" aria-label="Close the reading" onClick={() => setProbe(null)}>{icon("M5 5l8 8M13 5l-8 8")}</button>
       </div>}
 
-      <div className="wind-console">
-        <div className="wind-key" aria-label="Map key">
-          <span className="wind-speed-key"><span>0</span><i style={{background: `linear-gradient(to right, ${SPEED_STOPS.map(([sp,c]) => `rgb(${c.join(" ")}) ${sp / 35 * 100}%`).join(",")})`}} /><span>35+ mph</span></span>
-          <span className="wind-attribution">Imagery USDA NAIP / USGS · Wind <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a> · Places © OpenStreetMap</span>
-        </div>
-        <div className="wind-timebar">
-          <div className="wind-transport">
-            <button type="button" aria-label="Previous hour" disabled={t <= 0} onClick={() => scrub(t - 1)}>{icon("M11 4L6 9l5 5")}</button>
-            <button type="button" className="wind-play" aria-label={playing ? "Pause forecast" : "Play forecast"} aria-pressed={playing} onClick={() => {
-              setSelectedPlace(null); setSelectedEvent(null);
-              if (t >= hours - 1) setT(0);
-              setPlaying(!playing);
-            }}>{icon(playing ? "M6 4v10M12 4v10" : "M6 3l9 6-9 6V3")}</button>
-            <button type="button" aria-label="Next hour" disabled={t >= hours - 1} onClick={() => scrub(t + 1)}>{icon("M7 4l5 5-5 5")}</button>
+      {/* The dock: the wind for the chosen hour around a compass, the days, and the hours.
+          Its outline is clipped glass with a crisp edge; nothing is blurred outside it. */}
+      <div ref={dock} className="wind-dock" role="region" aria-label="Forecast">
+        <div className="wind-dock-glass" style={{ clipPath: `path('${outline}')` }} aria-hidden="true" />
+        <svg className="wind-dock-edge" width={dockSize.w} height={dockSize.h} aria-hidden="true">
+          <defs>
+            <mask id="wind-dock-outside" maskUnits="userSpaceOnUse" x="-8" y="-8" width={dockSize.w + 16} height={dockSize.h + 16}>
+              <rect x="-8" y="-8" width={dockSize.w + 16} height={dockSize.h + 16} fill="#fff" />
+              <path d={outline} fill="#000" />
+            </mask>
+          </defs>
+          {/* A dark keyline just outside the edge separates the panel from bright ground. */}
+          <path d={outline} fill="none" stroke="rgb(4 14 11 / .45)" strokeWidth="3" mask="url(#wind-dock-outside)" />
+          <path d={outline} fill="none" stroke="rgb(233 231 224 / .22)" />
+        </svg>
+
+        <div className="wind-dock-reading">
+          <div className="wind-dock-side">
+            <div className="wind-stat"><WindGlyph size={24} /><div><p className="wind-stat-name">Gusts</p><p className="wind-stat-value">{windGust} mph</p></div></div>
+            {daylight && <div className="wind-stat is-wide"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 18h18M7 18a5 5 0 0 1 10 0M12 7v2M5.6 10.6l1.4 1.4M18.4 10.6 17 12" /></svg><div><p className="wind-stat-name">Daylight</p><p className={`wind-stat-value ${dark ? "is-dark" : ""}`}>{daylight}</p></div></div>}
           </div>
-          <p className="wind-time"><strong>{hourLabel(local)}</strong><span>{dayLabel(date, "short")}, {new Intl.DateTimeFormat("en-US", {month: "short", day: "numeric", timeZone: "UTC"}).format(new Date(`${date}T12:00:00Z`))}</span></p>
-          <div className="wind-days" role="group" aria-label="Forecast day">{dates.map((d, i) => <button key={d} type="button" aria-pressed={i === dayIndex} onClick={() => scrub(i * 24 + t % 24)}>{dayLabel(d, "short")} <span>{Number(d.slice(8))}</span></button>)}</div>
-          <div className="wind-range-switch" role="group" aria-label="Timeline range"><button type="button" aria-pressed={!wholeTrip} onClick={() => setWholeTrip(false)}>Day</button><button type="button" aria-pressed={wholeTrip} onClick={() => setWholeTrip(true)}>Trip</button></div>
+
+          <div className="wind-dock-compass" role="img" aria-label={`${windSpeed} mph from the ${compass(windDirection)}`}>
+            <svg width="112" height="112" viewBox="0 0 112 112" aria-hidden="true">
+              <circle cx="56" cy="56" r="53" fill="rgb(10 26 21 / .55)" stroke="rgb(233 231 224 / .28)" />
+              {TICKS.map((a) => (
+                <line key={a} x1="56" y1={a % 30 === 0 ? 14 : 11} x2="56" y2="8" stroke="#e9e7e0" strokeOpacity={a % 30 === 0 ? 0.6 : 0.25} strokeWidth={a % 30 === 0 ? 1.4 : 1} transform={`rotate(${a} 56 56)`} />
+              ))}
+              <text x="56" y="25" textAnchor="middle" fontSize="10" fontWeight="700" fill="#eceee8">N</text>
+              {/* The big mark sits on the side the wind comes from; the small one, where it goes. */}
+              <g className="wind-dock-needle" style={{ transform: `rotate(${needle}deg)` }}>
+                <path d="M47.5 2.5 L64.5 2.5 L56 18 Z" fill="#d99a6c" />
+                <path d="M50.5 98 L61.5 98 L56 108 Z" fill="#d99a6c" fillOpacity=".85" />
+              </g>
+            </svg>
+            <div className="wind-dock-speed" aria-hidden="true">
+              <p><strong>{windSpeed}</strong><span>mph</span></p>
+              <p>from <b>{compass(windDirection)}</b></p>
+            </div>
+          </div>
+
+          <div className="wind-dock-side">
+            <div className="wind-stat is-quiet"><WeatherGlyph kind={sky.kind} size={22} /><div><p className="wind-stat-name">{sky.label}</p><p className="wind-stat-value">{temperature}°F</p></div></div>
+            <div className="wind-stat is-quiet"><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M8 2.2c2.4 2.9 3.8 5 3.8 6.9a3.8 3.8 0 0 1-7.6 0C4.2 7.2 5.6 5.1 8 2.2Z" /></svg><div><p className="wind-stat-name">Rain</p><p className="wind-stat-value">{chance === null ? "n/a" : `${chance}%`}</p></div></div>
+          </div>
         </div>
-        <ForecastTimeline data={data} events={events} time={t} from={wholeTrip ? 0 : dayIndex * 24} to={wholeTrip ? hours : Math.min(hours, dayIndex * 24 + 24)} nights={nights}
-          selected={(e) => selectedEvent ? selectedEvent === e.id : t >= e.start && t < e.until}
-          onChange={scrub} onEvent={jump} />
+
+        <div className="wind-dock-days" role="group" aria-label="Forecast day" style={{ gridTemplateColumns: `repeat(${dates.length}, minmax(0, 1fr))` }}>
+          {dates.map((d, i) => (
+            <button key={d} type="button" aria-pressed={i === dayOf} onClick={() => chooseDay(i)}>
+              {weekday(d)}<span>{Number(d.slice(8))}</span>
+            </button>
+          ))}
+        </div>
+
+        <div ref={strip} className="wind-dock-hours" role="group" aria-label="Hour">
+          <div>
+            {strand.map((x) => (
+              <button key={x.at} type="button" aria-pressed={x.on} className={x.night ? "is-night" : ""}
+                aria-label={`${hourName(x.h)}: ${x.speed} mph from the ${compass(x.from)}${x.stop ? `. ${x.stop.title} at ${clockAt(x.stop.start)}` : ""}`}
+                onClick={() => go(x.stop ? x.stop.start : x.at)}>
+                {x.stop && (
+                  <span className={`wind-hour-stop ${happening?.id === x.stop.id ? "is-on" : ""}`} aria-hidden="true">
+                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: ICONS[kindOf(x.stop.type)] }} />
+                  </span>
+                )}
+                <span className="wind-hour-name">{hourName(x.h)}</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" style={{ transform: `rotate(${x.from + 180}deg)` }}><path d="M12 3L18 19L12 15.5L6 19Z" fill="currentColor" /></svg>
+                <span className="wind-hour-speed">{x.speed}</span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
