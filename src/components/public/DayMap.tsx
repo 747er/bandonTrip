@@ -59,6 +59,7 @@ export function DayMap({
   homeLabel,
   activeEventId,
   onSelect,
+  compact = false,
 }: {
   stops: MapStop[];
   homeId: string | null;
@@ -66,6 +67,8 @@ export function DayMap({
   homeLabel: string | null;
   activeEventId: string | null;
   onSelect: (eventId: string | null) => void;
+  /** Just the picture, a short band with no list beneath: for a single stop in a card. */
+  compact?: boolean;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
@@ -120,8 +123,13 @@ export function DayMap({
   const path = [...(home ? [home] : []), ...stops.map((s) => PLACES[s.placeId])];
 
   return (
-    <figure className="day-map-figure">
-      <div ref={box} className="relative isolate aspect-square overflow-hidden bg-forest-deep sm:aspect-[4/3] lg:aspect-[5/6]">
+    <figure className={compact ? "" : "day-map-figure"}>
+      <div
+        ref={box}
+        className={`relative isolate overflow-hidden bg-forest-deep ${
+          compact ? "h-[196px] md:h-[240px] lg:h-[420px]" : "aspect-square sm:aspect-[4/3] lg:aspect-[5/6]"
+        }`}
+      >
         <div
           className="absolute left-0 top-0 origin-top-left"
           style={{
@@ -227,6 +235,8 @@ export function DayMap({
         )}
       </div>
 
+      {!compact && (
+      <>
       <ol className="divide-y divide-rule border-b border-rule">
         {home && (
           <li className="flex min-h-12 items-center gap-3 py-2">
@@ -268,7 +278,9 @@ export function DayMap({
           );
         })}
       </ol>
-    <figcaption className="mt-3 text-fine text-moss">Stops in itinerary order. Connecting lines are not walking routes.</figcaption>
+      <figcaption className="mt-3 text-fine text-moss">Stops in itinerary order. Connecting lines are not walking routes.</figcaption>
+      </>
+      )}
     </figure>
   );
 }
