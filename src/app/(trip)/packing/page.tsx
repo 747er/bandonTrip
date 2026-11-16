@@ -14,6 +14,8 @@ export const metadata: Metadata = { title: "Packing list" };
 export default async function PackingPage() {
   const data = await getTrip();
   if (!data) notFound();
+  // The layout shows only the name sheet until a player is chosen; send nothing else.
+  if (!data.viewer) return null;
   const { trip } = data;
   const weather = await getForecast(trip);
   const days = eachDay(trip.startDate, trip.endDate)
