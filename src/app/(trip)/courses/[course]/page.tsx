@@ -22,6 +22,8 @@ export default async function CoursePage({ params }: PageProps<"/courses/[course
   const data = await getTrip();
   const course = courseById(id);
   if (!data || !course) notFound();
+  // The layout shows only the name sheet until a player is chosen; send nothing else.
+  if (!data.viewer) return null;
   const { trip, events } = data;
 
   // Our round here, if this course is on the trip.
@@ -76,7 +78,7 @@ export default async function CoursePage({ params }: PageProps<"/courses/[course
       <div className="course-card-strip"><dl>{facts.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl></div>
       <nav className="course-chapters" aria-label="On this course page"><div>
         <a href="#course-overview">The course</a><a href="#expect">What to expect</a>{round && <a href="#your-round">Your round</a>}
-        <Link href={`/wind${round ? `?day=${round.date}` : ""}`}>Wind map <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14" /></svg></Link>
+        <Link href={`/wind${round ? `?day=${round.date}` : ""}`}>Hourly Wind Map <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14" /></svg></Link>
       </div></nav>
 
       <div className="mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 pb-16 pt-10 md:px-10 md:pt-16 lg:grid-cols-[minmax(0,1fr)_22rem]">
