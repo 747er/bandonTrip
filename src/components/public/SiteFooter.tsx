@@ -20,7 +20,7 @@ export function SiteFooter({ viewer }: { viewer: string | null }) {
   if (pathname === `/wind`) return null;
   const links = [
     { href: `/schedule`, name: "Schedule", detail: "Day by day, with the resort map" },
-    { href: `/wind`, name: "Wind map", detail: "Hour by hour, with daylight" },
+    { href: `/wind`, name: "Hourly Wind Map", detail: "Wind and daylight for each day" },
     { href: `/packing`, name: "Packing list", detail: "The resort's advice as a checklist" },
   ];
   return (
