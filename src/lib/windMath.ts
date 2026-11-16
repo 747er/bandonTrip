@@ -5,6 +5,9 @@ const COMPASS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "
 /** 315 → "NW": the direction the wind blows from. */
 export const compass = (degrees: number) => COMPASS[Math.round((((degrees % 360) + 360) % 360) / 22.5) % 16];
 
+/** "NW" → 315: the other way round. Unknown names read as north. */
+export const degreesOf = (direction: string) => Math.max(0, COMPASS.indexOf(direction)) * 22.5;
+
 /** Index of the hour containing a local date and "HH:MM" time, or -1 when it is not covered. */
 export function hourIndex(times: string[], date: string, time: string): number {
   return times.indexOf(`${date}T${time.slice(0, 2)}:00`);
