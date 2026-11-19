@@ -718,6 +718,20 @@ details.event[open] .event-body {
 .flyover-tools button { transition: background 160ms; }
 .flyover-tools button:hover { background: rgb(40 69 58 / .95); }
 .flyover-north { position: relative; }
+/* Location: quiet when off, copper while it follows the player from hole to hole. */
+.flyover-locate .flyover-locate-dot { opacity: 0; transition: opacity 200ms; }
+.flyover-locate.is-asking svg { animation: flyover-seek 1.2s ease-in-out infinite; }
+.flyover-locate.is-on { color: var(--color-copper-light); }
+.flyover-locate[aria-pressed=true] { border-color: rgb(217 154 108 / .7); }
+.flyover-locate[aria-pressed=true] .flyover-locate-dot { opacity: 1; }
+@keyframes flyover-seek { 50% { opacity: .35; } }
+.flyover-notice {
+  position: absolute; z-index: 5; top: 150px; left: 40px; max-width: min(360px, calc(100% - 120px));
+  padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.4; color: #eceee8;
+  background: var(--panel); border: 1px solid var(--panel-rule); box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.flyover-live { font-weight: 600; color: var(--color-copper-light); }
 .flyover-north > span { display: grid; place-items: center; transition: transform 300ms var(--ease-settle); }
 .flyover-north b { position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%); padding: 0 4px; border-radius: 4px; background: var(--color-forest-deep); font-size: 9.5px; font-weight: 700; letter-spacing: .04em; color: var(--color-copper-light); }
 
@@ -764,6 +778,7 @@ details.event[open] .event-body {
   .flyover .wind-map-shade { display: none; }
   .flyover-top { top: calc(10px + env(safe-area-inset-top)); left: 10px; max-width: calc(100% - 74px); }
   .flyover-tools { top: calc(10px + env(safe-area-inset-top)); right: 10px; flex-direction: column; }
+  .flyover-notice { top: calc(62px + env(safe-area-inset-top)); left: 10px; max-width: calc(100% - 74px); font-size: 13.5px; }
   .flyover-sheet { inset-inline: 10px; width: auto; bottom: calc(76px + env(safe-area-inset-bottom)); padding: 14px 12px 10px; border-radius: 22px; }
   .flyover-number { width: 46px; height: 46px; font-size: 25px; }
   .flyover-wind { margin-top: 12px; padding-top: 12px; }
@@ -783,4 +798,5 @@ details.event[open] .event-body {
 }
 @media (prefers-reduced-motion: reduce) {
   .flyover-arrow svg, .flyover-north > span { transition: none; }
+  .flyover-locate.is-asking svg { animation: none; opacity: .5; }
 }
