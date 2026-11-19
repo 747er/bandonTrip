@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { KeepCurrent } from "@/components/public/KeepCurrent";
 import { SiteFooter } from "@/components/public/SiteFooter";
 import { TabNav } from "@/components/public/TabNav";
 import { WhoSheet } from "@/components/public/WhoSheet";
@@ -42,6 +43,8 @@ export default async function TripLayout({ children }: LayoutProps<"/">) {
       </header>
       {/* Outside the header, so the sheet can cover everything, the tab bar included. */}
       {sheet}
+      {/* A tab left open overnight wakes up on the new day. */}
+      <KeepCurrent timeZone={trip.timezone} />
 
       <main>{children}</main>
 
