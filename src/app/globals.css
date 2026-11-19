@@ -284,6 +284,8 @@ details.event[open] .event-body {
 .wind-hole-tip-close:hover { background: rgb(233 231 224 / .08); color: #eceee8; }
 .wind-hole-tip-text { position: absolute; inset: 44px 12px 0; display: flex; flex-direction: column; align-items: center; text-align: center; }
 .wind-hole-tip-name { font-size: 11.5px; color: #a7b6b1; white-space: nowrap; font-variant-numeric: lining-nums; }
+.wind-hole-tip-name a { color: #e7a77a; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.wind-hole-tip-name a:hover { color: #f4d9c4; }
 .wind-hole-tip-wind { margin-top: 2px; font-size: 16px; line-height: 1.25; white-space: nowrap; font-variant-numeric: lining-nums; }
 .wind-hole-tip-wind strong { font-weight: 600; }
 .wind-hole-tip-wind em { font-style: normal; font-weight: 600; color: #e7a77a; }
@@ -684,3 +686,101 @@ details.event[open] .event-body {
 }
 /* On the day sheet's paper, the daylight bar's markers are ringed in paper too. */
 @media (min-width: 1024px) { .day-sheet .sched-card { --card-ring: var(--color-paper); } }
+
+/* Holes: the flyover. Each hole on the resort's aerial, turned so the tee is at the
+   player's feet and the green straight ahead, the wind streaming over it, and the hole's
+   reading in a sheet of the wind page's dark forest glass. */
+.flyover {
+  position: relative; isolation: isolate; height: 100svh; min-height: 640px; overflow: hidden;
+  background: var(--color-ocean); color: #eceee8; font-variant-numeric: lining-nums;
+  --panel: rgb(13 33 27 / .88);
+  --panel-rule: rgb(233 231 224 / .16);
+  --panel-hover: rgb(233 231 224 / .1);
+  --panel-shadow: 0 1px 2px rgb(0 0 0 / .3), 0 18px 36px -16px rgb(0 0 0 / .7);
+  --into: #e7a77a;
+  --across: #cbbb97;
+  --help: #b9d3cf;
+}
+.flyover button { cursor: pointer; }
+.flyover :focus-visible { outline-color: var(--color-copper-light); }
+.flyover ::selection { background: var(--color-copper-light); color: var(--color-forest-deep); }
+
+.flyover-top { position: absolute; z-index: 3; top: 96px; left: 40px; max-width: calc(100% - 160px); }
+.flyover-round, .flyover-tools > * { background: var(--panel); border: 1px solid var(--panel-rule); box-shadow: var(--panel-shadow); backdrop-filter: blur(10px) saturate(1.1); -webkit-backdrop-filter: blur(10px) saturate(1.1); }
+.flyover-round { position: relative; display: flex; align-items: center; min-width: 0; height: 44px; border-radius: 22px; color: #eceee8; transition: border-color 160ms; }
+.flyover-round:hover { border-color: rgb(233 231 224 / .32); }
+.flyover-round select { appearance: none; -webkit-appearance: none; min-width: 0; max-width: 100%; height: 100%; padding: 0 40px 0 18px; border-radius: inherit; background: transparent; color: inherit; font: inherit; font-size: 15px; font-weight: 600; text-overflow: ellipsis; cursor: pointer; }
+.flyover-round select option { background: var(--color-forest-deep); color: #eceee8; }
+.flyover-round select:focus-visible { outline: 2px solid var(--color-copper-light); outline-offset: 3px; }
+.flyover-round svg { position: absolute; right: 15px; pointer-events: none; color: var(--color-copper-light); }
+.flyover-tools { position: absolute; z-index: 3; top: 96px; right: 40px; display: flex; gap: 8px; }
+.flyover-tools > * { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: #eceee8; }
+.flyover-tools button { transition: background 160ms; }
+.flyover-tools button:hover { background: rgb(40 69 58 / .95); }
+.flyover-north { position: relative; }
+.flyover-north > span { display: grid; place-items: center; transition: transform 300ms var(--ease-settle); }
+.flyover-north b { position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%); padding: 0 4px; border-radius: 4px; background: var(--color-forest-deep); font-size: 9.5px; font-weight: 700; letter-spacing: .04em; color: var(--color-copper-light); }
+
+/* The sheet: one hole at a time, its number between the steps, and its wind. */
+.flyover-sheet {
+  position: absolute; z-index: 4; left: 40px; bottom: 32px; width: 440px;
+  padding: 18px 18px 14px; border-radius: 26px; border: 1px solid rgb(233 231 224 / .2);
+  background: linear-gradient(180deg, rgb(40 69 58 / .84) 0%, rgb(16 38 31 / .94) 55%);
+  backdrop-filter: blur(22px) saturate(1.3); -webkit-backdrop-filter: blur(22px) saturate(1.3);
+  box-shadow: 0 0 0 1.5px rgb(4 14 11 / .4), 0 24px 48px -24px rgb(0 0 0 / .8);
+}
+.flyover-hole { display: grid; grid-template-columns: 44px auto minmax(0, 1fr) 44px; align-items: center; gap: 12px; }
+.flyover-step { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgb(233 231 224 / .22); color: #eceee8; transition: background 160ms, border-color 160ms; }
+.flyover-step:disabled { opacity: .28; cursor: default; }
+.flyover-step:not(:disabled):hover { background: rgb(233 231 224 / .08); border-color: rgb(233 231 224 / .36); }
+.flyover-number {
+  display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%;
+  border: 2px solid #f4d9c4; background: linear-gradient(180deg, #c27a4a 0%, #95522c 100%); color: #fff;
+  font-family: var(--font-display); font-size: 30px; line-height: 1; padding-top: 3px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .2), 0 8px 18px -8px rgb(0 0 0 / .7);
+}
+.flyover-facts { font-size: 13.5px; color: #b3c2bd; font-variant-numeric: tabular-nums lining-nums; }
+.flyover-when { display: flex; gap: .3em; margin-top: 2px; font-size: 16px; color: #eceee8; white-space: nowrap; }
+.flyover-when span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.flyover-when b { flex-shrink: 0; font-weight: 600; }
+.flyover-sky { display: inline-flex; align-items: center; gap: 4px; vertical-align: -3px; }
+
+.flyover-wind { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; align-items: center; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgb(233 231 224 / .14); }
+.flyover-arrow { grid-row: span 2; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; border: 1px solid rgb(233 231 224 / .2); background: rgb(10 26 21 / .5); color: var(--color-copper-light); }
+.flyover-arrow svg { transform: rotate(var(--turn)); transition: transform 600ms var(--ease-settle); }
+.flyover-wind > p:first-of-type { font-size: 22px; line-height: 1.2; }
+.flyover-wind strong { font-weight: 600; font-variant-numeric: tabular-nums lining-nums; }
+.flyover-wind em { font-style: normal; font-weight: 600; }
+.flyover-wind em.is-into { color: var(--into); }
+.flyover-wind em.is-help { color: var(--help); }
+.flyover-wind em.is-across { color: var(--across); }
+.flyover-wind em.is-calm { color: #c9d3cf; }
+.flyover-across { font-size: 16px; color: #c9d3cf; }
+.flyover-extra { margin-top: 2px; font-size: 13.5px; color: #b3c2bd; font-variant-numeric: tabular-nums lining-nums; }
+.flyover-none { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgb(233 231 224 / .14); font-size: 15px; line-height: 1.45; color: #c9d3cf; }
+
+@media (max-width: 767px) {
+  .flyover { min-height: 600px; }
+  .flyover .wind-map-shade { display: none; }
+  .flyover-top { top: calc(10px + env(safe-area-inset-top)); left: 10px; max-width: calc(100% - 74px); }
+  .flyover-tools { top: calc(10px + env(safe-area-inset-top)); right: 10px; flex-direction: column; }
+  .flyover-sheet { inset-inline: 10px; width: auto; bottom: calc(76px + env(safe-area-inset-bottom)); padding: 14px 12px 10px; border-radius: 22px; }
+  .flyover-number { width: 46px; height: 46px; font-size: 25px; }
+  .flyover-wind { margin-top: 12px; padding-top: 12px; }
+  .flyover-arrow { width: 46px; height: 46px; }
+  .flyover-wind > p:first-of-type { font-size: 20px; }
+  .flyover-hole { grid-template-columns: 44px auto minmax(0, 1fr) 44px; gap: 8px; }
+  .flyover-when { font-size: 15px; }
+  .flyover-round select { font-size: 14px; padding: 0 36px 0 15px; }
+  .flyover-round svg { right: 12px; }
+}
+@media (max-width: 379px) {
+  .flyover-round select { font-size: 13.5px; padding: 0 32px 0 13px; }
+  .flyover-round svg { right: 10px; }
+  .flyover-hole { gap: 6px; }
+  .flyover-number { width: 42px; height: 42px; font-size: 23px; }
+  .flyover-when { font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flyover-arrow svg, .flyover-north > span { transition: none; }
+}
