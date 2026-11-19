@@ -507,8 +507,11 @@ function Before(ctx: Ctx) {
 
 function During(ctx: Ctx) {
   const { data, now, hero, photos, weather, roundOf } = ctx;
-  const { events } = data;
+  const { events, trip } = data;
   const today = events.filter((e) => e.date === now.date);
+  // The room, roommates and shuttle number matter most the day everyone arrives, so that day
+  // they come straight after today's plans; on the days after, they wait at the foot of the page.
+  const arriving = now.date === trip.startDate;
   const current = today.find((e) => isUnderway(e, now));
   const next = events.find((e) => !isPast(e, now) && !isUnderway(e, now));
   const featured = current ?? next;
@@ -570,6 +573,8 @@ function During(ctx: Ctx) {
         </div>
       </section>
 
+      {arriving && <Stay {...ctx} />}
+
       <Forecast data={data} weather={weather} today={now.date} />
 
       {tomorrow.length > 0 && (
@@ -597,6 +602,7 @@ function During(ctx: Ctx) {
         </section>
       )}
 
+      {!arriving && <Stay {...ctx} />}
     </>
   );
 }
