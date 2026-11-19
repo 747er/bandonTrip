@@ -41,8 +41,9 @@ export const TRIP = {
 // ---- Everyone on the trip ----
 // A person's key is their last name as the tee sheet writes it. `core` marks our six,
 // who see the full itinerary with meals; everyone else sees their tee times and lodging.
+// `outings` adds someone to our meals and outings without folding them into the six's tee times.
 
-export type Person = { key: string; name: string; room: string; core?: boolean };
+export type Person = { key: string; name: string; room: string; core?: boolean; outings?: boolean };
 
 export const ROOMS: Record<string, { name: string; /** Which pin on the maps */ place: string }> = {
   grove1: { name: "Grove Cottage #1", place: "grove-cottages" },
@@ -88,7 +89,7 @@ export const PEOPLE: Person[] = [
   { key: "Campagna", name: "Brian Campagna", room: "grove4" },
   { key: "Johnston", name: "Troy Johnston", room: "loft1" },
   { key: "Toolan", name: "Mike Toolan", room: "loft1" },
-  { key: "De Graff", name: "Ben De Graff", room: "loft2" },
+  { key: "De Graff", name: "Ben De Graff", room: "loft2", outings: true },
   { key: "Haggerty", name: "Brooks Haggerty", room: "loft2" },
   { key: "KQ", name: "KQ", room: "double" },
   { key: "Maez", name: "Erik Maez", room: "double" },
@@ -134,7 +135,7 @@ export const TEE_SHEET: Record<string, [time: string, players: string[]][]> = {
 
 // ---- The schedule ----
 // A round's start and end are the whole club's window; each person sees their own tee
-// time from the sheet above. Meals and other outings are our six's, and only they see them.
+// time from the sheet above. Meals and other outings are our six's (plus anyone marked `outings`), and only they see them.
 
 export const EVENTS: TripEvent[] = [
   // ---- Thursday ----
@@ -149,16 +150,16 @@ export const EVENTS: TripEvent[] = [
     address: RESORT,
     description: "The putting course beside the Pacific Dunes clubhouse.",
   },
-  { type: "dining", date: "2026-11-19", startTime: "17:30", title: "Trails End", venue: "Trails End Restaurant", address: RESORT, partySize: 6 },
+  { type: "dining", date: "2026-11-19", startTime: "17:30", title: "Trails End", venue: "Trails End Restaurant", address: RESORT, partySize: 7 },
 
   // ---- Friday ----
   { type: "golf", date: "2026-11-20", startTime: "08:20", endTime: "09:30", title: "Pacific Dunes", venue: "Pacific Dunes", address: RESORT, par: 71 },
   { type: "activity", date: "2026-11-20", startTime: "15:00", title: "Shorty's", venue: "Shorty's", address: RESORT },
-  { type: "dining", date: "2026-11-20", startTime: "19:30", title: "Pacific Grill", venue: "Pacific Grill", address: RESORT, partySize: 6 },
+  { type: "dining", date: "2026-11-20", startTime: "19:30", title: "Pacific Grill", venue: "Pacific Grill", address: RESORT, partySize: 7 },
 
   // ---- Saturday ----
   { type: "golf", date: "2026-11-21", startTime: "08:00", endTime: "08:50", title: "Bandon Trails", venue: "Bandon Trails", address: RESORT, par: 71 },
-  { type: "dining", date: "2026-11-21", startTime: "17:00", title: "Ghost Tree", venue: "Ghost Tree", address: RESORT, partySize: 6 },
+  { type: "dining", date: "2026-11-21", startTime: "17:00", title: "Ghost Tree", venue: "Ghost Tree", address: RESORT, partySize: 7 },
 
   // ---- Sunday ----
   { type: "golf", date: "2026-11-22", startTime: "08:10", endTime: "09:30", title: "Bandon Dunes", venue: "Bandon Dunes", address: RESORT, par: 72 },

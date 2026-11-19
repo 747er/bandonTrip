@@ -31,7 +31,7 @@ export type Viewer = {
   id: string;
   name: string;
   firstName: string;
-  /** One of our six: sees meals and outings as well as golf */
+  /** One of our six, or along for their outings: sees meals and outings as well as golf */
   core: boolean;
   room: string;
   /** Which pin on the maps the room is at */
@@ -56,7 +56,7 @@ export function viewerFor(id: string | null | undefined): Viewer | null {
     id: personId(person.key),
     name: person.name,
     firstName: person.name.split(" ")[0],
-    core: !!person.core,
+    core: !!(person.core || person.outings),
     room: ROOMS[person.room].name,
     roomPlace: ROOMS[person.room].place,
     roommates: PEOPLE.filter((p) => p.room === person.room && p.key !== person.key).map((p) => p.name),

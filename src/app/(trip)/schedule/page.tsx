@@ -116,7 +116,7 @@ export default async function SchedulePage({
       party={Object.fromEntries(
         events
           .filter((e) => e.type !== "golf")
-          .map((e) => [e.id, PEOPLE.filter((p) => p.core && personId(p.key) !== viewer?.id).map((p) => p.name)]),
+          .map((e) => [e.id, PEOPLE.filter((p) => (p.core || p.outings) && personId(p.key) !== viewer?.id).map((p) => p.name)]),
       )}
       firstTee={Object.fromEntries(
         events.flatMap((e) => {
