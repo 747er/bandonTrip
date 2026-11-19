@@ -136,12 +136,18 @@ export function ScheduleView(props: ScheduleProps) {
       <div
         role="tablist"
         aria-label="Trip days"
-        className="schedule-days sticky top-0 z-20 -mx-5 grid auto-cols-[minmax(4.75rem,1fr)] grid-flow-col gap-1.5 overflow-x-auto bg-limestone/95 px-5 py-2.5 backdrop-blur-sm [scrollbar-width:none] md:mx-0 md:gap-2 md:px-0 [&::-webkit-scrollbar]:hidden"
+        className="schedule-days sticky top-0 z-20 -mx-5 grid auto-cols-[minmax(4.75rem,1fr)] grid-flow-col gap-1.5 overflow-x-auto bg-limestone/95 px-5 pb-2 pt-[18px] backdrop-blur-sm md:pb-2.5 md:pt-[26px] [scrollbar-width:none] md:mx-0 md:gap-2 md:px-0 [&::-webkit-scrollbar]:hidden"
       >
         {days.map((date) => {
           const selected = date === day;
           const lead = events.find((e) => e.date === date && e.type === "golf") ?? events.find((e) => e.date === date);
           const time = lead?.teeTime ?? lead?.startTime;
+          const sky = weather[date];
+          // The icon follows the rain chance, so the two never disagree: a rain cloud once rain
+          // is likely (30% or more), a plain cloud for a day forecast as rain that probably won't.
+          const wet = sky?.kind === "rain" || sky?.kind === "drizzle";
+          const chance = sky?.rainChance ?? null;
+          const look = !sky || chance === null ? sky : chance >= 30 && !wet && sky.kind !== "storm" && sky.kind !== "snow" ? { kind: "rain", label: "Rain likely" } : chance < 30 && wet ? { kind: "cloud", label: "Cloudy" } : sky;
           return (
             <button
               key={date}
@@ -160,19 +166,33 @@ export function ScheduleView(props: ScheduleProps) {
               }}
               aria-controls="day-panel"
               onClick={() => choose(date)}
-              className={`flex min-h-16 flex-col gap-[7px] px-2.5 pb-2 pt-[9px] text-left transition-colors duration-200 md:px-4 md:pb-3 md:pt-3 ${
+              className={`relative flex flex-col items-center px-1.5 pb-2 pt-4 text-center transition-colors duration-200 md:pb-3 md:pt-[22px] ${
                 selected ? "bg-forest text-limestone" : "bg-paper text-pine hover:bg-sand/40 active:bg-sand/60"
               }`}
             >
+              {/* The day's sky in a round badge set into the card's top edge, as the compass
+                  rises out of the wind dock. */}
+              {look && (
+                <span
+                  aria-hidden="true"
+                  className={`absolute left-1/2 top-[-14px] -ml-3.5 grid size-7 place-items-center rounded-full border bg-inherit transition-colors duration-200 md:top-[-16px] md:-ml-4 md:size-8 ${
+                    selected ? "border-copper-light text-limestone" : "border-pine/20 text-pine"
+                  }`}
+                >
+                  <WeatherGlyph kind={look.kind} size={20} className="h-4 w-4 md:h-5 md:w-5" />
+                </span>
+              )}
               <span className="flex items-baseline gap-1.5">
                 <span className={`text-[13px] font-semibold ${selected ? "text-mist" : "text-moss"}`}>
                   {date === today ? "Today" : weekdayShort(date)}
                 </span>
-                <span className="display figures text-[24px] md:text-[28px]">{Number(date.slice(8))}</span>
+                <span className="display figures text-[26px] md:text-[28px]">{Number(date.slice(8))}</span>
               </span>
-              <span className={`whitespace-nowrap text-[13px] font-semibold lining-nums ${selected ? "text-copper-light" : "text-pine"}`}>
-                {time ? clock(time) : " "}
+              <span className={`mt-0.5 whitespace-nowrap text-[13px] font-semibold lining-nums md:mt-1.5 ${selected ? "text-copper-light" : "text-pine"}`}>
+                {time ? clock(time) : "\u00a0"}
               </span>
+              {chance !== null && <Rain chance={chance} className={`mt-1 text-[12.5px] md:mt-[7px] md:text-[13px] ${selected ? "text-mist" : "text-moss"}`} />}
+              {look && <span className="sr-only">, {look.label}{chance !== null ? `, ${chance}% chance of rain` : ""}</span>}
             </button>
           );
         })}
@@ -663,5 +683,15 @@ function DayForecast({ day, weather, daylight, marks, onMark }: {
       </div>
     </section>
     </>
+  );
+}
+
+/** A chance of rain: a drop, so the number never reads as anything else, and the percentage. */
+function Rain({ chance, className = "" }: { chance: number; className?: string }) {
+  return (
+    <span className={`inline-flex items-center gap-0.5 font-semibold lining-nums ${className}`}>
+      <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.6c2.6 3.1 4.2 5.4 4.2 7.5a4.2 4.2 0 0 1-8.4 0c0-2.1 1.6-4.4 4.2-7.5Z" /></svg>
+      {chance}%
+    </span>
   );
 }
