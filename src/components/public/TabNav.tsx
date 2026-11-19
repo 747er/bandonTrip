@@ -19,6 +19,13 @@ const icons = {
       <path d="M3 15.5h6" />
     </>
   ),
+  holes: (
+    <>
+      <circle cx="6.5" cy="17.5" r="1.7" />
+      <path d="M7.6 16.2c2.6-2.4 1.6-5.6 5.4-8" strokeDasharray="1.6 2.2" />
+      <circle cx="15.6" cy="6.4" r="3" />
+    </>
+  ),
   packing: (
     <>
       <path d="M5 8.5h12v9.5a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 015 18z" />
@@ -38,13 +45,16 @@ export function TabNav({
     { href: base, label: "Home", icon: icons.home },
     { href: "/schedule", label: "Schedule", icon: icons.schedule },
     { href: "/wind", label: "Wind", icon: icons.weather },
+    { href: "/holes", label: "Holes", icon: icons.holes },
     { href: "/packing", label: "Packing", icon: icons.packing },
   ];
   const isActive = (href: string) => (href === base ? pathname === base : pathname.startsWith(href));
   // The home page opens on a photograph, so its masthead is set in light type.
-  const onCover = pathname === base || pathname === "/wind" || pathname.startsWith("/courses/");
+  // The wind map and the hole flyover are full-screen aerials, dark from edge to edge.
+  const aerial = pathname === "/wind" || pathname === "/holes";
+  const onCover = pathname === base || aerial || pathname.startsWith("/courses/");
   const ink = onCover ? "text-paper" : "text-forest-deep";
-  const dark = pathname === "/wind";
+  const dark = aerial;
 
   return (
     <>
@@ -53,7 +63,7 @@ export function TabNav({
         className={`trip-masthead h-14 items-center justify-between gap-8 px-5 md:flex md:h-20 md:justify-start md:px-10 ${
           // On phones the wind map wants the whole screen, and Home sets the trip's
           // name at the top of its photograph instead.
-          pathname === "/wind" || pathname === base ? "hidden" : "flex"
+          aerial || pathname === base ? "hidden" : "flex"
         }`}
       >
         <Link href={base} className={`serif text-[17px] italic ${ink}`}>
@@ -98,7 +108,7 @@ export function TabNav({
         }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <ul className="mx-auto grid max-w-md grid-cols-4">
+        <ul className="mx-auto grid max-w-md grid-cols-5">
           {tabs.map((tab) => {
             const active = isActive(tab.href);
             return (
