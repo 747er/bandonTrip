@@ -74,7 +74,9 @@ export function WhoSheet({
     setTimeout(() => setOpen(false), 380);
   };
 
-  const onPhoto = pathname === "/" || pathname === "/wind" || pathname.startsWith("/courses/");
+  // The full-screen aerials: the wind map and the hole flyover.
+  const aerial = pathname === "/wind" || pathname === "/holes";
+  const onPhoto = pathname === "/" || aerial || pathname.startsWith("/courses/");
 
   return (
     <>
@@ -88,7 +90,7 @@ export function WhoSheet({
             onPhoto
               ? "border-paper/45 bg-forest-deep/35 text-paper hover:bg-forest-deep/60"
               : "border-pine/30 text-pine hover:bg-pine/8"
-          } ${pathname === "/wind" ? "max-md:hidden" : ""}`}
+          } ${aerial ? "max-md:hidden" : ""}`}
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
             <circle cx="8" cy="5.5" r="2.75" />
