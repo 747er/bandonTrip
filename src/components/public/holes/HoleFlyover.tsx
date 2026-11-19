@@ -3,12 +3,12 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Map as MapLibre, setWorkerUrl, type GeoJSONSource } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { holeTimes, holeYards } from "@/lib/holeRound";
+import { greenCenter, holeAtPoint, holeTimes, holeYards, yardsBetween } from "@/lib/holeRound";
 import { HOLES, type Hole } from "@/lib/holes";
 import { clock } from "@/lib/time";
 import { describe } from "@/lib/weatherCodes";
 import type { WindData } from "@/lib/wind";
-import { heading, interpolate, interpolateDirection, timelineLocal, windOnHole } from "@/lib/windMath";
+import { heading, hourIndex, interpolate, interpolateDirection, timelineLocal, windOnHole } from "@/lib/windMath";
 import { WeatherGlyph } from "../Glyphs";
 import { aerialStyle } from "../wind/aerial";
 import { WindParticles } from "../wind/particles";
@@ -112,6 +112,51 @@ function badge(n: number, font: string): ImageData {
   return ctx.getImageData(0, 0, size, size);
 }
 
+/** A position from the phone: where, how sure (metres), and when (ms). */
+type Fix = { at: [number, number]; accuracy: number; time: number };
+/** Where this device remembers that the player turned their location on. */
+const GPS_KEY = "holes-gps";
+const remember = (value: "on" | "off") => { try { window.localStorage.setItem(GPS_KEY, value); } catch {} };
+
+/** The player on the map: a dot, inside a ring as wide as the phone's uncertainty. */
+function youFeatures(fix: Fix | null): GeoJSON.FeatureCollection {
+  if (!fix) return { type: "FeatureCollection", features: [] };
+  const [lon, lat] = fix.at;
+  const r = Math.min(150, Math.max(5, fix.accuracy));
+  const ring = Array.from({ length: 41 }, (_, k) => {
+    const a = (k / 40) * 2 * Math.PI;
+    return [lon + ((r * Math.cos(a)) / (EARTH * Math.cos(rad(lat)))) * (180 / Math.PI), lat + ((r * Math.sin(a)) / EARTH) * (180 / Math.PI)];
+  });
+  return {
+    type: "FeatureCollection",
+    features: [
+      { type: "Feature", properties: { part: "accuracy" }, geometry: { type: "Polygon", coordinates: [ring] } },
+      { type: "Feature", properties: { part: "dot" }, geometry: { type: "Point", coordinates: fix.at } },
+    ],
+  };
+}
+
+/** The hole a player is standing on: on the round shown first, then their other rounds. */
+function standingAt(fix: Fix | null, rounds: FlyoverRound[], shown: number): { round: number; n: number } | null {
+  if (!fix) return null;
+  for (const k of [shown, ...rounds.map((_, k) => k).filter((k) => k !== shown)]) {
+    const on = holeAtPoint(fix.at, HOLES[rounds[k].course].holes);
+    if (on !== null) return { round: k, n: on };
+  }
+  return null;
+}
+
+/** A moment (ms) as fractional hours into the forecast, on the trip's clock; -1 outside it. */
+function hourIn(times: string[], timezone: string, time: number): number {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+      .formatToParts(new Date(time))
+      .map((part) => [part.type, part.value]),
+  );
+  const at = hourIndex(times, `${parts.year}-${parts.month}-${parts.day}`, `${parts.hour}:00`);
+  return at < 0 ? -1 : at + Number(parts.minute) / 60;
+}
+
 const icon = (path: string, size = 18, width = 1.6) => (
   <svg width={size} height={size} viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth={width} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={path} /></svg>
 );
@@ -121,11 +166,14 @@ export function HoleFlyover({
   rounds,
   initial,
   center,
+  timezone,
 }: {
   wind: WindData | null;
   rounds: FlyoverRound[];
-  initial: { round: number; hole: number };
+  /** Where to open; `asked` when a link named the hole */
+  initial: { round: number; hole: number; asked: boolean };
   center: [number, number];
+  timezone: string;
 }) {
   const [roundIndex, setRoundIndex] = useState(initial.round);
   const [n, setN] = useState(initial.hole);
@@ -135,12 +183,27 @@ export function HoleFlyover({
   const hole = holes[i];
   const pace = useMemo(() => holeTimes(holes), [holes]);
 
+  // ---- Where the player is, once they let the page use their location ----
+  // Nothing about it leaves the phone: the position is only read here, in the page.
+  const [gps, setGps] = useState<"off" | "asking" | "on">("off");
+  const [fix, setFix] = useState<Fix | null>(null);
+  // Following: the page keeps to whichever hole the player is standing on, until they
+  // step to another hole themselves.
+  const [follow, setFollow] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const watch = useRef<number | null>(null);
+  const hadFix = useRef(false);
+  // Set when following has just been turned on, so the first sighting jumps straight there.
+  const eager = useRef(false);
+  const standing = standingAt(fix, rounds, roundIndex);
+  const onThis = !!standing && standing.round === roundIndex && standing.n === n;
+
   // ---- The forecast at each hole: on its tee at about the time the group gets there ----
   const hours = wind?.times.length ?? 0;
   const timeAt = (k: number) => (round.teeHour >= 0 ? round.teeHour + pace[k].at / 60 : -1);
   const covered = (t: number) => !!wind && t >= 0 && t <= hours - 1;
-  const readingAt = (k: number) => {
-    const t = timeAt(k);
+  const readingAt = (k: number, at?: number) => {
+    const t = at ?? timeAt(k);
     if (!wind || !covered(t)) return null;
     const from = interpolateDirection(wind.point.direction, t);
     const mph = Math.round(interpolate(wind.point.speed, t));
@@ -158,7 +221,11 @@ export function HoleFlyover({
       plays: playsOf(along, mph),
     };
   };
-  const now = readingAt(i);
+  // Standing on the hole, the wind is the wind now, not at an estimated time.
+  const liveT = onThis && fix && wind ? hourIn(wind.times, timezone, fix.time) : -1;
+  const isLive = covered(liveT);
+  const now = readingAt(i, isLive ? liveT : undefined);
+  const toGreen = onThis && fix ? yardsBetween(fix.at, greenCenter(hole)) : null;
   const clockAt = (t: number) => (wind ? clock(timelineLocal(wind.times, t).slice(11)) : "");
 
   // ---- The map ----
@@ -174,6 +241,7 @@ export function HoleFlyover({
   const [wandered, setWandered] = useState(false);
   const live = useRef({ t: now?.t ?? -1, dirty: true });
   const shown = useRef({ course: round.course, n: hole.n });
+  const fixRef = useRef(fix);
   const reduce = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /** The clear part of the screen: below the top controls and above the sheet. */
@@ -338,7 +406,7 @@ export function HoleFlyover({
     };
     m.on("click", (e) => {
       const other = holeAt(e.point.x, e.point.y);
-      if (other) setN(other);
+      if (other) { setFollow(false); setN(other); }
     });
     m.on("mousemove", (e) => { m.getCanvas().style.cursor = holeAt(e.point.x, e.point.y) ? "pointer" : ""; });
 
@@ -369,6 +437,11 @@ export function HoleFlyover({
       });
       m.addLayer({ id: "holes-tee", type: "circle", source: "holes", filter: part("tee"), paint: { "circle-radius": 6, "circle-color": "#0d211b", "circle-stroke-color": "#f4d9c4", "circle-stroke-width": 2.5 } });
       m.addLayer({ id: "holes-badge", type: "symbol", source: "holes", filter: part("badge"), layout: { "icon-image": ["concat", "badge-", ["to-string", ["get", "n"]]], "icon-padding": 1, "icon-rotation-alignment": "viewport" }, paint: { "icon-opacity": 0.85 } });
+      // The player, over the holes.
+      m.addSource("you", { type: "geojson", data: youFeatures(fixRef.current) });
+      m.addLayer({ id: "you-accuracy", type: "fill", source: "you", filter: part("accuracy"), paint: { "fill-color": "#b9d3cf", "fill-opacity": 0.16, "fill-outline-color": "rgba(185, 211, 207, 0.6)" } });
+      m.addLayer({ id: "you-halo", type: "circle", source: "you", filter: part("dot"), paint: { "circle-radius": 16, "circle-color": "#b9d3cf", "circle-opacity": 0.42, "circle-stroke-color": "#eceee8", "circle-stroke-width": 1, "circle-stroke-opacity": 0.6 } });
+      m.addLayer({ id: "you-dot", type: "circle", source: "you", filter: part("dot"), paint: { "circle-radius": 7, "circle-color": "#ffffff", "circle-stroke-color": "#0d211b", "circle-stroke-width": 2.5 } });
     });
     const observer = new ResizeObserver(() => { m.resize(); size(); });
     observer.observe(mapBox.current);
@@ -396,9 +469,112 @@ export function HoleFlyover({
   }, [round.course, hole.n, now?.t]);
 
   const chooseRound = (k: number) => {
+    setFollow(false);
     setRoundIndex(k);
     setN(HOLES[rounds[k].course].holes[0].n);
   };
+
+  // ---- Location: asking, watching, following ----
+  const stopGps = () => {
+    if (watch.current !== null) navigator.geolocation.clearWatch(watch.current);
+    watch.current = null;
+    hadFix.current = false;
+    setGps("off");
+    setFix(null);
+    setFollow(false);
+    remember("off");
+  };
+  const startGps = () => {
+    if (!("geolocation" in navigator)) return setNotice("This browser can’t share its location.");
+    if (watch.current !== null) return;
+    setGps("asking");
+    remember("on");
+    watch.current = navigator.geolocation.watchPosition(
+      (p) => {
+        const next: Fix = { at: [p.coords.longitude, p.coords.latitude], accuracy: p.coords.accuracy, time: p.timestamp };
+        if (!hadFix.current && yardsBetween(next.at, center) > 5000) setNotice("You’re not at the resort, so there’s no hole to put you on yet.");
+        hadFix.current = true;
+        setGps("on");
+        setFix(next);
+      },
+      (e) => {
+        if (e.code === e.PERMISSION_DENIED) {
+          stopGps();
+          setNotice("Location is blocked for this site. You can allow it in your browser’s settings.");
+        } else if (!hadFix.current) {
+          setNotice("Can’t find your location right now. Out on the course it usually takes a few seconds.");
+        }
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 },
+    );
+  };
+  /** The location button: turn it on and follow; back to the hole you're on; or turn it off. */
+  const locate = () => {
+    if (gps === "off") {
+      eager.current = true;
+      setFollow(true);
+      startGps();
+    } else if (!follow) {
+      setFollow(true);
+      if (standing) {
+        setRoundIndex(standing.round);
+        setN(standing.n);
+      } else if (fix) {
+        setNotice("You’re not on one of your rounds’ holes right now.");
+      }
+    } else {
+      stopGps();
+    }
+  };
+  const gpsRef = useRef({ startGps, stopGps });
+  useEffect(() => { gpsRef.current = { startGps, stopGps }; });
+  // Someone who turned their location on before gets it back without asking again, as long
+  // as the browser still allows it. A link to a particular hole opens that hole, not theirs.
+  useEffect(() => {
+    let saved: string | null = null;
+    try { saved = window.localStorage.getItem(GPS_KEY); } catch {}
+    if (saved !== "on" || !navigator.permissions) return;
+    let cancelled = false;
+    navigator.permissions.query({ name: "geolocation" }).then((state) => {
+      if (cancelled || state.state !== "granted") return;
+      eager.current = !initial.asked;
+      setFollow(!initial.asked);
+      gpsRef.current.startGps();
+    }).catch(() => {});
+    return () => {
+      cancelled = true;
+      if (watch.current !== null) navigator.geolocation.clearWatch(watch.current);
+      watch.current = null;
+    };
+    // Once, on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // The dot follows the phone.
+  useEffect(() => {
+    fixRef.current = fix;
+    map.current?.getSource<GeoJSONSource>("you")?.setData(youFeatures(fix));
+  }, [fix]);
+  // Following: move to the hole the player is on once it has been seen twice running, so a
+  // stray reading on the edge of a neighbouring hole doesn't swing the page across.
+  const seen = useRef({ key: "", time: 0 });
+  useEffect(() => {
+    const here = standingAt(fix, rounds, roundIndex);
+    if (!follow || !fix || !here) return;
+    const key = `${here.round}/${here.n}`;
+    // A second reading, not the same one seen again after a re-render.
+    const sure = eager.current || (seen.current.key === key && seen.current.time !== fix.time);
+    if (seen.current.time !== fix.time) seen.current = { key, time: fix.time };
+    if (!sure || (here.round === roundIndex && here.n === n)) return;
+    eager.current = false;
+    const go = setTimeout(() => { setRoundIndex(here.round); setN(here.n); }, 0);
+    return () => clearTimeout(go);
+  }, [follow, fix, rounds, roundIndex, n]);
+  // A notice says its piece and goes.
+  useEffect(() => {
+    if (!notice) return;
+    const done = setTimeout(() => setNotice(null), 6000);
+    return () => clearTimeout(done);
+  }, [notice]);
 
   // The walk runs one way through the round: back stops at the first hole, and on from
   // the last goes to the first tee of the next round (stopping after the last round).
@@ -406,6 +582,7 @@ export function HoleFlyover({
   const canBack = i > 0;
   const canOn = i < holes.length - 1 || nextRound >= 0;
   const step = (by: number) => {
+    setFollow(false);
     if (by < 0 && canBack) setN(holes[i - 1].n);
     else if (by > 0 && i < holes.length - 1) setN(holes[i + 1].n);
     else if (by > 0 && nextRound >= 0) chooseRound(nextRound);
@@ -459,7 +636,22 @@ export function HoleFlyover({
           <span ref={north}><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M11 2.5l4 9h-8z" fill="#d99a6c" /><path d="M7 11.5h8l-4 8z" fill="rgb(233 231 224 / .35)" /></svg></span>
           <b>N</b>
         </span>
+        <button
+          type="button"
+          className={`flyover-locate is-${gps}`}
+          onClick={locate}
+          aria-pressed={follow}
+          aria-label={gps === "off" ? "Show where I am" : !follow ? "Go to the hole I’m on" : "Stop using my location"}
+          title={gps === "off" ? "Show where I am" : !follow ? "Go to the hole I’m on" : "Stop using my location"}
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+            <circle cx="10" cy="10" r="5.5" />
+            <path d="M10 1.5v3M10 15.5v3M1.5 10h3M15.5 10h3" />
+            <circle cx="10" cy="10" r="2.2" fill="currentColor" stroke="none" className="flyover-locate-dot" />
+          </svg>
+        </button>
       </div>
+      {notice && <p className="flyover-notice" role="status">{notice}</p>}
 
       <div
         ref={sheet}
@@ -483,14 +675,17 @@ export function HoleFlyover({
           <div className="min-w-0" aria-hidden="true">
             <p className="flyover-facts">{hole.par ? `Par ${hole.par} · ` : ""}about {yards} yds</p>
             {/* The time never gives way: on a narrow phone only the words after it shorten. */}
-            <p className="flyover-when">{now ? <>About <b>{clockAt(now.t)}</b> <span>on the tee</span></> : <span>{round.tee ? `Tee time ${round.tee}` : round.name}</span>}</p>
+            <p className="flyover-when">{toGreen !== null ? <><b>{toGreen} yds</b> <span>to the middle</span></> : now ? <>About <b>{clockAt(now.t)}</b> <span>on the tee</span></> : <span>{round.tee ? `Tee time ${round.tee}` : round.name}</span>}</p>
           </div>
           <button type="button" className="flyover-step" onClick={() => step(1)} disabled={!canOn} aria-label={i < holes.length - 1 ? `Next hole, ${holes[i + 1].n}` : nextRound >= 0 ? `Next round, ${rounds[nextRound].name}` : "Next hole"}>{icon("M7 4l5 5-5 5")}</button>
         </div>
 
+        {/* Read on request, not announced: it changes with every step the player takes. */}
+        {toGreen !== null && <p className="sr-only">{toGreen} yards to the middle of the green.</p>}
         <p className="sr-only" aria-live="polite">
           Hole {hole.n} of {holes.length}{hole.par ? `, par ${hole.par}` : ""}, about {yards} yards.
-          {now ? ` On the tee about ${clockAt(now.t)}. ${now.mph} mph ${now.along ?? "crosswind"}${now.across ? `, ${now.across}` : ""}. Gusts ${now.gust}.` : ""}
+          {onThis ? " You’re on this hole." : now && !isLive ? ` On the tee about ${clockAt(now.t)}.` : ""}
+          {now ? ` ${isLive ? "Now " : ""}${now.mph} mph ${now.along ?? "crosswind"}${now.across ? `, ${now.across}` : ""}. Gusts ${now.gust}.` : ""}
         </p>
         {now ? (
           <div className="flyover-wind" aria-hidden="true">
@@ -502,7 +697,7 @@ export function HoleFlyover({
               {now.across && <span className="flyover-across"> · {now.across}</span>}
             </p>
             <p className="flyover-extra">
-              Gusts {now.gust}{now.rain !== null ? ` · Rain ${now.rain}%` : ""} · <span className="flyover-sky"><WeatherGlyph kind={now.sky.kind} size={16} />{now.temp}°<span className="sr-only">, {now.sky.label}</span></span>
+              {isLive && <b className="flyover-live">Now · </b>}Gusts {now.gust}{now.rain !== null ? ` · Rain ${now.rain}%` : ""} · <span className="flyover-sky"><WeatherGlyph kind={now.sky.kind} size={16} />{now.temp}°<span className="sr-only">, {now.sky.label}</span></span>
             </p>
           </div>
         ) : (
