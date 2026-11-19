@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;border:0 solid}
+html,body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+button{font:inherit;color:inherit;background:none;cursor:pointer;text-align:inherit}
+ol,ul{list-style:none}
+a{color:inherit;text-decoration:none}
+a:hover{color:#d99a6c}
+img,svg{display:block}
+</style>
+</helmet>
+<div data-screen-label="{{ label }}" style="position:relative; width:390px; height:844px; overflow:hidden; isolation:isolate; border-radius:44px; background:#122e36; color:#eceee8; font-family:'Schibsted Grotesk',ui-sans-serif,system-ui,sans-serif; box-shadow:0 0 0 1px rgba(233,231,224,0.16), 0 30px 60px -24px rgba(8,20,16,0.6);">
+  <div style="position:absolute; inset:0; overflow:hidden;">
+    <img src="public/images/map/aerial-z15.jpg" alt="" draggable="false" style="position:absolute; left:0; top:0; width:1280px; height:2048px; max-width:none; transform-origin:0 0; filter:brightness(0.78) saturate(1.1) contrast(1.05); transition:transform 700ms cubic-bezier(0.2,0.7,0.2,1); transform:{{ map }};">
+  </div>
+  <canvas ref="{{ cv }}" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none;"></canvas>
+  <div style="position:absolute; left:0; right:0; top:0; height:150px; pointer-events:none; background:linear-gradient(to bottom, rgba(10,26,21,0.55), rgba(10,26,21,0));"></div>
+
+  <sc-for list="{{ pins }}" as="p" hint-placeholder-count="0">
+    <button type="button" onClick="{{ p.onClick }}" style="position:absolute; left:0; top:0; z-index:2; transition:transform 700ms cubic-bezier(0.2,0.7,0.2,1); transform:translate({{ p.x }}px, {{ p.y }}px);">
+      <span style="position:absolute; top:0; transform:translateY(-50%); display:flex; align-items:center; left:{{ p.l }}; right:{{ p.r }}; flex-direction:{{ p.dir }};">
+        <span style="position:relative; z-index:1; display:flex; width:28px; height:28px; flex-shrink:0; align-items:center; justify-content:center; border-radius:9999px; border:2px solid rgba(236,238,232,0.92); background:rgba(13,33,27,0.9); color:#eceee8; box-shadow:0 4px 12px -4px rgba(0,0,0,0.6);"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="{{ p.icon }}" fill="{{ p.fill }}"></path></svg></span>
+        <sc-if value="{{ p.hasLabel }}">
+          <span style="display:flex; align-items:baseline; gap:6px; padding:4px 11px; border-radius:9999px; white-space:nowrap; font-size:13px; font-weight:600; background:rgba(236,238,232,0.92); color:#14261f; box-shadow:0 4px 12px -6px rgba(0,0,0,0.6); margin:{{ p.m }};"><span style="font-size:12px; font-weight:600; color:#8a4b27; font-variant-numeric:lining-nums;">{{ p.time }}</span>{{ p.name }}</span>
+        </sc-if>
+      </span>
+    </button>
+  </sc-for>
+
+  <sc-if value="{{ act.has }}" hint-placeholder-val="{{ false }}">
+    <span style="position:absolute; left:0; top:0; z-index:3; pointer-events:none; transition:transform 700ms cubic-bezier(0.2,0.7,0.2,1); transform:translate({{ act.x }}px, {{ act.y }}px);">
+      <span style="position:absolute; left:-38px; top:-38px; width:76px; height:76px; border-radius:9999px; border:1.5px solid rgba(217,154,108,0.55); background:radial-gradient(circle, rgba(217,154,108,0.24) 0%, rgba(217,154,108,0.05) 70%);"></span>
+      <span style="position:absolute; top:{{ act.dy }}px; transform:translate({{ act.nx }}px, -50%); display:flex; align-items:baseline; gap:7px; white-space:nowrap; border-radius:9999px; transition:top 300ms; font-size:15px; font-weight:600; color:#fbf3ec; background:linear-gradient(180deg, #b8703f 0%, #95522c 100%); box-shadow:inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 20px -8px rgba(0,0,0,0.6); left:{{ act.l }}; right:{{ act.r }}; padding:{{ act.pad }};"><span style="font-size:13px; color:#f8dcc6; font-variant-numeric:lining-nums;">{{ act.time }}</span>{{ act.title }}</span>
+      <span style="position:absolute; left:-22px; top:-22px; display:flex; width:44px; height:44px; align-items:center; justify-content:center; border-radius:9999px; border:2.5px solid #f4d9c4; color:#fff; background:linear-gradient(180deg, #c27a4a 0%, #9a5530 100%); box-shadow:0 8px 20px -6px rgba(0,0,0,0.6);"><svg width="19" height="19" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="{{ act.icon }}" fill="{{ act.fill }}"></path></svg></span>
+    </span>
+  </sc-if>
+
+  <div style="position:absolute; left:50%; top:22px; z-index:6; width:188px; height:188px; margin-left:-94px; border-radius:9999px; background:radial-gradient(circle at 50% 35%, rgba(46,78,66,0.72) 0%, rgba(16,38,31,0.82) 70%); border:1px solid rgba(233,231,224,0.22); box-shadow:inset 0 1px 0 rgba(255,255,255,0.12), inset 0 0 0 6px rgba(10,26,21,0.25), 0 24px 48px -18px rgba(0,0,0,0.7); backdrop-filter:blur(16px) saturate(1.3);">
+    <svg width="188" height="188" viewBox="0 0 188 188" style="position:absolute; inset:0;">
+      <sc-for list="{{ ticks }}" as="tk"><line x1="94" y1="{{ tk.y1 }}" x2="94" y2="12" stroke="#e9e7e0" strokeOpacity="{{ tk.op }}" strokeWidth="{{ tk.w }}" transform="rotate({{ tk.a }} 94 94)"></line></sc-for>
+      <text x="94" y="40" textAnchor="middle" fontSize="13" fontWeight="700" fill="#eceee8">N</text>
+      <text x="153" y="98.5" textAnchor="middle" fontSize="11" fontWeight="600" fill="#eceee8" fillOpacity=".6">E</text>
+      <text x="94" y="157" textAnchor="middle" fontSize="11" fontWeight="600" fill="#eceee8" fillOpacity=".6">S</text>
+      <text x="35" y="98.5" textAnchor="middle" fontSize="11" fontWeight="600" fill="#eceee8" fillOpacity=".6">W</text>
+      <g style="transition:transform 600ms cubic-bezier(0.2,0.7,0.2,1); transform-origin:94px 94px; transform:rotate({{ r.from }}deg);">
+        <path d="M94 12 L94 172" stroke="#d99a6c" strokeOpacity=".28" strokeWidth="1.2" strokeDasharray="2 4"></path>
+        <path d="M84 8 L104 8 L94 26 Z" fill="#d99a6c" stroke="#0d211b" strokeOpacity=".5" strokeWidth="1"></path>
+        <path d="M87 168 L94 180 L101 168" fill="none" stroke="#d99a6c" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"></path>
+      </g>
+    </svg>
+    <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none;">
+      <p style="display:flex; align-items:baseline; gap:4px; font-variant-numeric:tabular-nums lining-nums;"><span style="font-size:46px; font-weight:500; letter-spacing:-0.04em; line-height:1;">{{ r.speed }}</span><span style="font-size:14px; font-weight:600;">mph</span></p>
+      <p style="margin-top:4px; font-size:13px; color:#c3d0cd; white-space:nowrap;">from <span style="font-weight:700; color:#e7a77a;">{{ r.dir }}</span></p>
+      <p style="margin-top:2px; font-size:11.5px; color:#a7b6b1; white-space:nowrap; font-variant-numeric:lining-nums;">gusts {{ r.gust }}</p>
+    </div>
+  </div>
+
+  <section style="position:absolute; left:10px; right:10px; bottom:88px; z-index:8; padding:8px; border-radius:26px; background:linear-gradient(180deg, rgba(38,66,56,0.78) 0%, rgba(16,38,31,0.9) 100%); border:1px solid rgba(233,231,224,0.18); box-shadow:inset 0 1px 0 rgba(255,255,255,0.08), 0 20px 40px -20px rgba(0,0,0,0.7); backdrop-filter:blur(22px) saturate(1.3);">
+    <div role="tablist" style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; padding:3px; border-radius:18px; background:rgba(10,26,21,0.4);">
+      <sc-for list="{{ days }}" as="d" hint-placeholder-count="4">
+        <button type="button" role="tab" onClick="{{ d.choose }}" style="min-height:40px; display:flex; align-items:baseline; justify-content:center; gap:5px; padding-top:11px; border-radius:15px; font-size:14px; font-weight:600; transition:background 220ms, color 220ms; background:{{ d.bg }}; color:{{ d.fg }}; box-shadow:{{ d.shadow }};">{{ d.short }}<span style="font-weight:500; font-variant-numeric:lining-nums;">{{ d.n }}</span></button>
+      </sc-for>
+    </div>
+    <div ref="{{ stripRef }}" style="margin-top:8px; overflow-x:auto; scrollbar-width:none; scroll-snap-type:x proximity;">
+      <div style="display:flex; gap:2px; width:max-content; padding:12px 4px 2px;">
+        <sc-for list="{{ hours }}" as="h" hint-placeholder-count="7">
+          <button type="button" onClick="{{ h.onClick }}" style="position:relative; width:52px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:6px; padding:12px 0 10px; border-radius:14px; scroll-snap-align:center; transition:background 200ms, border-color 200ms; background:{{ h.bg }}; border:1.5px solid {{ h.border }};">
+            <sc-if value="{{ h.hasStop }}"><span style="position:absolute; top:-11px; left:50%; margin-left:-10px; display:grid; place-items:center; width:20px; height:20px; border-radius:9999px; border:1.5px solid #f3f1ec; background:{{ h.stopBg }}; color:#fff;"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="{{ h.stopIcon }}" fill="{{ h.stopFill }}"></path></svg></span></sc-if>
+            <span style="font-size:12px; font-weight:500; white-space:nowrap; font-variant-numeric:lining-nums; color:{{ h.labC }};">{{ h.label }}</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" style="transition:transform 400ms; transform:rotate({{ h.rot }}deg);"><path d="M12 3L18 19L12 15.5L6 19Z" fill="{{ h.arrowC }}"></path></svg>
+            <span style="font-size:17px; font-weight:500; line-height:1.1; font-variant-numeric:tabular-nums lining-nums;">{{ h.speed }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <nav style="position:absolute; left:0; right:0; bottom:0; z-index:10; height:78px; border-top:1px solid rgba(233,231,224,0.12); background:linear-gradient(180deg, rgba(16,38,31,0.86), rgba(10,26,21,0.95)); backdrop-filter:blur(20px) saturate(1.3);">
+    <ul style="display:grid; height:100%; padding-bottom:10px; grid-template-columns:repeat(4,minmax(0,1fr));">
+      <li><a href="#" style="display:flex; height:100%; flex-direction:column; align-items:center; justify-content:center; gap:5px; font-size:13px; color:#c3d0cd;"><svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"><path d="M11 19V4.5"></path><path d="M11 5l7 2.6L11 10.5"></path><path d="M4 19.5c2.4-1.4 4.6-2 7-2s4.6.6 7 2"></path></svg>Home</a></li>
+      <li><a href="#" style="display:flex; height:100%; flex-direction:column; align-items:center; justify-content:center; gap:5px; font-size:13px; color:#c3d0cd;"><svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6.5h14M4 11.5h14M4 16.5h9"></path></svg>Schedule</a></li>
+      <li><a href="#" style="position:relative; display:flex; height:100%; flex-direction:column; align-items:center; justify-content:center; gap:5px; font-size:13px; font-weight:600; color:#eceee8;"><svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5h9.5a2.5 2.5 0 10-2.4-3.2"></path><path d="M3 12h13.5a2.5 2.5 0 11-2.4 3.2"></path><path d="M3 15.5h6"></path></svg>Wind<span style="position:absolute; bottom:6px; width:44px; height:3px; border-radius:2px; background:#d99a6c;"></span></a></li>
+      <li><a href="#" style="display:flex; height:100%; flex-direction:column; align-items:center; justify-content:center; gap:5px; font-size:13px; color:#c3d0cd;"><svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"><path d="M5 8.5h12v9.5a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 015 18z"></path><path d="M8.5 8.5V6a2.5 2.5 0 015 0v2.5M5 13h12"></path></svg>Packing</a></li>
+    </ul>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;start&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:10.3333,&quot;tsType&quot;:&quot;number&quot;},&quot;label&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Wind compass&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = {};
+  S = { w: 0, h: 0, n: 0, x: [], y: [], age: [], life: [] };
+  cv = el => { if (el) this.canvas = el; };
+  stripRef = el => { if (el) this.strip = el; };
+  TICKS = Array.from({ length: 72 }, (_, i) => ({ a: i * 5, y1: i % 6 === 0 ? 22 : 17, op: i % 6 === 0 ? 0.7 : 0.3, w: i % 6 === 0 ? 1.6 : 1 }));
+
+  K = (() => {
+    const days = [
+      { short: 'Thu', n: 19, rise: 7 + 13 / 60, set: 16 + 51 / 60, sp: [6, 6, 7, 11, 13, 15, 12, 9, 8], go: [5, 5, 6, 7, 9, 9, 8, 6, 6], dir: [190, 192, 195, 200, 205, 220, 225, 230, 232] },
+      { short: 'Fri', n: 20, rise: 7 + 14 / 60, set: 16 + 50 / 60, sp: [8, 9, 11, 14, 17, 18, 16, 13, 11], go: [7, 8, 9, 10, 12, 13, 11, 9, 8], dir: [175, 178, 180, 182, 185, 188, 190, 195, 200] },
+      { short: 'Sat', n: 21, rise: 7 + 15 / 60, set: 16 + 50 / 60, sp: [9, 8, 7, 7, 10, 11, 9, 7, 6], go: [5, 5, 5, 5, 6, 6, 5, 4, 4], dir: [300, 305, 310, 315, 300, 295, 290, 300, 330] },
+      { short: 'Sun', n: 22, rise: 7 + 16 / 60, set: 16 + 49 / 60, sp: [6, 5, 5, 6, 8, 9, 7, 6, 5], go: [4, 4, 4, 4, 5, 5, 4, 4, 4], dir: [355, 352, 350, 350, 345, 340, 345, 350, 355] },
+    ];
+    const ev = (id, title, type, start, until, place) => ({ id, title, type, start, until, place });
+    const events = [
+      ev('om', 'Old Macdonald', 'golf', 10 + 20 / 60, 14 + 20 / 60, 'old-macdonald'),
+      ev('pb', 'Punchbowl', 'activity', 16, 17, 'pacific-dunes'),
+      ev('te', 'Trails End', 'dining', 17.5, 19.5, 'bandon-trails'),
+      ev('pd', 'Pacific Dunes', 'golf', 32.5, 36.5, 'pacific-dunes'),
+      ev('sh', "Shorty's", 'activity', 39, 40.5, 'shortys'),
+      ev('pg', 'Pacific Grill', 'dining', 43.5, 45.5, 'pacific-dunes'),
+      ev('bt', 'Bandon Trails', 'golf', 56 + 20 / 60, 60 + 20 / 60, 'bandon-trails'),
+      ev('gt', 'Ghost Tree', 'dining', 65, 67, 'ghost-tree'),
+      ev('bd', 'Bandon Dunes', 'golf', 80 + 20 / 60, 84 + 20 / 60, 'bandon-dunes'),
+    ];
+    const places = {
+      'old-macdonald': { lat: 43.20303, lon: -124.3836 }, 'ghost-tree': { lat: 43.20289, lon: -124.38282 },
+      'pacific-dunes': { lat: 43.1936, lon: -124.3899 }, 'bandon-dunes': { lat: 43.18838, lon: -124.39038 },
+      'grove-cottages': { lat: 43.1866, lon: -124.3855 }, 'bandon-trails': { lat: 43.18472, lon: -124.39117 }, shortys: { lat: 43.17599, lon: -124.3937 },
+    };
+    for (const p of Object.values(places)) {
+      const x = ((p.lon + 180) / 360) * 32768, r = (p.lat * Math.PI) / 180;
+      const y = ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * 32768;
+      p.x = (x - 5059) * 256; p.y = (y - 12012) * 256;
+    }
+    return { days, events, places };
+  })();
+
+  ICONS = {
+    home: 'M2.5 7.5L8 3l5.5 4.5V13h-11z', golf: 'M5 14V2.5l7 2.7L5 8',
+    dining: 'M4 2v4.5a1.5 1.5 0 003 0V2M5.5 8v6M11.5 14V2c-1.6 1.2-2.2 3.2-2.2 5.5h2.2',
+    activity: 'M5.5 8a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0',
+  };
+  wx(t) {
+    const d = Math.max(0, Math.min(3, Math.floor(t / 24))), h = Math.max(0, Math.min(24, t - d * 24));
+    const D = this.K.days[d], i = Math.min(7, Math.floor(h / 3)), f = (h - i * 3) / 3, L = a => a[i] + (a[i + 1] - a[i]) * f;
+    const speed = L(D.sp);
+    return { speed, gust: speed + L(D.go), from: L(D.dir) };
+  }
+  compass(deg) { return ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'][Math.round((((deg % 360) + 360) % 360) / 22.5) % 16]; }
+  clock(t) { const m = Math.round((((t % 24) + 24) % 24) * 60) % 1440; return `${Math.floor(m / 60) % 12 || 12}:${String(m % 60).padStart(2, '0')} ${m < 720 ? 'AM' : 'PM'}`; }
+  hourLabel(h) { return h === 12 ? 'Noon' : `${h % 12 || 12} ${h < 12 ? 'AM' : 'PM'}`; }
+  speedColor(mph) {
+    const S = [[0, [150, 205, 200]], [6, [238, 226, 196]], [12, [242, 205, 130]], [18, [226, 140, 78]], [25, [214, 78, 60]], [35, [170, 40, 90]]];
+    for (let i = 1; i < S.length; i++) if (mph <= S[i][0]) { const [s0, c0] = S[i - 1], [s1, c1] = S[i], k = (mph - s0) / (s1 - s0); return c0.map((c, j) => c + (c1[j] - c) * k); }
+    return S[S.length - 1][1];
+  }
+  t() { return this.state.t ?? Number(this.props.start ?? 10.3333); }
+
+  componentDidMount() { this.loop = setInterval(() => this.frame(), 33); this.last = null; setTimeout(() => this.centerStrip(true), 60); }
+  componentDidUpdate() { const h = Math.floor(this.t()); if (h !== this.last) { this.centerStrip(this.last === null); } }
+  componentWillUnmount() { clearInterval(this.loop); }
+  centerStrip(instant) {
+    if (!this.strip) return;
+    this.last = Math.floor(this.t());
+    const idx = (this.last % 24) - 6;
+    this.strip.scrollTo({ left: Math.max(0, 4 + idx * 54 + 26 - this.strip.clientWidth / 2), behavior: instant ? 'auto' : 'smooth' });
+  }
+  spawn(i, scatter) { const S = this.S; S.x[i] = Math.random() * S.w; S.y[i] = Math.random() * S.h; S.life[i] = 50 + Math.random() * 80; S.age[i] = scatter ? Math.random() * S.life[i] : 0; }
+  frame() {
+    const cv = this.canvas, S = this.S;
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    if (cv.clientWidth !== S.w || cv.clientHeight !== S.h) {
+      S.w = cv.clientWidth; S.h = cv.clientHeight;
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      cv.width = S.w * dpr; cv.height = S.h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      S.n = Math.round((S.w * S.h) / 900);
+      for (let i = 0; i < S.n; i++) this.spawn(i, true);
+    }
+    const W = this.wx(this.t()), f0 = (W.from * Math.PI) / 180;
+    ctx.globalCompositeOperation = 'destination-out'; ctx.fillStyle = 'rgba(0,0,0,0.06)'; ctx.fillRect(0, 0, S.w, S.h);
+    ctx.globalCompositeOperation = 'source-over'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    for (let i = 0; i < S.n; i++) {
+      const x0 = S.x[i], y0 = S.y[i];
+      const a = f0 + 0.12 * Math.sin(x0 / 110 + y0 / 160), s = W.speed * (1 + 0.12 * Math.sin(y0 / 80 - x0 / 130));
+      const x1 = x0 - s * Math.sin(a) * 0.16, y1 = y0 + s * Math.cos(a) * 0.16;
+      S.x[i] = x1; S.y[i] = y1; S.age[i]++;
+      if (S.age[i] > S.life[i] || x1 < -4 || y1 < -4 || x1 > S.w + 4 || y1 > S.h + 4) { this.spawn(i); continue; }
+      const [r, g, b] = this.speedColor(s + 3);
+      const al = Math.sin((Math.PI * S.age[i]) / S.life[i]) * 0.85;
+      ctx.strokeStyle = `rgba(${r | 0},${g | 0},${b | 0},${al.toFixed(3)})`;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    }
+  }
+
+  renderVals() {
+    const { days, events, places } = this.K;
+    const t = this.t(), day = Math.max(0, Math.min(3, Math.floor(t / 24))), D = days[day], H = Math.floor(t), W = this.wx(t);
+    const dayEv = events.filter(e => Math.floor(e.start / 24) === day);
+    const cand = dayEv.find(e => e.until > t);
+    const activePlace = cand ? cand.place : 'grove-cottages';
+    const go = v => this.setState({ t: v });
+
+    const ids = [...new Set([...dayEv.map(e => e.place), 'grove-cottages'])];
+    const xs = ids.map(i => places[i].x), ys = ids.map(i => places[i].y);
+    const box = { top: 262, bottom: 526, left: 70, right: 70 };
+    const aw = 390 - box.left - box.right, ah = box.bottom - box.top;
+    const s = Math.min(aw / Math.max(1, Math.max(...xs) - Math.min(...xs)), ah / Math.max(1, Math.max(...ys) - Math.min(...ys)), 0.9);
+    const vx = box.left + aw / 2 - ((Math.min(...xs) + Math.max(...xs)) / 2) * s, vy = box.top + ah / 2 - ((Math.min(...ys) + Math.max(...ys)) / 2) * s;
+    const P = id => ({ x: places[id].x * s + vx, y: places[id].y * s + vy });
+    const evAt = id => (cand && cand.place === id ? cand : dayEv.find(e => e.place === id));
+
+    const pins = ids.filter(id => id !== activePlace).map(id => {
+      const me = P(id), e = evAt(id), home = id === 'grove-cottages' && !e;
+      const name = e ? e.title : '', time = e ? this.clock(e.start) : '', w = (name.length + time.length) * 7 + 40;
+      const flip = me.x + w + 16 > 380 || ids.some(o => o !== id && Math.abs(P(o).y - me.y) < 26 && P(o).x > me.x && P(o).x - me.x < w);
+      return {
+        ...me, name, time, hasLabel: !home, icon: this.ICONS[home ? 'home' : e.type], fill: !home && e.type === 'activity' ? 'currentColor' : 'none',
+        l: flip ? 'auto' : '-14px', r: flip ? '-14px' : 'auto', dir: flip ? 'row-reverse' : 'row', m: flip ? '0 -8px 0 0' : '0 0 0 -8px',
+        onClick: () => e && go(e.start),
+      };
+    });
+    const ap = P(activePlace);
+    const pillW = ((cand ? cand.title : 'Your cottage').length + 8) * 7.6 + 56;
+    const hits = side => ids.filter(o => o !== activePlace).some(o => {
+      const q = P(o); if (Math.abs(q.y - ap.y) > 34) return false;
+      return side === 'right' ? q.x > ap.x - 24 && q.x < ap.x + pillW : q.x < ap.x + 24 && q.x > ap.x - pillW;
+    });
+    let right = ap.x < 195;
+    if (hits(right ? 'right' : 'left') && !hits(right ? 'left' : 'right')) right = !right;
+    if (right ? ap.x + pillW > 384 : ap.x - pillW < 6) right = !right;
+    if (right ? ap.x + pillW > 384 : ap.x - pillW < 6) right = (384 - ap.x) >= (ap.x - 6);
+    const nx = right ? Math.min(0, 380 - (ap.x + pillW)) : Math.max(0, 10 - (ap.x - pillW));
+    const blocker = ids.filter(o => o !== activePlace).map(P).find(q => Math.abs(q.y - ap.y) <= 34 && (right ? q.x > ap.x - 24 && q.x < ap.x + pillW : q.x < ap.x + 24 && q.x > ap.x - pillW));
+    const dy = blocker ? (blocker.y < ap.y ? 24 : -24) : nx !== 0 ? (ap.y < 120 ? 30 : -30) : 0;
+    const act = {
+      has: true, ...ap, title: cand ? cand.title : 'Your cottage', time: cand ? this.clock(cand.start) : '',
+      icon: this.ICONS[cand ? cand.type : 'home'], fill: cand && cand.type === 'activity' ? 'currentColor' : 'none',
+      dy, nx, l: right ? '-14px' : 'auto', r: right ? 'auto' : '-14px', pad: right ? '7px 16px 8px 40px' : '7px 40px 8px 16px',
+    };
+
+    const hours = Array.from({ length: 16 }, (_, k) => {
+      const hh = 6 + k, abs = day * 24 + hh, w = this.wx(abs), stop = dayEv.find(e => Math.floor(e.start) === abs);
+      const on = abs === H, night = hh + 1 <= D.rise || hh >= D.set;
+      return {
+        label: this.hourLabel(hh), rot: w.from + 180, speed: Math.round(w.speed),
+        bg: on ? 'rgba(217,154,108,0.16)' : 'transparent', border: on ? '#d99a6c' : 'transparent',
+        labC: on ? '#f0c2a0' : night ? '#7f918b' : '#c3d0cd', arrowC: night && !on ? '#9a7a64' : '#d99a6c',
+        hasStop: !!stop, stopIcon: stop ? this.ICONS[stop.type] : '', stopFill: stop && stop.type === 'activity' ? 'currentColor' : 'none',
+        stopBg: stop && cand && stop.id === cand.id ? '#a65f36' : '#17332b',
+        onClick: () => go(stop ? stop.start : abs),
+      };
+    });
+
+    return {
+      label: this.props.label ?? 'Wind compass', cv: this.cv, stripRef: this.stripRef, ticks: this.TICKS,
+      map: `translate(${vx}px, ${vy}px) scale(${s})`, pins, act,
+      r: { from: W.from, speed: Math.round(W.speed), dir: this.compass(W.from), gust: `${Math.round(W.gust)} mph` },
+      days: days.map((d, i) => {
+        const first = events.find(e => Math.floor(e.start / 24) === i), sel = i === day;
+        return { short: d.short, n: d.n, bg: sel ? '#eceee8' : 'transparent', fg: sel ? '#0d211b' : '#c3d0cd', shadow: sel ? '0 4px 12px -6px rgba(0,0,0,0.6)' : 'none', choose: () => go(first.start) };
+      }),
+      hours,
+    };
+  }
+}
+</script>
+</body>
+</html>

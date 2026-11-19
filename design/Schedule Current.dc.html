@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;border:0 solid}
+html,body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{background:#e9e7e0}
+button{font:inherit;color:inherit;background:none;cursor:pointer;text-align:inherit}
+ol,ul{list-style:none}
+a{color:inherit;text-decoration:none}
+a:hover{color:inherit}
+img,svg{display:block}
+</style>
+</helmet>
+<div data-screen-label="Schedule (current)" style="position:relative; width:390px; height:844px; overflow:hidden; background:#e9e7e0; color:#14261f; font-family:'Schibsted Grotesk',ui-sans-serif,system-ui,sans-serif;">
+  <div style="position:absolute; inset:0; overflow-y:auto; overflow-x:hidden; scrollbar-width:none;">
+    <div style="position:relative;">
+      <header style="position:absolute; left:0; right:0; top:0; z-index:20;">
+        <div style="height:56px; display:flex; align-items:center; justify-content:space-between; gap:32px; padding:0 20px;">
+          <a href="#" style="font-family:'Libre Caslon Text',Georgia,serif; font-size:17px; font-style:italic; color:#0d211b;">Bandon 2026</a>
+        </div>
+      </header>
+      <button type="button" style="position:absolute; right:16px; top:10px; z-index:30; display:inline-flex; align-items:center; gap:8px; min-height:36px; padding:0 12px; border:1px solid rgba(20,38,31,0.3); font-size:14px; line-height:1.35; font-weight:600; color:#14261f; backdrop-filter:blur(4px);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="8" cy="5.5" r="2.75"></circle><path d="M2.75 14c.6-2.8 2.6-4.25 5.25-4.25s4.65 1.45 5.25 4.25"></path></svg>
+        Cody
+      </button>
+
+      <main>
+        <div style="max-width:72rem; margin:0 auto; padding:80px 20px 64px;">
+          <header style="padding-bottom:22px; border-bottom:1px solid #14261f;">
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <h1 style="font-family:'Libre Caslon Display','Libre Caslon Text',Georgia,serif; font-weight:400; letter-spacing:-0.012em; line-height:0.95; text-wrap:balance; font-size:48px;">Schedule</h1>
+              <p style="font-size:13px; color:#4b5a52; font-variant-numeric:tabular-nums lining-nums;">November 19–22, 2026</p>
+            </div>
+          </header>
+
+          <div role="tablist" style="position:sticky; top:0; z-index:20; margin:20px -20px 0; display:flex; gap:6px; overflow-x:auto; background:rgba(233,231,224,0.95); padding:12px 20px; backdrop-filter:blur(4px); border-bottom:1px solid rgba(20,38,31,0.16); scrollbar-width:none;">
+            <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+              <button type="button" role="tab" onClick="{{ t.choose }}" style="position:relative; display:flex; min-height:68px; min-width:73.6px; flex:1; align-items:center; justify-content:space-between; gap:8px; padding:10px 14px; text-align:left; transition:background-color 200ms; background:{{ t.bg }}; color:{{ t.fg }}; border-bottom:2px solid {{ t.rule }};">
+                <span>
+                  <span style="display:block; font-size:14px; line-height:1.35; font-weight:600; color:{{ t.lab }};">{{ t.short }}</span>
+                  <span style="display:block; margin-top:2px; font-family:'Libre Caslon Display','Libre Caslon Text',Georgia,serif; font-weight:400; letter-spacing:-0.012em; line-height:0.95; font-size:28px; font-variant-numeric:tabular-nums lining-nums;">{{ t.n }}</span>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+
+          <div style="margin-top:32px; display:grid; row-gap:40px;">
+            <section style="min-width:0;">
+              <header style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px;">
+                <h2 style="font-family:'Libre Caslon Display','Libre Caslon Text',Georgia,serif; font-weight:400; letter-spacing:-0.012em; line-height:0.95; font-size:44px;">{{ day.wd }}</h2>
+                <p style="padding-bottom:6px; text-align:right; font-size:15px; line-height:1.45; font-weight:500; color:#4b5a52;">{{ day.md }}</p>
+              </header>
+
+              <section style="margin-top:16px; background:#17332b; color:#e9e7e0;">
+                <div style="padding:16px 20px;">
+                  <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px 32px;">
+                    <div style="display:flex; align-items:center; gap:16px;">
+                      <svg width="52" height="52" viewBox="0 0 52 52" style="flex-shrink:0;">
+                        <circle cx="26" cy="26" r="24" fill="none" stroke="currentColor" strokeOpacity=".28"></circle>
+                        <path d="M26 3v3M49 26h-3M26 49v-3M3 26h3" stroke="currentColor" strokeOpacity=".5"></path>
+                        <text x="26" y="13.5" textAnchor="middle" fontSize="8" fontWeight="600" fill="currentColor" fillOpacity=".75">N</text>
+                        <path d="M26 16L32 34L26 30L20 34Z" fill="#d99a6c" transform="rotate({{ day.arrow }} 26 26)"></path>
+                      </svg>
+                      <p style="display:flex; align-items:center; gap:12px;">
+                        <span style="font-family:'Libre Caslon Display','Libre Caslon Text',Georgia,serif; font-weight:400; letter-spacing:-0.012em; font-size:52px; line-height:1;">{{ day.w.wind }}</span>
+                        <span style="font-size:17px; font-weight:600; line-height:1.375; white-space:nowrap;">mph<span style="display:block; font-weight:400; color:#c3d0cd;">from {{ day.w.dir }}</span></span>
+                      </p>
+                    </div>
+                    <dl style="display:flex;">
+                      <div style="padding-right:16px;">
+                        <dt style="display:flex; align-items:center; gap:6px; white-space:nowrap; font-size:14px; line-height:1.35; color:#c3d0cd;">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9h10.500a2.500 2.500 0 1 0-2.500-2.500M3 13h15a2.500 2.500 0 1 1-2.500 2.500M3 17h7"></path></svg>
+                          Gusts
+                        </dt>
+                        <dd style="margin-top:4px; white-space:nowrap; font-size:17px; line-height:1.4; font-weight:600; font-variant-numeric:tabular-nums lining-nums;">{{ day.gust }}</dd>
+                      </div>
+                      <div style="padding:0 16px; border-left:1px solid rgba(233,231,224,0.18);">
+                        <dt style="display:flex; align-items:center; gap:6px; white-space:nowrap; font-size:14px; line-height:1.35; color:#c3d0cd;">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><sc-for list="{{ day.glyph }}" as="g"><path d="{{ g.d }}" transform="{{ g.t }}"></path></sc-for></svg>
+                          High / low
+                        </dt>
+                        <dd style="margin-top:4px; white-space:nowrap; font-size:17px; line-height:1.4; font-weight:600; font-variant-numeric:tabular-nums lining-nums;">{{ day.hilo }}</dd>
+                      </div>
+                      <div style="padding-left:16px; border-left:1px solid rgba(233,231,224,0.18);">
+                        <dt style="display:flex; align-items:center; gap:6px; white-space:nowrap; font-size:14px; line-height:1.35; color:#c3d0cd;">
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2.200c2.400 2.900 3.800 5 3.800 6.900a3.800 3.800 0 0 1-7.600 0C4.200 7.200 5.600 5.100 8 2.200Z"></path></svg>
+                          Rain
+                        </dt>
+                        <dd style="margin-top:4px; white-space:nowrap; font-size:17px; line-height:1.4; font-weight:600; font-variant-numeric:tabular-nums lining-nums;">{{ day.rain }}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                </div>
+
+                <div style="padding:16px 20px 24px; border-top:1px solid rgba(233,231,224,0.18);">
+                  <div style="position:relative; display:flex; justify-content:space-between; gap:16px; font-size:15px; line-height:1.45; font-weight:600; font-variant-numeric:tabular-nums lining-nums;">
+                    <p style="display:flex; align-items:center; gap:8px;">
+                      <span style="color:#c3d0cd;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d="M1.500 12.500h13M4 12.500a4 4 0 0 1 8 0M8 6V2.500M5.800 4.300 8 2.200l2.200 2.100M2.600 8.300l1.200.900M13.400 8.300l-1.200.900"></path></svg></span>
+                      {{ day.sun.rise }}
+                    </p>
+                    <p style="display:flex; align-items:center; gap:8px;">
+                      <span style="color:#c3d0cd;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d="M1.500 12.500h13M4 12.500a4 4 0 0 1 8 0M8 2.200v3.500M5.800 3.900 8 6l2.200-2.100M2.600 8.300l1.200.900M13.400 8.300l-1.200.900"></path></svg></span>
+                      {{ day.sun.set }}
+                    </p>
+                  </div>
+                  <div style="position:relative; margin-top:12px; height:8px; background:rgba(233,231,224,0.15);">
+                    <span style="position:absolute; top:0; bottom:0; background:#cbbb97; left:{{ day.riseAt }}%; right:{{ day.setAt }}%;"></span>
+                    <sc-for list="{{ marks }}" as="m" hint-placeholder-count="3">
+                      <button type="button" onClick="{{ m.onClick }}" title="{{ m.title }}" style="position:absolute; top:50%; display:flex; height:44px; width:44px; transform:translate(-50%,-50%); align-items:center; justify-content:center; left:{{ m.left }}%;">
+                        <span style="display:flex; height:24px; width:24px; align-items:center; justify-content:center; border-radius:9999px; font-size:12px; font-weight:700; box-shadow:0 0 0 3px #17332b; font-variant-numeric:tabular-nums lining-nums; background:{{ m.bg }}; color:{{ m.fg }};">{{ m.number }}</span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:4px 24px; padding:10px 20px; border-top:1px solid rgba(233,231,224,0.18);">
+                  <a href="#" style="display:inline-flex; min-height:44px; align-items:center; gap:12px; font-size:17px; line-height:1.4; font-weight:600;">
+                    <span style="text-decoration:underline; text-decoration-color:#cbbb97; text-decoration-thickness:1px; text-underline-offset:6px;">Hourly Wind Map</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12h15m-6-6 6 6-6 6"></path></svg>
+                  </a>
+                  <p style="font-size:13px; line-height:1.4; color:#c3d0cd;">Forecast by <a href="https://open-meteo.com/" style="text-decoration:underline; text-underline-offset:2px;">Open-Meteo</a></p>
+                </div>
+              </section>
+
+              <ol style="margin-top:24px; display:flex; flex-direction:column; gap:12px;">
+                <sc-for list="{{ events }}" as="e" hint-placeholder-count="3">
+                  <li style="background:#f3f1ec; outline:1px solid {{ e.outline }}; outline-offset:4px; transition:outline-color 220ms;">
+                    <sc-if value="{{ e.isGolf }}" hint-placeholder-val="{{ true }}">
+                      <div style="position:relative; isolation:isolate; aspect-ratio:16/10; overflow:hidden; background:#0d211b; color:#f3f1ec;">
+                        <img src="{{ e.photo }}" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:{{ e.pos }};">
+                        <div style="position:absolute; inset:0; background:linear-gradient(to top, rgb(13 33 27 / 0.92) 0%, rgb(13 33 27 / 0.7) 30%, rgb(13 33 27 / 0) 68%), linear-gradient(to bottom, rgb(13 33 27 / 0.55) 0%, rgb(13 33 27 / 0) 26%);"></div>
+                        <div style="position:absolute; left:0; right:0; bottom:0; padding:20px;">
+                          <h3 style="font-family:'Libre Caslon Display','Libre Caslon Text',Georgia,serif; font-weight:400; letter-spacing:-0.012em; line-height:0.95; text-wrap:balance; font-size:40px; text-shadow:0 1px 14px rgb(13 33 27 / 0.55);">{{ e.title }}</h3>
+                        </div>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ e.isPlain }}">
+                      <div style="display:flex; align-items:center; gap:16px; padding:16px; border-bottom:1px solid rgba(20,38,31,0.16);">
+                        <span style="position:relative; display:block; height:56px; width:56px; flex-shrink:0; overflow:hidden; background:#0d211b;">
+                          <img src="{{ e.photo }}" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;">
+                        </span>
+                        <div style="min-width:0; flex:1;">
+                          <h3 style="font-family:'Libre Caslon Text',Georgia,serif; font-size:23px; line-height:1.25;">{{ e.title }}</h3>
+                          <p style="margin-top:2px; font-size:15px; line-height:1.45; color:#4b5a52;">{{ e.kind }}</p>
+                        </div>
+                      </div>
+                      <sc-if value="{{ e.hasDesc }}">
+                        <div style="padding:14px 20px; border-bottom:1px solid rgba(20,38,31,0.16);">
+                          <p style="font-family:'Libre Caslon Text',Georgia,serif; max-width:65ch; font-size:18px; line-height:1.625;">{{ e.desc }}</p>
+                        </div>
+                      </sc-if>
+                    </sc-if>
+
+                    <div style="display:grid;">
+                      <div style="padding:20px;">
+                        <p style="font-size:14px; line-height:1.35; font-weight:500; color:#4b5a52;">{{ e.label }}</p>
+                        <p style="margin-top:4px; display:flex; align-items:baseline; gap:8px;">
+                          <span style="font-family:'Libre Caslon Display','Libre Caslon Text',Georgia,serif; font-weight:400; letter-spacing:-0.012em; font-size:52px; line-height:1;">{{ e.hour }}</span>
+                          <span style="font-size:17px; line-height:1.4; font-weight:600;">{{ e.half }}</span>
+                        </p>
+                        <sc-if value="{{ e.isGolf }}">
+                          <p style="margin-top:12px; font-size:15px; line-height:1.45; color:#4b5a52; font-variant-numeric:tabular-nums lining-nums;">First group off at <span style="font-weight:600; color:#14261f;">{{ e.firstText }}</span></p>
+                        </sc-if>
+                        <sc-if value="{{ e.hasLate }}">
+                          <p style="margin-top:12px; font-size:15px; line-height:1.45; font-weight:600; color:#a65f36;">{{ e.late }}</p>
+                        </sc-if>
+                        <sc-if value="{{ e.hasForecast }}">
+                          <dl style="margin-top:16px; border-top:1px solid rgba(20,38,31,0.16); font-size:15px; line-height:1.45; font-variant-numeric:tabular-nums lining-nums;">
+                            <sc-for list="{{ e.forecast }}" as="f">
+                              <div style="display:flex; align-items:baseline; justify-content:space-between; gap:16px; padding:10px 0; border-top:{{ f.bt }};">
+                                <dt style="color:#4b5a52;">{{ f.k }}</dt>
+                                <dd style="font-weight:600;">{{ f.v }}</dd>
+                              </div>
+                            </sc-for>
+                          </dl>
+                        </sc-if>
+                      </div>
+                      <div style="border-top:1px solid rgba(20,38,31,0.16);">
+                        <div style="padding:20px;">
+                          <p style="font-size:14px; line-height:1.35; font-weight:500; color:#4b5a52;">With</p>
+                          <ul style="margin-top:8px; display:flex; flex-direction:column; gap:4px; font-size:17px; line-height:1.4; font-weight:600;">
+                            <sc-for list="{{ e.with }}" as="name"><li>{{ name }}</li></sc-for>
+                          </ul>
+                        </div>
+                        <div style="padding:20px; border-top:1px solid rgba(20,38,31,0.16);">
+                          <p style="font-size:14px; line-height:1.35; font-weight:500; color:#4b5a52;">Where</p>
+                          <p style="margin-top:8px; font-size:17px; line-height:1.4; font-weight:600;">{{ e.where }}</p>
+                          <sc-if value="{{ e.isGolf }}">
+                            <a href="#" style="margin-top:16px; display:inline-flex; min-height:40px; align-items:center; gap:8px; background:#17332b; padding:0 14px; font-size:14px; line-height:1.35; font-weight:600; color:#e9e7e0;">
+                              About the course
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12h15m-6-6 6 6-6 6"></path></svg>
+                            </a>
+                          </sc-if>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                </sc-for>
+              </ol>
+            </section>
+
+            <aside>
+              <section style="margin-bottom:32px;">
+                <h2 style="font-family:'Libre Caslon Display','Libre Caslon Text',Georgia,serif; font-weight:400; letter-spacing:-0.012em; line-height:0.95; margin-bottom:16px; font-size:30px;">Property Map</h2>
+                <figure style="border-top:1px solid #14261f; padding-top:10px;">
+                  <div style="position:relative; isolation:isolate; aspect-ratio:1/1; overflow:hidden; background:#0d211b;">
+                    <div style="position:absolute; left:0; top:0; width:1045px; height:1173px; transform-origin:0 0; transition:transform 800ms cubic-bezier(0.2,0.7,0.2,1); transform:{{ map.transform }};">
+                      <img src="public/images/map/resort.jpg" alt="Map of Bandon Dunes Golf Resort" draggable="false" style="display:block; width:100%; height:100%; max-width:none; user-select:none;">
+                      <svg style="position:absolute; inset:0; width:100%; height:100%;" viewBox="0 0 1045 1173">
+                        <polyline points="{{ map.path }}" fill="none" stroke="#f3f1ec" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" opacity="0.75"></polyline>
+                        <polyline points="{{ map.path }}" fill="none" stroke="#0d211b" strokeWidth="2.5" strokeDasharray="7 6" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"></polyline>
+                      </svg>
+                    </div>
+                    <span style="position:absolute; left:0; top:0; transition:transform 800ms cubic-bezier(0.2,0.7,0.2,1); transform:translate({{ map.hx }}px, {{ map.hy }}px);">
+                      <span style="position:absolute; left:-16px; top:-16px; display:flex; height:32px; width:32px; align-items:center; justify-content:center; border-radius:9999px; border:2px solid #f3f1ec; background:#17332b; color:#e9e7e0; box-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"><path d="M2.5 7.5L8 3l5.5 4.5V13h-11z"></path></svg>
+                      </span>
+                      <span style="position:absolute; transform:translateY(-50%); white-space:nowrap; background:#17332b; padding:4px 8px; text-align:center; font-size:12px; font-weight:600; color:#e9e7e0; box-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); left:{{ map.hlx }}px; top:{{ map.hly }}px; width:{{ map.hlw }}px;">Grove Cottages</span>
+                    </span>
+                    <sc-for list="{{ map.pins }}" as="p" hint-placeholder-count="3">
+                      <button type="button" onClick="{{ p.onClick }}" style="position:absolute; left:0; top:0; z-index:10; transition:transform 800ms cubic-bezier(0.2,0.7,0.2,1); transform:translate({{ p.x }}px, {{ p.y }}px);">
+                        <span style="position:absolute; left:0; top:0; display:flex; height:44px; min-width:44px; transform:translate(-50%,-50%); align-items:center; justify-content:center;">
+                          <span style="display:flex; height:32px; min-width:32px; align-items:center; justify-content:center; gap:4px; white-space:nowrap; border-radius:9999px; border:2px solid #f3f1ec; padding:0 8px; font-size:14px; font-weight:700; color:#f3f1ec; box-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); transition:transform 200ms; font-variant-numeric:tabular-nums lining-nums; background:{{ p.bg }}; transform:scale({{ p.scale }});">
+                            <sc-for list="{{ p.nums }}" as="n"><span style="border-left:{{ n.bl }}; padding-left:{{ n.pl }};">{{ n.n }}</span></sc-for>
+                          </span>
+                        </span>
+                        <span style="position:absolute; transform:translateY(-50%); padding:4px 8px; text-align:center; font-size:12px; font-weight:600; box-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); left:{{ p.lx }}px; top:{{ p.ly }}px; width:{{ p.lw }}px; background:{{ p.lbg }}; color:{{ p.lfg }};">{{ p.text }}</span>
+                      </button>
+                    </sc-for>
+                  </div>
+
+                  <ol style="border-bottom:1px solid rgba(20,38,31,0.16);">
+                    <li style="display:flex; min-height:48px; align-items:center; gap:12px; padding:8px 0;">
+                      <span style="display:flex; height:28px; width:28px; flex-shrink:0; align-items:center; justify-content:center; border-radius:9999px; background:#17332b; color:#e9e7e0;">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"><path d="M2.5 7.5L8 3l5.5 4.5V13h-11z"></path></svg>
+                      </span>
+                      <span style="font-size:15px; line-height:1.45; font-weight:600;">Grove Cottage #3</span>
+                      <span style="margin-left:auto; font-size:15px; line-height:1.45; color:#4b5a52;">Where you’re staying</span>
+                    </li>
+                    <sc-for list="{{ stopList }}" as="s" hint-placeholder-count="3">
+                      <li style="border-top:1px solid rgba(20,38,31,0.16);">
+                        <button type="button" onClick="{{ s.onClick }}" style="display:flex; min-height:48px; width:100%; align-items:center; gap:12px; padding:8px 0; text-align:left; transition:color 150ms; background:{{ s.rowBg }};">
+                          <span style="display:flex; height:28px; width:28px; flex-shrink:0; align-items:center; justify-content:center; border-radius:9999px; font-size:14px; font-weight:700; color:#f3f1ec; font-variant-numeric:tabular-nums lining-nums; background:{{ s.bg }}; box-shadow:{{ s.ring }};">{{ s.number }}</span>
+                          <span style="min-width:0;">
+                            <span style="display:block; font-size:15px; line-height:1.45; font-weight:600;">{{ s.title }}</span>
+                            <span style="display:block; font-size:14px; line-height:1.35; color:#4b5a52;">{{ s.placeName }}</span>
+                          </span>
+                          <span style="margin-left:auto; flex-shrink:0; font-size:15px; line-height:1.45; font-weight:600; font-variant-numeric:tabular-nums lining-nums;">{{ s.time }}</span>
+                        </button>
+                      </li>
+                    </sc-for>
+                  </ol>
+                  <figcaption style="margin-top:12px; font-size:13px; line-height:1.4; color:#4b5a52;">Stops in itinerary order. Connecting lines are not walking routes.</figcaption>
+                </figure>
+              </section>
+            </aside>
+          </div>
+        </div>
+      </main>
+
+      <footer style="position:relative; margin-top:112px; color:#e9e7e0; background:linear-gradient(to bottom, #1b3d31 0%, #17332b 40%, #10261f 100%);">
+        <svg style="position:absolute; left:0; right:0; bottom:calc(100% - 1px); display:block; height:80px; width:100%;" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <path d="M0 0 C 26 58 68 40 100 100 L 100 101 L 0 101 Z" fill="#1b3d31"></path>
+          <path d="M0 0 C 26 58 68 40 100 100" fill="none" stroke="#d99a6c" strokeWidth="1.25" opacity="0.65" vectorEffect="non-scaling-stroke"></path>
+        </svg>
+        <svg style="position:absolute; inset:0; height:100%; width:100%; opacity:0.14;" viewBox="0 0 400 640" preserveAspectRatio="xMidYMid slice" fill="none" stroke="#cbbb97" strokeWidth="1">
+          <sc-for list="{{ contours }}" as="pts"><polygon points="{{ pts }}" vectorEffect="non-scaling-stroke"></polygon></sc-for>
+        </svg>
+        <div style="position:relative; margin:0 auto; width:100%; max-width:72rem; padding:16px 20px 112px;">
+          <nav style="display:grid;">
+            <h2 style="font-family:'Libre Caslon Display','Libre Caslon Text',Georgia,serif; font-weight:400; letter-spacing:-0.012em; line-height:0.95; font-size:34px;">Trip essentials</h2>
+            <ul style="margin-top:16px; border-top:1px solid rgba(233,231,224,0.18); border-bottom:1px solid rgba(233,231,224,0.18);">
+              <li>
+                <a href="#" style="display:flex; min-height:76px; align-items:center; gap:16px; padding:16px 0;">
+                  <span style="min-width:0; flex:1;"><span style="display:block; font-family:'Libre Caslon Text',Georgia,serif; font-size:23px; line-height:1.25;">Schedule</span><span style="display:block; margin-top:4px; font-size:15px; line-height:1.45; color:#c3d0cd;">Day by day, with the resort map</span></span>
+                  <svg width="9" height="16" viewBox="0 0 8 14" fill="none" stroke="#d99a6c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style="flex-shrink:0;"><path d="M1 1l6 6-6 6"></path></svg>
+                </a>
+              </li>
+              <li style="border-top:1px solid rgba(233,231,224,0.18);">
+                <a href="#" style="display:flex; min-height:76px; align-items:center; gap:16px; padding:16px 0;">
+                  <span style="min-width:0; flex:1;"><span style="display:block; font-family:'Libre Caslon Text',Georgia,serif; font-size:23px; line-height:1.25;">Hourly Wind Map</span><span style="display:block; margin-top:4px; font-size:15px; line-height:1.45; color:#c3d0cd;">Wind and daylight for each day</span></span>
+                  <svg width="9" height="16" viewBox="0 0 8 14" fill="none" stroke="#d99a6c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style="flex-shrink:0;"><path d="M1 1l6 6-6 6"></path></svg>
+                </a>
+              </li>
+              <li style="border-top:1px solid rgba(233,231,224,0.18);">
+                <a href="#" style="display:flex; min-height:76px; align-items:center; gap:16px; padding:16px 0;">
+                  <span style="min-width:0; flex:1;"><span style="display:block; font-family:'Libre Caslon Text',Georgia,serif; font-size:23px; line-height:1.25;">Packing list</span><span style="display:block; margin-top:4px; font-size:15px; line-height:1.45; color:#c3d0cd;">The resort's advice as a checklist</span></span>
+                  <svg width="9" height="16" viewBox="0 0 8 14" fill="none" stroke="#d99a6c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style="flex-shrink:0;"><path d="M1 1l6 6-6 6"></path></svg>
+                </a>
+              </li>
+            </ul>
+          </nav>
+          <div style="margin-top:48px; font-size:13px; line-height:1.625; color:#c3d0cd;">
+            <p style="margin-bottom:24px; font-size:15px; line-height:1.45; color:#e9e7e0;">Viewing as <span style="font-weight:600;">Cody Wilson</span><button type="button" style="margin-left:12px; font-weight:600; text-decoration:underline; text-decoration-color:#d99a6c; text-decoration-thickness:1px; text-underline-offset:5px;">Switch</button></p>
+            <p style="font-family:'Libre Caslon Text',Georgia,serif; font-size:15px; font-style:italic; color:#e9e7e0;">BandonTrip</p>
+            <p style="margin-top:8px; max-width:28rem;">Made by golfers for their own trip. An independent site, not affiliated with or endorsed by Bandon Dunes Golf Resort.</p>
+            <p style="margin-top:8px; max-width:28rem;">Contact Cody Wilson for site issues, requests, and feedback.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <nav style="position:absolute; left:0; right:0; bottom:0; z-index:30; border-top:1px solid rgba(20,38,31,0.16); background:rgba(243,241,236,0.88); backdrop-filter:blur(16px);">
+    <ul style="margin:0 auto; display:grid; max-width:448px; grid-template-columns:repeat(4,minmax(0,1fr));">
+      <li><a href="#" style="position:relative; display:flex; height:66px; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:12.5px; font-weight:500; color:#4b5a52;">
+        <svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"><path d="M11 19V4.5"></path><path d="M11 5l7 2.6L11 10.5"></path><path d="M4 19.5c2.4-1.4 4.6-2 7-2s4.6.6 7 2"></path></svg>Home</a></li>
+      <li><a href="#" style="position:relative; display:flex; height:66px; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:12.5px; font-weight:600; color:#0d211b;">
+        <span style="position:absolute; top:0; height:2px; width:28px; background:#a65f36;"></span>
+        <svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6.5h14M4 11.5h14M4 16.5h9"></path></svg>Schedule</a></li>
+      <li><a href="#" style="position:relative; display:flex; height:66px; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:12.5px; font-weight:500; color:#4b5a52;">
+        <svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5h9.5a2.5 2.5 0 10-2.4-3.2"></path><path d="M3 12h13.5a2.5 2.5 0 11-2.4 3.2"></path><path d="M3 15.5h6"></path></svg>Wind</a></li>
+      <li><a href="#" style="position:relative; display:flex; height:66px; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:12.5px; font-weight:500; color:#4b5a52;">
+        <svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"><path d="M5 8.5h12v9.5a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 015 18z"></path><path d="M8.5 8.5V6a2.5 2.5 0 015 0v2.5M5 13h12"></path></svg>Packing</a></li>
+    </ul>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844}}">
+class Component extends DCLogic {
+  state = { day: 0, active: null };
+
+  D = (() => {
+    const CORE = ['JD Kritser', 'Justin Pennington', 'Jason Koerner', 'Erich Krueck', 'Cam Woolsey'];
+    const places = {
+      'old-macdonald': { name: 'Old Macdonald clubhouse', x: 570, y: 494 },
+      'ghost-tree': { name: 'Ghost Tree Grill', x: 597, y: 459 },
+      'pacific-dunes': { name: 'Pacific Dunes clubhouse', x: 513, y: 667 },
+      'bandon-dunes': { name: 'Bandon Dunes clubhouse', x: 459, y: 769 },
+      'bandon-trails': { name: 'Bandon Trails clubhouse', x: 450, y: 868 },
+      'grove-cottages': { name: 'Grove Cottages', x: 603, y: 834 },
+      shortys: { name: "Shorty's", x: 450, y: 1078 },
+    };
+    const days = [
+      { wd: 'Thursday', short: 'Thu', n: 19, md: 'November 19',
+        w: { kind: 'partly', high: 54, low: 45, wind: 14, from: 200, dir: 'SSW', gust: 24, rain: 35 },
+        sun: { rise: '7:13 AM', set: '4:51 PM', r: '07:13', s: '16:51' },
+        ev: [
+          { id: 'om', type: 'golf', title: 'Old Macdonald', time: '10:20', first: '10:10', with: ['Erich Krueck', 'Jason Koerner', 'Cam Woolsey'], place: 'old-macdonald', where: 'Old Macdonald clubhouse', photo: 'public/images/courses/old-macdonald.jpg', pos: '50% 62%', at: { temp: 50, speed: 12, dir: 'SSW', gust: 19 } },
+          { id: 'pb', type: 'activity', title: 'Punchbowl', time: '16:00', place: 'pacific-dunes', where: 'The Punchbowl, Pacific Dunes clubhouse', photo: 'public/images/activities/punchbowl.jpg', desc: 'The putting course beside the Pacific Dunes clubhouse.', with: CORE, at: { temp: 52, speed: 15, dir: 'SW', gust: 23 }, late: 'The sun sets at 4:51 PM' },
+          { id: 'te', type: 'dining', title: 'Trails End', time: '17:30', place: 'bandon-trails', where: 'Trails End Restaurant, Bandon Trails clubhouse', photo: 'public/images/dining/trails-end.jpg', with: CORE },
+        ] },
+      { wd: 'Friday', short: 'Fri', n: 20, md: 'November 20',
+        w: { kind: 'rain', high: 52, low: 46, wind: 18, from: 185, dir: 'S', gust: 31, rain: 70 },
+        sun: { rise: '7:14 AM', set: '4:50 PM', r: '07:14', s: '16:50' },
+        ev: [
+          { id: 'pd', type: 'golf', title: 'Pacific Dunes', time: '08:30', first: '08:20', with: ['Cam Woolsey', 'Justin Pennington', 'JD Kritser'], place: 'pacific-dunes', where: 'Pacific Dunes clubhouse', photo: 'public/images/courses/pacific-dunes.jpg', pos: '50% 62%', at: { temp: 47, speed: 14, dir: 'S', gust: 24 } },
+          { id: 'sh', type: 'activity', title: "Shorty's", time: '15:00', place: 'shortys', where: "Shorty's", photo: 'public/images/activities/shortys.jpg', with: CORE, at: { temp: 51, speed: 17, dir: 'S', gust: 29 } },
+          { id: 'pg', type: 'dining', title: 'Pacific Grill', time: '19:30', place: 'pacific-dunes', where: 'Pacific Dunes clubhouse', photo: 'public/images/dining/pacific-grill.jpg', with: CORE },
+        ] },
+      { wd: 'Saturday', short: 'Sat', n: 21, md: 'November 21',
+        w: { kind: 'cloud', high: 51, low: 43, wind: 11, from: 290, dir: 'WNW', gust: 17, rain: 20 },
+        sun: { rise: '7:15 AM', set: '4:50 PM', r: '07:15', s: '16:50' },
+        ev: [
+          { id: 'bt', type: 'golf', title: 'Bandon Trails', time: '08:20', first: '08:00', with: ['Cam Woolsey', 'Aaron Wagner', 'Brian Campagna'], place: 'bandon-trails', where: 'Bandon Trails clubhouse', photo: 'public/images/courses/bandon-trails.jpg', pos: '50% 62%', at: { temp: 44, speed: 7, dir: 'NW', gust: 12 } },
+          { id: 'gt', type: 'dining', title: 'Ghost Tree', time: '17:00', place: 'ghost-tree', where: 'Ghost Tree Grill', photo: 'public/images/dining/ghost-tree.jpg', with: CORE },
+        ] },
+      { wd: 'Sunday', short: 'Sun', n: 22, md: 'November 22',
+        w: { kind: 'clear', high: 53, low: 40, wind: 9, from: 350, dir: 'N', gust: 14, rain: 5 },
+        sun: { rise: '7:16 AM', set: '4:49 PM', r: '07:16', s: '16:49' },
+        ev: [
+          { id: 'bd', type: 'golf', title: 'Bandon Dunes', time: '08:20', first: '08:10', with: ['Erich Krueck', 'Jason Koerner', 'Cam Woolsey'], place: 'bandon-dunes', where: 'Bandon Dunes clubhouse', photo: 'public/images/courses/bandon-dunes.jpg', pos: '50% 38%', at: { temp: 41, speed: 6, dir: 'N', gust: 10 } },
+        ] },
+    ];
+    return { places, days };
+  })();
+
+  TALL = [...this.contours(330, 90, 9, 36, 0.9), ...this.contours(40, 560, 8, 40, 2.6)];
+
+  contours(cx, cy, rings, gap, phase) {
+    return Array.from({ length: rings }, (_, k) => {
+      const r = (k + 1) * gap;
+      return Array.from({ length: 73 }, (_, n) => {
+        const a = (n / 72) * Math.PI * 2;
+        const w = 1 + 0.09 * Math.sin(3 * a + k * 0.6 + phase) + 0.05 * Math.sin(5 * a + k * 1.1 + phase * 2);
+        return `${(cx + Math.cos(a) * r * w).toFixed(1)},${(cy + Math.sin(a) * r * w * 0.86).toFixed(1)}`;
+      }).join(' ');
+    });
+  }
+
+  glyph(kind) {
+    const circ = (cx, cy, r) => `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0`;
+    const cloud = 'M7 18.5h9.5a3.5 3.500 0 0 0 .6-6.950A5 5 0 0 0 7.600 10.200 4.200 4.200 0 0 0 7 18.500Z';
+    const none = 'translate(0 0)';
+    const G = {
+      clear: [{ d: circ(12, 12, 4), t: none }, { d: 'M12 3v2M12 19v2M3 12h2M19 12h2M5.600 5.600l1.400 1.400M17 17l1.400 1.400M5.600 18.400 7 17M17 7l1.400-1.400', t: none }],
+      partly: [{ d: circ(8.5, 8, 3), t: none }, { d: 'M8.500 2.500v1.300M3 8h1.300M4.600 4.100l.9.900M12.400 4.100l-.9.900', t: none }, { d: 'M9 19.500h8a3 3 0 0 0 .5-5.950 4.300 4.300 0 0 0-8.100-1.150A3.600 3.600 0 0 0 9 19.500Z', t: none }],
+      rain: [{ d: cloud, t: 'translate(0 -3)' }, { d: 'M8.500 18.500l-1 2.500M12.500 18.500l-1 2.500M16.500 18.500l-1 2.500', t: none }],
+      cloud: [{ d: cloud, t: none }],
+    };
+    return G[kind] || G.cloud;
+  }
+
+  clock(t) {
+    const [h, m] = t.split(':').map(Number);
+    return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+  }
+
+  along(t) {
+    const h = Number(t.slice(0, 2)) + Number(t.slice(3, 5)) / 60;
+    return Math.max(0, Math.min(100, ((h - 6) / 14) * 100));
+  }
+
+  frame(points, cw, ch) {
+    const W = 1045, H = 1173, PAD = 108;
+    const cover = Math.max(cw / W, ch / H);
+    const xs = points.map(p => p.x), ys = points.map(p => p.y);
+    const x0 = Math.min(...xs) - PAD, x1 = Math.max(...xs) + PAD;
+    const y0 = Math.min(...ys) - PAD, y1 = Math.max(...ys) + PAD;
+    const scale = Math.max(cover, Math.min(cw / (x1 - x0), ch / (y1 - y0), cw / 330));
+    const clamp = (v, min) => Math.min(0, Math.max(min, v));
+    return { scale, x: clamp(cw / 2 - ((x0 + x1) / 2) * scale, cw - W * scale), y: clamp(ch / 2 - ((y0 + y1) / 2) * scale, ch - H * scale) };
+  }
+
+  labelAt(x, text, prefer, cw) {
+    const width = Math.min(220, text.length * 7 + 16, cw - 48);
+    const fitsLeft = x > width + 30, fitsRight = x + width + 30 < cw;
+    const left = (prefer === 'right' ? fitsRight : !fitsLeft && fitsRight) ? 24 : fitsLeft ? -width - 24 : Math.max(8 - x, Math.min(-width / 2, cw - x - width - 8));
+    return { lw: width, lx: left, ly: fitsLeft || fitsRight ? 0 : -38 };
+  }
+
+  renderVals() {
+    const { places: P, days } = this.D;
+    const day = days[this.state.day];
+    const active = this.state.active;
+    const rule = '1px solid rgba(20,38,31,0.16)';
+    const select = id => this.setState({ active: id });
+    const toggle = id => this.setState(s => ({ active: s.active === id ? null : id }));
+
+    const tabs = days.map((d, i) => {
+      const sel = i === this.state.day;
+      return { short: d.short, n: d.n, bg: sel ? '#17332b' : '#f3f1ec', fg: sel ? '#e9e7e0' : '#14261f', lab: sel ? '#c3d0cd' : '#4b5a52', rule: sel ? '#d99a6c' : 'transparent', choose: () => this.setState({ day: i, active: null }) };
+    });
+
+    const stops = day.ev.map((e, i) => ({ ...e, number: i + 1 }));
+
+    const events = stops.map(e => {
+      const golf = e.type === 'golf';
+      const [hour, half] = this.clock(e.time).split(' ');
+      const at = e.type === 'dining' ? null : e.at;
+      const rows = at ? [[golf ? 'At tee time' : 'At the start', `${at.temp}°`], ['Wind', `${at.speed} mph ${at.dir}`], ...(at.gust > at.speed ? [['Gusts', `${at.gust} mph`]] : [])] : [];
+      return {
+        ...e, isGolf: golf, isPlain: !golf, hour, half,
+        label: golf ? 'Your tee time' : e.type === 'dining' ? 'Reservation' : 'Starts',
+        kind: e.type === 'dining' ? 'Dinner' : 'Activity',
+        firstText: e.first ? this.clock(e.first) : '',
+        forecast: rows.map(([k, v], i) => ({ k, v, bt: i > 0 ? rule : '0' })),
+        hasForecast: rows.length > 0, hasLate: !!e.late, hasDesc: !!e.desc,
+        outline: active === e.id ? '#a65f36' : 'transparent',
+      };
+    });
+
+    const marks = stops.map(s => ({
+      number: s.number, left: this.along(s.time), title: `${s.title} · ${this.clock(s.time)}`,
+      bg: s.type === 'golf' ? '#f3f1ec' : '#a65f36', fg: s.type === 'golf' ? '#0d211b' : '#f3f1ec',
+      onClick: () => select(s.id),
+    }));
+
+    const CW = 350;
+    const home = P['grove-cottages'];
+    const homeRoom = [home, { x: Math.min(1045, home.x + 120), y: home.y }];
+    const placeIds = [...new Set(stops.map(s => s.place))];
+    const activeStop = stops.find(s => s.id === active);
+    const view = this.frame(activeStop ? [P[activeStop.place], ...homeRoom] : [...placeIds.map(id => P[id]), ...homeRoom], CW, CW);
+    const sx = p => p.x * view.scale + view.x, sy = p => p.y * view.scale + view.y;
+    const pins = placeIds.map(id => {
+      const here = stops.filter(s => s.place === id);
+      const on = here.some(s => s.id === active);
+      const golf = here.some(s => s.type === 'golf');
+      const text = here.map(s => s.title).join(', ');
+      const x = sx(P[id]), y = sy(P[id]);
+      return {
+        x, y, text, ...this.labelAt(x, text, 'left', CW),
+        nums: here.map((s, i) => ({ n: s.number, bl: i > 0 ? '1px solid rgba(243,241,236,0.5)' : '0', pl: i > 0 ? '6px' : '0' })),
+        bg: golf ? '#0d211b' : '#a65f36', scale: on ? 1.25 : 1,
+        lbg: on ? '#0d211b' : '#f3f1ec', lfg: on ? '#f3f1ec' : '#14261f',
+        onClick: () => this.setState({ active: on ? null : here[0].id }),
+      };
+    });
+    const hx = sx(home), hy = sy(home);
+    const hl = this.labelAt(hx, 'Grove Cottages', 'right', CW);
+    const map = {
+      transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
+      path: [home, ...stops.map(s => P[s.place])].map(p => `${p.x},${p.y}`).join(' '),
+      pins, hx, hy, hlx: hl.lx, hly: hl.ly, hlw: hl.lw,
+    };
+
+    const stopList = stops.map(s => {
+      const on = s.id === active;
+      return {
+        number: s.number, title: s.title, placeName: P[s.place].name, time: this.clock(s.time),
+        bg: s.type === 'golf' ? '#0d211b' : '#a65f36',
+        ring: on ? '0 0 0 2px #e9e7e0, 0 0 0 4px #a65f36' : 'none',
+        rowBg: on ? '#f3f1ec' : 'transparent',
+        onClick: () => toggle(s.id),
+      };
+    });
+
+    return {
+      tabs, events, marks, map, stopList, contours: this.TALL,
+      day: {
+        wd: day.wd, md: day.md, w: day.w, sun: day.sun,
+        arrow: day.w.from + 180,
+        gust: day.w.gust !== null ? `${day.w.gust} mph` : 'None',
+        hilo: `${day.w.high}° / ${day.w.low}°`,
+        rain: `${day.w.rain}%`,
+        glyph: this.glyph(day.w.kind),
+        riseAt: this.along(day.sun.r), setAt: 100 - this.along(day.sun.s),
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>

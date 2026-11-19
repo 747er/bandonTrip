@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;border:0 solid}
+html,body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{background:#e9e7e0}
+button{font:inherit;color:inherit;background:none;cursor:pointer;text-align:inherit}
+ol,ul{list-style:none}
+a{color:inherit;text-decoration:none}
+a:hover{color:inherit}
+img,svg{display:block}
+</style>
+</helmet>
+<div data-screen-label="Home (current)" style="position:relative; width:390px; height:844px; overflow:hidden; background:#e9e7e0; color:#14261f; font-family:'Schibsted Grotesk',ui-sans-serif,system-ui,sans-serif;">
+  <div style="position:absolute; inset:0; overflow-y:auto; overflow-x:hidden; scrollbar-width:none;">
+    <div style="position:relative;">
+      <button type="button" style="position:absolute; right:16px; top:10px; z-index:30; display:inline-flex; align-items:center; gap:8px; min-height:36px; padding:0 12px; border:1px solid rgba(243,241,236,0.45); background:rgba(13,33,27,0.35); font-size:14px; line-height:1.35; font-weight:600; color:#f3f1ec; backdrop-filter:blur(4px);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="8" cy="5.5" r="2.75"></circle><path d="M2.75 14c.6-2.8 2.6-4.25 5.25-4.25s4.65 1.45 5.25 4.25"></path></svg>
+        Cody
+      </button>
+
+      <main>
+        <section style="position:relative;">
+          <div style="position:relative; isolation:isolate; overflow:hidden; background:#0d211b; height:405px;">
+            <img src="public/images/hero/bandon-coast.jpg" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:70% 60%;">
+            <div style="position:absolute; inset:0; background:linear-gradient(to bottom, rgb(13 33 27 / 0.6) 0%, rgb(13 33 27 / 0) 22%);"></div>
+            <div style="position:absolute; inset:0; background:radial-gradient(120% 85% at 0% 100%, rgb(13 33 27 / 0.9) 0%, rgb(13 33 27 / 0.5) 42%, rgb(13 33 27 / 0) 72%);"></div>
+            <div style="position:absolute; left:0; right:0; bottom:0; padding:0 24px 80px 20px; color:#f3f1ec;">
+              <h1 style="font-family:'Libre Caslon Text',Georgia,serif; font-style:italic; font-weight:400; letter-spacing:-0.025em; line-height:0.92; text-wrap:balance; font-size:58.5px;">Bandon 2026</h1>
+              <p style="margin-top:16px; font-size:13px; font-weight:500;">November 19–22, 2026</p>
+            </div>
+            <p style="position:absolute; left:20px; top:16px; font-family:'Libre Caslon Text',Georgia,serif; font-size:17px; font-style:italic; color:#f3f1ec;">BandonTrip</p>
+          </div>
+
+          <section style="position:relative; z-index:10; margin-top:-1px; color:#e9e7e0; background:linear-gradient(to bottom, #1b3d31 0%, #17332b 40%, #10261f 100%);">
+            <svg style="position:absolute; left:0; right:0; bottom:100%; display:block; height:72px; width:100%;" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <path d="M0 101 L0 92 C 28 62 62 78 100 0 L100 101 Z" fill="#1b3d31"></path>
+              <path d="M0 92 C 28 62 62 78 100 0" fill="none" stroke="#d99a6c" strokeWidth="1.25" opacity="0.65" vectorEffect="non-scaling-stroke"></path>
+            </svg>
+            <svg style="position:absolute; inset:0; height:100%; width:100%; opacity:0.1;" viewBox="0 0 400 420" preserveAspectRatio="xMidYMid slice" fill="none" stroke="#e9e7e0" strokeWidth="1">
+              <sc-for list="{{ dayLines }}" as="d"><path d="{{ d }}" vectorEffect="non-scaling-stroke"></path></sc-for>
+            </svg>
+            <div style="position:relative; padding:4px 24px 24px;">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <p style="display:flex; align-items:center; gap:12px; font-size:15px; line-height:1.45; color:#c3d0cd;">
+                  <span>{{ next.lead }} <span style="font-weight:600; color:#e9e7e0;">{{ next.wait }}</span></span>
+                  <span style="height:1px; width:36px; background:#d99a6c;"></span>
+                </p>
+                <div style="display:flex; margin-right:-12px;">
+                  <button type="button" onClick="{{ next.prev }}" style="display:flex; height:44px; width:40px; align-items:center; justify-content:center; color:#e9e7e0; opacity:{{ next.prevOp }};"><svg width="9" height="15" viewBox="0 0 8 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style="transform:rotate(180deg);"><path d="M1 1l6 6-6 6"></path></svg></button>
+                  <button type="button" onClick="{{ next.nextFn }}" style="display:flex; height:44px; width:40px; align-items:center; justify-content:center; color:#e9e7e0; opacity:{{ next.nextOp }};"><svg width="9" height="15" viewBox="0 0 8 14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l6 6-6 6"></path></svg></button>
+                </div>
+              </div>
+              <h2 style="margin-top:4px; font-family:'Libre Caslon Display','Libre Caslon Text',Georgia,serif; font-weight:400; letter-spacing:-0.012em; line-height:0.95; text-wrap:balance; font-size:44px;">{{ next.title }}</h2>
+              <ul style="margin-top:16px; display:flex; flex-direction:column; gap:10px; font-size:17px; line-height:1.4; font-variant-numeric:tabular-nums lining-nums;">
+                <li style="display:flex; align-items:center; gap:12px; font-weight:500;">
+                  <svg width="19" height="19" viewBox="0 0 18 18" fill="none" stroke="#c3d0cd" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" style="flex-shrink:0;"><rect x="2.5" y="3.5" width="13" height="12" rx="1"></rect><path d="M2.5 7.5h13M6 2v3M12 2v3"></path></svg>
+                  {{ next.date }}
+                </li>
+                <li style="display:flex; align-items:center; gap:12px; font-weight:600;">
+                  <svg width="19" height="19" viewBox="0 0 18 18" fill="none" stroke="#c3d0cd" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" style="flex-shrink:0;"><circle cx="9" cy="9" r="6.5"></circle><path d="M9 5.5V9l2.5 1.5"></path></svg>
+                  <span><span style="margin-right:8px; font-weight:500; color:#c3d0cd;">{{ next.timeLabel }}</span>{{ next.time }}<span style="margin-left:8px; font-weight:500; color:#c3d0cd;">{{ next.party }}</span></span>
+                </li>
+              </ul>
+              <dl style="margin-top:20px; display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px 20px; padding:16px 0; border-top:1px solid rgba(233,231,224,0.18); border-bottom:1px solid rgba(233,231,224,0.18);">
+                <sc-for list="{{ next.cond }}" as="c" hint-placeholder-count="4">
+                  <div style="display:flex; flex-direction:column-reverse;">
+                    <dt style="font-size:14px; line-height:1.35; color:#c3d0cd;">{{ c.k }}</dt>
+                    <dd style="display:inline-flex; align-items:center; gap:6px; white-space:nowrap; font-size:17px; line-height:1.4; font-weight:600; font-variant-numeric:tabular-nums lining-nums;">
+                      <sc-if value="{{ c.hasGlyph }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><sc-for list="{{ c.glyph }}" as="g"><path d="{{ g.d }}" transform="{{ g.t }}"></path></sc-for></svg></sc-if>
+                      {{ c.v }}
+                    </dd>
+                  </div>
+                </sc-for>
+              </dl>
+              <a href="#" style="margin-top:4px; display:inline-flex; align-items:center; min-height:44px; font-size:16px; font-weight:600; text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:5px; text-decoration-color:#d99a6c;">Schedule</a>
+            </div>
+          </section>
+        </section>
+
+        <section style="max-width:72rem; margin:0 auto; padding:40px 20px 0;">
+          <div style="display:grid; border-top:1px solid #a65f36; background:#f3f1ec;">
+            <div style="display:flex; flex-direction:column; gap:1px;">
+              <div style="position:relative; aspect-ratio:16/10; overflow:hidden; background:#0d211b;">
+                <img src="public/images/lodging/grove-cottages.jpg" alt="Grove Cottages" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;">
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1px;">
+                <div style="position:relative; aspect-ratio:16/10; overflow:hidden; background:#0d211b;"><img src="public/images/lodging/grove-cottages-living.jpg" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;"></div>
+                <div style="position:relative; aspect-ratio:16/10; overflow:hidden; background:#0d211b;"><img src="public/images/lodging/grove-cottages-bedroom.jpg" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;"></div>
+              </div>
+            </div>
+            <div style="padding:20px;">
+              <p style="font-size:14px; line-height:1.35; font-weight:600; color:#a65f36;">Your stay</p>
+              <h2 style="margin-top:6px; font-family:'Libre Caslon Display','Libre Caslon Text',Georgia,serif; font-weight:400; letter-spacing:-0.012em; line-height:0.95; font-size:34px;">Grove Cottage #3</h2>
+              <dl style="margin-top:20px; border-top:1px solid rgba(20,38,31,0.16); border-bottom:1px solid rgba(20,38,31,0.16); font-size:15px; line-height:1.45; font-variant-numeric:tabular-nums lining-nums;">
+                <div style="display:flex; align-items:baseline; gap:16px; padding:10px 0;">
+                  <dt style="width:100px; flex-shrink:0; color:#4b5a52;">Staying with</dt>
+                  <dd style="font-weight:600;"><ul><li>Jason Koerner</li><li>Erich Krueck</li><li>Cam Woolsey</li></ul></dd>
+                </div>
+                <div style="display:flex; align-items:baseline; gap:16px; padding:10px 0; border-top:1px solid rgba(20,38,31,0.16);">
+                  <dt style="width:100px; flex-shrink:0; color:#4b5a52;">Check-in</dt>
+                  <dd style="font-weight:600;">Thursday, November 19 <span style="display:block; font-weight:400; color:#4b5a52;">from 4:00 PM</span></dd>
+                </div>
+                <div style="display:flex; align-items:baseline; gap:16px; padding:10px 0; border-top:1px solid rgba(20,38,31,0.16);">
+                  <dt style="width:100px; flex-shrink:0; color:#4b5a52;">Check-out</dt>
+                  <dd style="font-weight:600;">Sunday, November 22 <span style="display:block; font-weight:400; color:#4b5a52;">by 11:00 AM</span></dd>
+                </div>
+                <div style="display:flex; align-items:baseline; gap:16px; padding:10px 0; border-top:1px solid rgba(20,38,31,0.16);">
+                  <dt style="width:100px; flex-shrink:0; color:#4b5a52;">Shuttle</dt>
+                  <dd style="font-weight:600;"><a href="#" style="text-decoration:underline; text-decoration-color:rgba(20,38,31,0.16); text-underline-offset:4px;">(541) 347-5894</a></dd>
+                </div>
+              </dl>
+              <p style="margin-top:16px; font-size:15px; line-height:1.625; color:#4b5a52;">Four bedrooms, each with a California king and its own bath, around a shared living room with a fireplace.</p>
+              <a href="#" style="margin-top:8px; display:inline-flex; align-items:center; min-height:44px; font-size:16px; font-weight:600; text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:5px; text-decoration-color:#a65f36;">Grove Cottages at Bandon Dunes</a>
+            </div>
+            <a href="#" style="position:relative; display:block; min-height:192px; overflow:hidden; border-top:1px solid rgba(20,38,31,0.16);">
+              <div style="position:absolute; inset:0;">
+                <img src="public/images/map/resort.jpg" alt="" style="position:absolute; max-width:none; width:888.25px; left:calc(50% - 512.55px); top:calc(44% - 708.9px);">
+              </div>
+              <span style="position:absolute; left:50%; top:44%; display:flex; height:36px; width:36px; transform:translate(-50%,-50%); align-items:center; justify-content:center; border-radius:9999px; border:2px solid #f3f1ec; background:#a65f36; color:#f3f1ec; box-shadow:0 2px 10px rgb(13 33 27 / 0.45);">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"><path d="M2.5 7.5L8 3l5.5 4.5V13h-11z"></path></svg>
+              </span>
+              <span style="position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:space-between; gap:12px; background:rgba(23,51,43,0.92); padding:10px 16px; font-size:14px; line-height:1.35; font-weight:600; color:#e9e7e0;">
+                Grove Cottages
+                <span style="display:flex; align-items:center; gap:8px; color:#d99a6c;">Resort map<svg width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l6 6-6 6"></path></svg></span>
+              </span>
+            </a>
+          </div>
+        </section>
+
+        <section style="max-width:1152px; margin:0 auto; padding:48px 20px 0;">
+          <div style="display:flex; flex-direction:column; align-items:flex-start; gap:12px; margin-bottom:24px;">
+            <h2 style="font-family:'Libre Caslon Display','Libre Caslon Text',Georgia,serif; font-weight:400; letter-spacing:-0.012em; line-height:0.95; font-size:44px;">The courses</h2>
+          </div>
+          <div role="tablist" style="display:flex; overflow-x:auto; scrollbar-width:none; border:1px solid rgba(20,38,31,0.16); border-bottom:0;">
+            <sc-for list="{{ courseTabs }}" as="t" hint-placeholder-count="4">
+              <button type="button" role="tab" onClick="{{ t.choose }}" style="position:relative; flex:0 0 auto; min-width:150px; display:flex; flex-direction:column; gap:4px; text-align:left; padding:14px 16px 16px; transition:background 320ms cubic-bezier(0.2,0.7,0.2,1), color 320ms; background:{{ t.bg }}; color:{{ t.fg }}; border-left:{{ t.bl }};">
+                <span style="position:absolute; left:0; right:0; top:-1px; height:2px; background:{{ t.bar }};"></span>
+                <span style="display:flex; align-items:baseline; gap:8px; font-size:12px; font-weight:500; color:{{ t.dateC }};"><span style="font-weight:600; font-variant-numeric:tabular-nums lining-nums; color:{{ t.numC }};">{{ t.num }}</span>{{ t.date }}</span>
+                <strong style="display:block; font-family:'Libre Caslon Text',Georgia,serif; font-size:19px; font-weight:400; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ t.title }}</strong>
+              </button>
+            </sc-for>
+          </div>
+          <div style="display:flex; flex-direction:column; background:#17332b; color:#e9e7e0;">
+            <div style="position:relative; overflow:hidden; height:280px;">
+              <div style="position:absolute; inset:0; background-size:cover; background-image:{{ course.photoBg }}; background-position:{{ course.pos }};"></div>
+              <span style="position:absolute; left:20px; top:20px; padding:7px 12px; background:#0d211b; font-size:13px; font-variant-numeric:tabular-nums lining-nums;">{{ course.count }}</span>
+              <div style="position:absolute; right:18px; bottom:18px; display:flex; border:1px solid rgba(233,231,224,0.18); background:#0d211b;">
+                <button type="button" onClick="{{ course.prev }}" style="display:grid; place-items:center; width:44px; height:44px; opacity:{{ course.prevOp }};"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m14 5-7 7 7 7"></path></svg></button>
+                <button type="button" onClick="{{ course.next }}" style="display:grid; place-items:center; width:44px; height:44px; border-left:1px solid rgba(233,231,224,0.18); opacity:{{ course.nextOp }};"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m10 5 7 7-7 7"></path></svg></button>
+              </div>
+            </div>
+            <div style="display:flex; flex-direction:column; padding:24px;">
+              <h3 style="font-family:'Libre Caslon Display','Libre Caslon Text',Georgia,serif; font-weight:400; letter-spacing:-0.012em; line-height:0.95; font-size:42px;">{{ course.title }}</h3>
+              <p style="font-size:13px; color:#c3d0cd; margin-top:12px;">{{ course.designer }}</p>
+              <p style="font-family:'Libre Caslon Text',Georgia,serif; font-size:18px; line-height:1.5; margin:20px 0;">{{ course.intro }}</p>
+              <dl style="border-top:1px solid rgba(233,231,224,0.18); margin-bottom:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:baseline; gap:16px; padding:10px 0; border-bottom:1px solid rgba(233,231,224,0.18); font-size:13px;"><dt style="color:#c3d0cd; flex-shrink:0; font-size:13px;">Your round</dt><dd style="text-align:right; font-variant-numeric:tabular-nums;">{{ course.day }}</dd></div>
+                <div style="display:flex; justify-content:space-between; align-items:baseline; gap:16px; padding:10px 0; border-bottom:1px solid rgba(233,231,224,0.18); font-size:13px;"><dt style="color:#c3d0cd; flex-shrink:0; font-size:13px;">Tee time</dt><dd style="text-align:right; font-variant-numeric:tabular-nums;">{{ course.tee }}</dd></div>
+                <div style="display:flex; justify-content:space-between; align-items:baseline; gap:16px; padding:10px 0; border-bottom:1px solid rgba(233,231,224,0.18); font-size:13px;"><dt style="color:#c3d0cd; flex-shrink:0; font-size:13px;">The card</dt><dd style="text-align:right; font-variant-numeric:tabular-nums;">{{ course.card }}</dd></div>
+              </dl>
+              <dl style="margin-top:20px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 20px;">
+                <sc-for list="{{ course.cond }}" as="c" hint-placeholder-count="4">
+                  <div style="display:flex; flex-direction:column-reverse;">
+                    <dt style="font-size:14px; line-height:1.35; color:#c3d0cd;">{{ c.k }}</dt>
+                    <dd style="display:inline-flex; align-items:center; gap:6px; white-space:nowrap; font-size:17px; line-height:1.4; font-weight:600; font-variant-numeric:tabular-nums lining-nums;">
+                      <sc-if value="{{ c.hasGlyph }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><sc-for list="{{ c.glyph }}" as="g"><path d="{{ g.d }}" transform="{{ g.t }}"></path></sc-for></svg></sc-if>
+                      {{ c.v }}
+                    </dd>
+                  </div>
+                </sc-for>
+              </dl>
+              <a href="#" style="display:flex; align-items:center; justify-content:space-between; gap:16px; min-height:48px; border-top:1px solid rgba(233,231,224,0.18); margin-top:20px; padding-top:18px; font-size:15px; font-weight:600;">Explore the course <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d99a6c" strokeWidth="1.5"><path d="M4 12h15m-6-6 6 6-6 6"></path></svg></a>
+            </div>
+          </div>
+        </section>
+
+        <section style="margin-top:64px; background:#0d211b;">
+          <div style="max-width:72rem; margin:0 auto; padding:48px 20px;">
+            <div style="display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:4px 24px;">
+              <h2 style="font-family:'Libre Caslon Display','Libre Caslon Text',Georgia,serif; font-weight:400; letter-spacing:-0.012em; line-height:0.95; font-size:38px; color:#e9e7e0;">The forecast</h2>
+              <p style="font-size:15px; line-height:1.45; color:#c3d0cd;">Bandon, Oregon</p>
+            </div>
+            <ol style="margin-top:28px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); border-top:1px solid rgba(233,231,224,0.18); border-bottom:1px solid rgba(233,231,224,0.18); color:#e9e7e0;">
+              <sc-for list="{{ board }}" as="b" hint-placeholder-count="4">
+                <li style="border-left:{{ b.bl }}; border-bottom:1px solid rgba(233,231,224,0.18);">
+                  <a href="#" style="display:block; height:100%; padding:18px 12px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:13px;"><strong>{{ b.day }}</strong><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d99a6c" strokeWidth="1.5"><path d="M5 19 19 5M5 5h14v14"></path></svg></div>
+                    <p style="font-size:12px; color:#c3d0cd; margin-top:6px; min-height:36px;">{{ b.course }}</p>
+                    <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:12px 0 18px;">
+                      <svg width="26" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><sc-for list="{{ b.glyph }}" as="g"><path d="{{ g.d }}" transform="{{ g.t }}"></path></sc-for></svg>
+                      <span style="font-family:'Libre Caslon Display','Libre Caslon Text',Georgia,serif; font-weight:400; letter-spacing:-0.012em; line-height:0.95; font-size:48px; font-variant-numeric:tabular-nums lining-nums;">{{ b.high }}</span>
+                      <span style="width:100%; font-size:13px; color:#c3d0cd;">{{ b.label }}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; color:#c3d0cd; font-size:12px; font-variant-numeric:tabular-nums;">
+                      <span>{{ b.low }}</span>
+                      <div style="position:relative; flex:1; height:4px; background:rgba(233,231,224,0.18);"><i style="position:absolute; top:0; height:100%; background:#cbbb97; left:{{ b.left }}%; width:{{ b.width }}%;"></i></div>
+                      <span>{{ b.high }}</span>
+                    </div>
+                    <dl style="margin-top:16px; font-variant-numeric:tabular-nums;">
+                      <div style="display:flex; justify-content:space-between; border-top:1px solid rgba(233,231,224,0.18); padding:8px 0;"><dt style="color:#c3d0cd; font-size:13px;">Wind</dt><dd style="font-size:16px; font-weight:500;">{{ b.wind }} <span style="color:#c3d0cd; font-size:13px;">mph</span></dd></div>
+                      <div style="display:flex; justify-content:space-between; border-top:1px solid rgba(233,231,224,0.18); padding:8px 0;"><dt style="color:#c3d0cd; font-size:13px;">Gusts</dt><dd style="font-size:16px; font-weight:500;">{{ b.gust }} <span style="color:#c3d0cd; font-size:13px;">mph</span></dd></div>
+                      <div style="display:flex; justify-content:space-between; border-top:1px solid rgba(233,231,224,0.18); padding:8px 0;"><dt style="color:#c3d0cd; font-size:13px;">Rain</dt><dd style="font-size:16px; font-weight:500;">{{ b.rain }}<span style="color:#c3d0cd; font-size:13px;">%</span></dd></div>
+                    </dl>
+                  </a>
+                </li>
+              </sc-for>
+            </ol>
+            <a href="#" style="margin-top:24px; display:inline-flex; min-height:44px; align-items:center; gap:8px; background:#e9e7e0; padding:0 16px; font-size:15px; font-weight:600; color:#14261f;">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9h10.500a2.500 2.500 0 1 0-2.500-2.500M3 13h15a2.500 2.500 0 1 1-2.500 2.500M3 17h7"></path></svg>
+              Hourly Wind Map
+            </a>
+            <p style="margin-top:16px; font-size:13px; line-height:1.4; color:#c3d0cd;">Forecast by <a href="#" style="text-decoration:underline; text-underline-offset:2px;">Open-Meteo</a>, refreshed every half hour.</p>
+          </div>
+        </section>
+
+        <section style="max-width:72rem; margin:0 auto; padding:48px 20px 0;">
+          <div style="display:grid;">
+            <h2 style="font-family:'Libre Caslon Display','Libre Caslon Text',Georgia,serif; font-weight:400; letter-spacing:-0.012em; line-height:0.95; font-size:34px;">Coming up</h2>
+            <div>
+              <sc-for list="{{ coming }}" as="g" hint-placeholder-count="2">
+                <div style="margin-top:{{ g.mt }};">
+                  <h3 style="font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.16em; color:#a65f36;">{{ g.day }}</h3>
+                  <ul style="margin-top:10px; border-top:1px solid rgba(20,38,31,0.16); border-bottom:1px solid rgba(20,38,31,0.16);">
+                    <sc-for list="{{ g.rows }}" as="r">
+                      <li style="border-top:{{ r.bt }};">
+                        <a href="#" style="display:flex; min-height:72px; align-items:center; gap:16px; padding:16px 0;">
+                          <span style="position:relative; display:block; height:72px; width:72px; flex-shrink:0; overflow:hidden; background:#0d211b;"><span style="position:absolute; inset:0; background-size:cover; background-image:{{ r.photoBg }}; background-position:{{ r.pos }};"></span></span>
+                          <span style="min-width:0; flex:1;">
+                            <span style="display:block; font-family:'Libre Caslon Text',Georgia,serif; font-size:22px; line-height:1.25;">{{ r.title }}</span>
+                            <span style="display:block; margin-top:4px; font-size:17px; line-height:1.4; font-weight:600; font-variant-numeric:tabular-nums lining-nums;">{{ r.time }}</span>
+                            <span style="display:block; margin-top:2px; font-size:15px; line-height:1.45; color:#4b5a52;">{{ r.summary }}</span>
+                          </span>
+                        </a>
+                      </li>
+                    </sc-for>
+                  </ul>
+                </div>
+              </sc-for>
+              <a href="#" style="margin-top:4px; display:inline-flex; align-items:center; min-height:44px; font-size:16px; font-weight:600; text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:5px; text-decoration-color:#a65f36;">The full schedule</a>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer style="position:relative; margin-top:112px; color:#e9e7e0; background:linear-gradient(to bottom, #1b3d31 0%, #17332b 40%, #10261f 100%);">
+        <svg style="position:absolute; left:0; right:0; bottom:calc(100% - 1px); display:block; height:80px; width:100%;" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <path d="M0 0 C 26 58 68 40 100 100 L 100 101 L 0 101 Z" fill="#1b3d31"></path>
+          <path d="M0 0 C 26 58 68 40 100 100" fill="none" stroke="#d99a6c" strokeWidth="1.25" opacity="0.65" vectorEffect="non-scaling-stroke"></path>
+        </svg>
+        <svg style="position:absolute; inset:0; height:100%; width:100%; opacity:0.14;" viewBox="0 0 400 640" preserveAspectRatio="xMidYMid slice" fill="none" stroke="#cbbb97" strokeWidth="1">
+          <sc-for list="{{ contours }}" as="pts"><polygon points="{{ pts }}" vectorEffect="non-scaling-stroke"></polygon></sc-for>
+        </svg>
+        <div style="position:relative; margin:0 auto; width:100%; max-width:72rem; padding:16px 20px 112px;">
+          <nav style="display:grid;">
+            <h2 style="font-family:'Libre Caslon Display','Libre Caslon Text',Georgia,serif; font-weight:400; letter-spacing:-0.012em; line-height:0.95; font-size:34px;">Trip essentials</h2>
+            <ul style="margin-top:16px; border-top:1px solid rgba(233,231,224,0.18); border-bottom:1px solid rgba(233,231,224,0.18);">
+              <li>
+                <a href="#" style="display:flex; min-height:76px; align-items:center; gap:16px; padding:16px 0;">
+                  <span style="min-width:0; flex:1;"><span style="display:block; font-family:'Libre Caslon Text',Georgia,serif; font-size:23px; line-height:1.25;">Schedule</span><span style="display:block; margin-top:4px; font-size:15px; line-height:1.45; color:#c3d0cd;">Day by day, with the resort map</span></span>
+                  <svg width="9" height="16" viewBox="0 0 8 14" fill="none" stroke="#d99a6c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style="flex-shrink:0;"><path d="M1 1l6 6-6 6"></path></svg>
+                </a>
+              </li>
+              <li style="border-top:1px solid rgba(233,231,224,0.18);">
+                <a href="#" style="display:flex; min-height:76px; align-items:center; gap:16px; padding:16px 0;">
+                  <span style="min-width:0; flex:1;"><span style="display:block; font-family:'Libre Caslon Text',Georgia,serif; font-size:23px; line-height:1.25;">Hourly Wind Map</span><span style="display:block; margin-top:4px; font-size:15px; line-height:1.45; color:#c3d0cd;">Wind and daylight for each day</span></span>
+                  <svg width="9" height="16" viewBox="0 0 8 14" fill="none" stroke="#d99a6c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style="flex-shrink:0;"><path d="M1 1l6 6-6 6"></path></svg>
+                </a>
+              </li>
+              <li style="border-top:1px solid rgba(233,231,224,0.18);">
+                <a href="#" style="display:flex; min-height:76px; align-items:center; gap:16px; padding:16px 0;">
+                  <span style="min-width:0; flex:1;"><span style="display:block; font-family:'Libre Caslon Text',Georgia,serif; font-size:23px; line-height:1.25;">Packing list</span><span style="display:block; margin-top:4px; font-size:15px; line-height:1.45; color:#c3d0cd;">The resort's advice as a checklist</span></span>
+                  <svg width="9" height="16" viewBox="0 0 8 14" fill="none" stroke="#d99a6c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style="flex-shrink:0;"><path d="M1 1l6 6-6 6"></path></svg>
+                </a>
+              </li>
+            </ul>
+          </nav>
+          <div style="margin-top:48px; font-size:13px; line-height:1.625; color:#c3d0cd;">
+            <p style="margin-bottom:24px; font-size:15px; line-height:1.45; color:#e9e7e0;">Viewing as <span style="font-weight:600;">Cody Wilson</span><button type="button" style="margin-left:12px; font-weight:600; text-decoration:underline; text-decoration-color:#d99a6c; text-decoration-thickness:1px; text-underline-offset:5px;">Switch</button></p>
+            <p style="font-family:'Libre Caslon Text',Georgia,serif; font-size:15px; font-style:italic; color:#e9e7e0;">BandonTrip</p>
+            <p style="margin-top:8px; max-width:28rem;">Made by golfers for their own trip. An independent site, not affiliated with or endorsed by Bandon Dunes Golf Resort.</p>
+            <p style="margin-top:8px; max-width:28rem;">Contact Cody Wilson for site issues, requests, and feedback.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <nav style="position:absolute; left:0; right:0; bottom:0; z-index:30; border-top:1px solid rgba(20,38,31,0.16); background:rgba(243,241,236,0.88); backdrop-filter:blur(16px);">
+    <ul style="margin:0 auto; display:grid; max-width:448px; grid-template-columns:repeat(4,minmax(0,1fr));">
+      <li><a href="#" style="position:relative; display:flex; height:66px; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:12.5px; font-weight:600; color:#0d211b;">
+        <span style="position:absolute; top:0; height:2px; width:28px; background:#a65f36;"></span>
+        <svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M11 19V4.5"></path><path d="M11 5l7 2.6L11 10.5"></path><path d="M4 19.5c2.4-1.4 4.6-2 7-2s4.6.6 7 2"></path></svg>Home</a></li>
+      <li><a href="#" style="position:relative; display:flex; height:66px; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:12.5px; font-weight:500; color:#4b5a52;">
+        <svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6.5h14M4 11.5h14M4 16.5h9"></path></svg>Schedule</a></li>
+      <li><a href="#" style="position:relative; display:flex; height:66px; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:12.5px; font-weight:500; color:#4b5a52;">
+        <svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5h9.5a2.5 2.5 0 10-2.4-3.2"></path><path d="M3 12h13.5a2.5 2.5 0 11-2.4 3.2"></path><path d="M3 15.5h6"></path></svg>Wind</a></li>
+      <li><a href="#" style="position:relative; display:flex; height:66px; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:12.5px; font-weight:500; color:#4b5a52;">
+        <svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"><path d="M5 8.5h12v9.5a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 015 18z"></path><path d="M8.5 8.5V6a2.5 2.5 0 015 0v2.5M5 13h12"></path></svg>Packing</a></li>
+    </ul>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844}}">
+class Component extends DCLogic {
+  state = { slide: 0, course: 0 };
+
+  D = (() => {
+    const W = {
+      '2026-11-19': { kind: 'partly', label: 'Partly cloudy', high: 54, low: 45, wind: 14, gust: 24, rain: 35 },
+      '2026-11-20': { kind: 'rain', label: 'Showers', high: 52, low: 46, wind: 18, gust: 31, rain: 70 },
+      '2026-11-21': { kind: 'cloud', label: 'Overcast', high: 51, low: 43, wind: 11, gust: 17, rain: 20 },
+      '2026-11-22': { kind: 'clear', label: 'Clear', high: 53, low: 40, wind: 9, gust: 14, rain: 5 },
+    };
+    const events = [
+      { date: '2026-11-19', wd: 'Thursday', md: 'November 19', type: 'golf', title: 'Old Macdonald', time: '10:20 AM', round: 1, photo: 'public/images/courses/old-macdonald.jpg', pos: '50% 62%', wait: 'in three days' },
+      { date: '2026-11-19', wd: 'Thursday', md: 'November 19', type: 'activity', title: 'Punchbowl', time: '4:00 PM', photo: 'public/images/activities/punchbowl.jpg', pos: '50% 50%', wait: 'in three days' },
+      { date: '2026-11-19', wd: 'Thursday', md: 'November 19', type: 'dining', title: 'Trails End', time: '5:30 PM', party: 6, photo: 'public/images/dining/trails-end.jpg', pos: '50% 50%', wait: 'in three days' },
+      { date: '2026-11-20', wd: 'Friday', md: 'November 20', type: 'golf', title: 'Pacific Dunes', time: '8:30 AM', round: 2, photo: 'public/images/courses/pacific-dunes.jpg', pos: '50% 62%', wait: 'in four days' },
+      { date: '2026-11-20', wd: 'Friday', md: 'November 20', type: 'activity', title: "Shorty's", time: '3:00 PM', photo: 'public/images/activities/shortys.jpg', pos: '50% 50%', wait: 'in four days' },
+      { date: '2026-11-20', wd: 'Friday', md: 'November 20', type: 'dining', title: 'Pacific Grill', time: '7:30 PM', party: 6, photo: 'public/images/dining/pacific-grill.jpg', pos: '50% 50%', wait: 'in four days' },
+      { date: '2026-11-21', wd: 'Saturday', md: 'November 21', type: 'golf', title: 'Bandon Trails', time: '8:20 AM', round: 3, photo: 'public/images/courses/bandon-trails.jpg', pos: '50% 62%', wait: 'in five days' },
+      { date: '2026-11-21', wd: 'Saturday', md: 'November 21', type: 'dining', title: 'Ghost Tree', time: '5:00 PM', party: 6, photo: 'public/images/dining/ghost-tree.jpg', pos: '50% 50%', wait: 'in five days' },
+      { date: '2026-11-22', wd: 'Sunday', md: 'November 22', type: 'golf', title: 'Bandon Dunes', time: '8:20 AM', round: 4, photo: 'public/images/courses/bandon-dunes.jpg', pos: '50% 38%', wait: 'in six days' },
+    ];
+    const courses = [
+      { date: '2026-11-19', short: 'Thu 19', title: 'Old Macdonald', designer: 'Tom Doak and Jim Urbina · 2010', intro: 'Enormous greens. Finding the putting surface is the easy part; being on the right section of it is the round.', day: 'Thursday, November 19', tee: '10:20 AM', card: 'Par 71 · 6,944 yards', photo: 'public/images/courses/old-macdonald.jpg', pos: '50% 62%' },
+      { date: '2026-11-20', short: 'Fri 20', title: 'Pacific Dunes', designer: 'Tom Doak · 2001', intro: 'Short enough to give you hope, rugged enough to test everything. Yardage matters less here than the wind.', day: 'Friday, November 20', tee: '8:30 AM', card: 'Par 71 · 6,633 yards', photo: 'public/images/courses/pacific-dunes.jpg', pos: '50% 62%' },
+      { date: '2026-11-21', short: 'Sat 21', title: 'Bandon Trails', designer: 'Bill Coore and Ben Crenshaw · 2005', intro: 'Three landscapes in one walk: dunes, meadow, then forest.', day: 'Saturday, November 21', tee: '8:20 AM', card: 'Par 71 · 6,788 yards', photo: 'public/images/courses/bandon-trails.jpg', pos: '50% 62%' },
+      { date: '2026-11-22', short: 'Sun 22', title: 'Bandon Dunes', designer: 'David McLay Kidd · 1999', intro: 'Ocean views that keep arriving through the round.', day: 'Sunday, November 22', tee: '8:20 AM', card: 'Par 72 · 7,212 yards', photo: 'public/images/courses/bandon-dunes.jpg', pos: '50% 38%' },
+    ];
+    return { W, events, courses };
+  })();
+
+  TALL = [...this.contours(330, 90, 9, 36, 0.9), ...this.contours(40, 560, 8, 40, 2.6)];
+  DAY_LINES = [
+    ...[0, 1, 2, 3, 4].map(k => `M${170 + k * 44} -10 C ${250 + k * 36} ${34 + k * 14}, ${330 + k * 22} ${60 + k * 34}, 410 ${92 + k * 52}`),
+    ...[0, 1, 2, 3].map(k => `M-10 ${330 + k * 26} C ${70 + k * 12} ${318 + k * 20}, ${150 + k * 20} ${352 + k * 18}, ${220 + k * 34} 430`),
+  ];
+
+  contours(cx, cy, rings, gap, phase) {
+    return Array.from({ length: rings }, (_, k) => {
+      const r = (k + 1) * gap;
+      return Array.from({ length: 73 }, (_, n) => {
+        const a = (n / 72) * Math.PI * 2;
+        const w = 1 + 0.09 * Math.sin(3 * a + k * 0.6 + phase) + 0.05 * Math.sin(5 * a + k * 1.1 + phase * 2);
+        return `${(cx + Math.cos(a) * r * w).toFixed(1)},${(cy + Math.sin(a) * r * w * 0.86).toFixed(1)}`;
+      }).join(' ');
+    });
+  }
+
+  glyph(kind) {
+    const circ = (cx, cy, r) => `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0`;
+    const cloud = 'M7 18.5h9.5a3.5 3.500 0 0 0 .6-6.950A5 5 0 0 0 7.600 10.200 4.200 4.200 0 0 0 7 18.500Z';
+    const none = 'translate(0 0)';
+    const G = {
+      clear: [{ d: circ(12, 12, 4), t: none }, { d: 'M12 3v2M12 19v2M3 12h2M19 12h2M5.600 5.600l1.400 1.400M17 17l1.400 1.400M5.600 18.400 7 17M17 7l1.400-1.400', t: none }],
+      partly: [{ d: circ(8.5, 8, 3), t: none }, { d: 'M8.500 2.500v1.300M3 8h1.300M4.600 4.100l.9.900M12.400 4.100l-.9.900', t: none }, { d: 'M9 19.500h8a3 3 0 0 0 .5-5.950 4.300 4.300 0 0 0-8.100-1.150A3.600 3.600 0 0 0 9 19.500Z', t: none }],
+      rain: [{ d: cloud, t: 'translate(0 -3)' }, { d: 'M8.500 18.500l-1 2.500M12.500 18.500l-1 2.500M16.500 18.500l-1 2.500', t: none }],
+      cloud: [{ d: cloud, t: none }],
+    };
+    return G[kind] || G.cloud;
+  }
+
+  conditions(w) {
+    return [
+      { k: w.label, v: `${w.high}° / ${w.low}°`, hasGlyph: true, glyph: this.glyph(w.kind) },
+      { k: 'Wind', v: `${w.wind} mph`, hasGlyph: false, glyph: [] },
+      { k: 'Gusts', v: `${w.gust} mph`, hasGlyph: false, glyph: [] },
+      { k: 'Rain', v: `${w.rain}%`, hasGlyph: false, glyph: [] },
+    ];
+  }
+
+  renderVals() {
+    const { W, events, courses } = this.D;
+    const s = this.state.slide, e = events[s];
+    const golf = e.type === 'golf';
+    const next = {
+      lead: s === 0 ? 'Next up' : 'Starts', wait: e.wait, title: e.title, date: `${e.wd}, ${e.md}`,
+      timeLabel: golf ? 'Tee time' : '', time: e.time, party: e.party ? `party of ${e.party}` : '',
+      cond: this.conditions(W[e.date]),
+      prev: () => this.setState({ slide: Math.max(0, s - 1) }), nextFn: () => this.setState({ slide: Math.min(events.length - 1, s + 1) }),
+      prevOp: s === 0 ? 0.25 : 1, nextOp: s === events.length - 1 ? 0.25 : 1,
+    };
+
+    const ci = this.state.course, c = courses[ci];
+    const courseTabs = courses.map((x, i) => {
+      const sel = i === ci;
+      return {
+        num: String(i + 1).padStart(2, '0'), date: x.short, title: x.title,
+        bg: sel ? '#17332b' : 'transparent', fg: sel ? '#e9e7e0' : '#14261f', bar: sel ? '#d99a6c' : 'transparent',
+        dateC: sel ? '#c3d0cd' : '#4b5a52', numC: sel ? '#d99a6c' : '#a65f36',
+        bl: i === 0 ? '0' : (sel || i - 1 === ci) ? '1px solid transparent' : '1px solid rgba(20,38,31,0.16)',
+        choose: () => this.setState({ course: i }),
+      };
+    });
+    const course = {
+      ...c, photoBg: `url("${c.photo}")`, count: `${ci + 1} / ${courses.length}`, cond: this.conditions(W[c.date]),
+      prev: () => this.setState({ course: Math.max(0, ci - 1) }), next: () => this.setState({ course: Math.min(courses.length - 1, ci + 1) }),
+      prevOp: ci === 0 ? 0.35 : 1, nextOp: ci === courses.length - 1 ? 0.35 : 1,
+    };
+
+    const dates = Object.keys(W);
+    const lo = Math.min(...dates.map(d => W[d].low)) - 2, hi = Math.max(...dates.map(d => W[d].high)) + 2, ext = Math.max(1, hi - lo);
+    const short = { '2026-11-19': 'Thu, Nov 19', '2026-11-20': 'Fri, Nov 20', '2026-11-21': 'Sat, Nov 21', '2026-11-22': 'Sun, Nov 22' };
+    const board = dates.map((d, i) => {
+      const w = W[d];
+      return {
+        day: short[d], course: courses[i].title, glyph: this.glyph(w.kind), high: `${w.high}°`, low: `${w.low}°`, label: w.label,
+        left: ((w.low - lo) / ext) * 100, width: ((w.high - w.low) / ext) * 100, wind: w.wind, gust: w.gust, rain: w.rain,
+        bl: i % 2 === 0 ? '0' : '1px solid rgba(233,231,224,0.18)',
+      };
+    });
+
+    const first4 = events.slice(0, 4);
+    const groups = [...new Set(first4.map(x => x.date))].map((d, gi) => {
+      const rows = first4.filter(x => x.date === d);
+      return {
+        day: rows[0].wd, mt: gi === 0 ? '16px' : '20px',
+        rows: rows.map((r, ri) => ({ ...r, photoBg: `url("${r.photo}")`, summary: r.type === 'golf' ? 'Golf' : r.type === 'dining' ? `Party of ${r.party}` : 'Activity', bt: ri === 0 ? '0' : '1px solid rgba(20,38,31,0.16)' })),
+      };
+    });
+
+    return { next, courseTabs, course, board, coming: groups, contours: this.TALL, dayLines: this.DAY_LINES };
+  }
+}
+</script>
+</body>
+</html>

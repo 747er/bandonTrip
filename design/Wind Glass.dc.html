@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;border:0 solid}
+html,body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+button{font:inherit;color:inherit;background:none;cursor:pointer;text-align:inherit}
+ol,ul{list-style:none}
+a{color:inherit;text-decoration:none}
+a:hover{color:#d99a6c}
+img,svg{display:block}
+</style>
+</helmet>
+<div data-screen-label="{{ label }}" style="position:relative; width:390px; height:844px; overflow:hidden; isolation:isolate; border-radius:44px; background:#122e36; color:#eceee8; font-family:'Schibsted Grotesk',ui-sans-serif,system-ui,sans-serif; box-shadow:0 0 0 1px rgba(233,231,224,0.16), 0 30px 60px -24px rgba(8,20,16,0.6);">
+  <div style="position:absolute; inset:0; overflow:hidden;">
+    <img src="public/images/map/aerial-z15.jpg" alt="" draggable="false" style="position:absolute; left:0; top:0; width:1280px; height:2048px; max-width:none; transform-origin:0 0; filter:brightness(0.78) saturate(1.1) contrast(1.05); transition:transform 700ms cubic-bezier(0.2,0.7,0.2,1); transform:{{ map }};">
+  </div>
+  <canvas ref="{{ cv }}" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none;"></canvas>
+  <div style="position:absolute; left:0; right:0; top:0; height:170px; pointer-events:none; background:linear-gradient(to bottom, rgba(10,26,21,0.7) 0%, rgba(10,26,21,0.3) 50%, rgba(10,26,21,0) 100%);"></div>
+
+  <sc-for list="{{ pins }}" as="p" hint-placeholder-count="0">
+    <span style="position:absolute; left:0; top:0; z-index:2; transition:transform 700ms cubic-bezier(0.2,0.7,0.2,1); transform:translate({{ p.x }}px, {{ p.y }}px);">
+      <span style="position:absolute; top:0; transform:translateY(-50%); display:flex; align-items:center; left:{{ p.l }}; right:{{ p.r }}; flex-direction:{{ p.dir }};">
+        <span style="position:relative; z-index:1; display:flex; width:30px; height:30px; flex-shrink:0; align-items:center; justify-content:center; border-radius:9999px; border:2px solid rgba(236,238,232,0.92); background:rgba(13,33,27,0.88); color:#eceee8; box-shadow:0 4px 12px -4px rgba(0,0,0,0.6);"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="{{ p.icon }}" fill="{{ p.fill }}"></path></svg></span>
+        <span style="padding:4px 12px 4px 12px; margin:{{ p.m }}; border-radius:9999px; white-space:nowrap; font-size:13px; font-weight:600; background:rgba(236,238,232,0.9); color:#14261f; box-shadow:0 4px 12px -6px rgba(0,0,0,0.6);">{{ p.name }}</span>
+      </span>
+    </span>
+  </sc-for>
+
+  <sc-if value="{{ act.has }}" hint-placeholder-val="{{ false }}">
+    <span style="position:absolute; left:0; top:0; z-index:3; transition:transform 700ms cubic-bezier(0.2,0.7,0.2,1); transform:translate({{ act.x }}px, {{ act.y }}px);">
+      <span style="position:absolute; left:-40px; top:-40px; width:80px; height:80px; border-radius:9999px; border:1.5px solid rgba(217,154,108,0.5); background:radial-gradient(circle, rgba(217,154,108,0.22) 0%, rgba(217,154,108,0.06) 70%);"></span>
+      <span style="position:absolute; top:0; transform:translateY(-50%); white-space:nowrap; padding:7px 34px 8px 16px; border-radius:9999px; font-size:15px; font-weight:600; color:#fbf3ec; background:linear-gradient(180deg, #b8703f 0%, #95522c 100%); box-shadow:inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 20px -8px rgba(0,0,0,0.6); left:{{ act.l }}; right:{{ act.r }}; padding:{{ act.pad }};">{{ act.title }}</span>
+      <span style="position:absolute; left:-23px; top:-23px; display:flex; width:46px; height:46px; align-items:center; justify-content:center; border-radius:9999px; border:2.5px solid #f4d9c4; color:#fff; background:linear-gradient(180deg, #c27a4a 0%, #9a5530 100%); box-shadow:0 8px 20px -6px rgba(0,0,0,0.6);"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="{{ act.icon }}" fill="{{ act.fill }}"></path></svg></span>
+    </span>
+  </sc-if>
+
+  <button type="button" onClick="{{ toggleMenu }}" style="position:absolute; right:14px; top:16px; z-index:6; display:flex; align-items:center; gap:8px; height:42px; padding:0 14px 0 16px; border-radius:9999px; font-size:16px; font-weight:500; background:linear-gradient(180deg, rgba(40,70,59,0.62), rgba(16,38,31,0.72)); border:1px solid rgba(233,231,224,0.18); box-shadow:inset 0 1px 0 rgba(255,255,255,0.08); backdrop-filter:blur(18px) saturate(1.3);">
+        {{ dayLabel }}
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style="transition:transform 220ms; transform:rotate({{ chevron }}deg);"><path d="M2.5 4.5L6 8l3.5-3.5"></path></svg>
+      </button>
+
+  <div style="position:absolute; left:14px; top:16px; z-index:5; display:flex; align-items:center; gap:10px; padding:10px 16px 10px 10px; border-radius:9999px; background:linear-gradient(180deg, rgba(40,70,59,0.58), rgba(16,38,31,0.7)); border:1px solid rgba(233,231,224,0.16); box-shadow:inset 0 1px 0 rgba(255,255,255,0.08), 0 20px 40px -20px rgba(0,0,0,0.6); backdrop-filter:blur(18px) saturate(1.3);">
+    <svg width="54" height="54" viewBox="0 0 52 52" style="flex-shrink:0;">
+      <circle cx="26" cy="26" r="24.5" fill="rgba(10,26,21,0.4)" stroke="#e9e7e0" strokeOpacity=".32"></circle>
+      <path d="M26 2.5v3M49.5 26h-3M26 49.5v-3M2.5 26h3" stroke="#e9e7e0" strokeOpacity=".55"></path>
+      <text x="26" y="11.8" textAnchor="middle" fontSize="6.5" fontWeight="600" fill="#e9e7e0">N</text>
+      <text x="42.3" y="28.3" textAnchor="middle" fontSize="6" fontWeight="500" fill="#e9e7e0" fillOpacity=".7">E</text>
+      <text x="26" y="45" textAnchor="middle" fontSize="6" fontWeight="500" fill="#e9e7e0" fillOpacity=".7">S</text>
+      <text x="9.7" y="28.3" textAnchor="middle" fontSize="6" fontWeight="500" fill="#e9e7e0" fillOpacity=".7">W</text>
+      <g style="transition:transform 500ms cubic-bezier(0.2,0.7,0.2,1); transform-origin:26px 26px; transform:rotate({{ r.rot }}deg);">
+        <path d="M26 27 L26 41" stroke="#e9e7e0" strokeWidth="1.4" strokeDasharray="1.6 2" strokeLinecap="round"></path>
+        <circle cx="26" cy="42.5" r="1.5" fill="#e9e7e0"></circle>
+        <path d="M26 10L32 27.5L26 24L20 27.5Z" fill="#d99a6c"></path>
+      </g>
+    </svg>
+    <div>
+      <p style="display:flex; align-items:baseline; gap:5px; font-variant-numeric:tabular-nums lining-nums;"><span style="font-size:36px; font-weight:500; letter-spacing:-0.03em; line-height:1;">{{ r.speed }}</span><span style="font-size:16px; font-weight:500;">mph</span></p>
+      <p style="margin-top:3px; font-size:15px; color:#c3d0cd; white-space:nowrap;">from {{ r.dir }}</p>
+    </div>
+    <span style="width:1px; align-self:stretch; margin:4px 0; background:rgba(233,231,224,0.18);"></span>
+    <div>
+      <p style="font-size:12px; color:#a7b6b1;">Gusts</p>
+      <p style="margin-top:3px; font-size:17px; font-weight:500; white-space:nowrap; font-variant-numeric:lining-nums;">{{ r.gust }}</p>
+    </div>
+  </div>
+
+  <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; right:14px; top:66px; z-index:20; width:262px; padding:6px; border-radius:22px; background:linear-gradient(180deg, rgba(40,70,59,0.86), rgba(16,38,31,0.92)); border:1px solid rgba(233,231,224,0.18); box-shadow:inset 0 1px 0 rgba(255,255,255,0.08), 0 24px 48px -16px rgba(0,0,0,0.7); backdrop-filter:blur(24px) saturate(1.3);">
+      <sc-for list="{{ menu }}" as="m" hint-placeholder-count="4">
+        <button type="button" onClick="{{ m.choose }}" style="display:grid; width:100%; grid-template-columns:52px minmax(0,1fr) auto; align-items:center; column-gap:10px; padding:10px 12px; border-radius:16px; text-align:left; background:{{ m.bg }};">
+          <span><span style="display:block; font-size:12px; font-weight:600; color:{{ m.labC }};">{{ m.short }}</span><span style="display:block; margin-top:1px; font-size:22px; font-weight:500; line-height:1; font-variant-numeric:lining-nums;">{{ m.n }}</span></span>
+          <span style="min-width:0;"><span style="display:block; font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ m.course }}</span><span style="display:block; margin-top:2px; font-size:12px; color:#a7b6b1; font-variant-numeric:lining-nums;">{{ m.tee }}</span></span>
+          <span style="display:flex; flex-direction:column; align-items:flex-end; gap:2px; font-size:12px; color:#c3d0cd; font-variant-numeric:lining-nums;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><sc-for list="{{ m.glyph }}" as="g"><path d="{{ g.d }}" transform="{{ g.t }}"></path></sc-for></svg>{{ m.wind }}</span>
+        </button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <section style="position:absolute; left:0; right:0; bottom:0; z-index:8; border-radius:30px 30px 0 0; background:linear-gradient(180deg, rgba(38,66,56,0.8) 0%, rgba(18,40,33,0.9) 40%, rgba(13,33,27,0.94) 100%); border-top:1px solid rgba(233,231,224,0.18); box-shadow:inset 0 1px 0 rgba(255,255,255,0.08), 0 -20px 40px -24px rgba(0,0,0,0.6); backdrop-filter:blur(22px) saturate(1.3); transition:top 420ms cubic-bezier(0.2,0.7,0.2,1); top:{{ sheetTop }}px;">
+    <div onPointerDown="{{ grab.down }}" onPointerMove="{{ grab.move }}" onPointerUp="{{ grab.up }}" onPointerCancel="{{ grab.up }}" style="height:26px; display:flex; justify-content:center; padding-top:10px; cursor:grab; touch-action:none;">
+      <span style="width:38px; height:4px; border-radius:9999px; background:rgba(233,231,224,0.42);"></span>
+    </div>
+    <div style="position:absolute; left:0; right:0; top:26px; bottom:78px; overflow-y:auto; overflow-x:hidden; scrollbar-width:none; padding:0 20px 20px;">
+      <div style="display:flex; align-items:stretch; gap:16px; padding:2px 2px 0;">
+        <div style="min-width:0; flex:1;">
+          <p style="font-size:11.5px; font-weight:600; letter-spacing:0.14em; color:{{ ctx.labC }};">{{ ctx.label }}</p>
+          <p style="margin-top:6px; font-size:28px; font-weight:500; letter-spacing:-0.01em; line-height:1.05; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ ctx.title }}</p>
+          <p style="margin-top:6px; font-size:15px; color:#c3d0cd; font-variant-numeric:lining-nums;">{{ ctx.sub }}</p>
+        </div>
+        <div style="display:flex; flex-direction:column; justify-content:center; gap:10px; padding-left:18px; border-left:1px solid rgba(233,231,224,0.18); font-size:17px; font-weight:500; font-variant-numeric:lining-nums;">
+          <p style="display:flex; align-items:center; gap:12px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><sc-for list="{{ glyph }}" as="g"><path d="{{ g.d }}" transform="{{ g.t }}"></path></sc-for></svg>{{ r.temp }}</p>
+          <p style="display:flex; align-items:center; gap:12px;"><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2.200c2.400 2.900 3.800 5 3.800 6.900a3.800 3.800 0 0 1-7.600 0C4.200 7.200 5.600 5.100 8 2.200Z"></path></svg>{{ r.rain }}</p>
+        </div>
+      </div>
+
+      <p style="margin-top:16px; font-size:11.5px; font-weight:600; letter-spacing:0.14em; color:#a7b6b1;">{{ stopsTitle }}</p>
+      <div style="margin-top:8px; display:grid; gap:8px; grid-template-columns:{{ stopCols }};">
+        <sc-for list="{{ stops }}" as="s" hint-placeholder-count="3">
+          <button type="button" onClick="{{ s.onClick }}" style="display:flex; flex-direction:column; gap:3px; min-height:54px; padding:8px 10px 9px 11px; border-radius:14px; text-align:left; transition:background 220ms, border-color 220ms; background:{{ s.bg }}; border:1px solid {{ s.border }}; box-shadow:{{ s.shadow }};">
+            <span style="display:flex; align-items:center; gap:6px; font-size:12.5px; white-space:nowrap; font-variant-numeric:lining-nums; color:{{ s.timeC }};"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style="flex-shrink:0;"><path d="{{ s.icon }}" fill="{{ s.fill }}"></path></svg>{{ s.time }}</span>
+            <span style="display:block; font-size:14px; font-weight:500; line-height:1.2; text-wrap:balance;">{{ s.title }}</span>
+          </button>
+        </sc-for>
+      </div>
+
+      <div style="margin-top:14px; display:flex; align-items:center; justify-content:space-between;">
+        <p style="font-size:17px; font-weight:500;">Hourly wind</p>
+        <button type="button" onClick="{{ togglePlay }}" aria-label="Play the day" style="display:grid; place-items:center; width:36px; height:36px; border-radius:9999px; background:rgba(233,231,224,0.1); border:1px solid rgba(233,231,224,0.2); box-shadow:inset 0 1px 0 rgba(255,255,255,0.08);"><svg width="14" height="14" viewBox="0 0 14 14" fill="#eceee8"><path d="{{ playIcon }}"></path></svg></button>
+      </div>
+      <div ref="{{ stripRef }}" style="margin:6px -20px 0; padding:0 20px; overflow-x:auto; scrollbar-width:none;">
+        <div style="position:relative; display:flex; width:max-content; padding-bottom:6px;">
+          <sc-for list="{{ hours }}" as="h" hint-placeholder-count="6">
+            <button type="button" onClick="{{ h.onClick }}" style="position:relative; width:58px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:6px; padding:8px 0 9px; border-radius:12px; transition:background 200ms, border-color 200ms; background:{{ h.bg }}; border:1.5px solid {{ h.border }};">
+              <span style="font-size:13px; white-space:nowrap; color:{{ h.labC }};">{{ h.label }}</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" style="transition:transform 400ms; transform:rotate({{ h.rot }}deg);"><path d="M12 3L18 19L12 15.5L6 19Z" fill="{{ h.arrowC }}"></path></svg>
+              <span style="font-size:18px; font-weight:500; line-height:1.1; font-variant-numeric:tabular-nums lining-nums;">{{ h.speed }}</span>
+              <sc-if value="{{ full }}"><span style="margin-top:-4px; font-size:11px; color:#a7b6b1; font-variant-numeric:tabular-nums lining-nums;">{{ h.gust }}</span></sc-if>
+              <span style="position:absolute; left:50%; top:3px; width:4px; height:4px; margin-left:-2px; border-radius:9999px; background:#d99a6c; opacity:{{ h.dot }};"></span>
+            </button>
+          </sc-for>
+          <span style="position:absolute; left:0; right:0; bottom:0; height:1px; background:rgba(233,231,224,0.16);"></span>
+          <span style="position:absolute; bottom:-1px; height:3px; border-radius:2px; background:#d99a6c; transition:left 300ms cubic-bezier(0.2,0.7,0.2,1); width:34px; left:{{ underline }}px;"></span>
+        </div>
+      </div>
+
+      <sc-if value="{{ full }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:24px; padding:16px; border-radius:18px; background:rgba(233,231,224,0.06); border:1px solid rgba(233,231,224,0.12);">
+          <div style="display:flex; justify-content:space-between; font-size:13px; color:#c3d0cd; font-variant-numeric:lining-nums;">
+            <span>Sunrise <span style="color:#eceee8; font-weight:600;">{{ sun.rise }}</span></span>
+            <span>Sunset <span style="color:#eceee8; font-weight:600;">{{ sun.set }}</span></span>
+          </div>
+          <div style="position:relative; margin-top:14px; height:8px; border-radius:9999px; background:rgba(233,231,224,0.12);">
+            <span style="position:absolute; top:0; bottom:0; border-radius:9999px; background:linear-gradient(90deg, #cbbb97, #e3cf9f 50%, #cbbb97); left:{{ sun.riseAt }}%; right:{{ sun.setAt }}%;"></span>
+            <sc-for list="{{ sun.marks }}" as="mk"><span style="position:absolute; top:50%; width:10px; height:10px; border-radius:9999px; transform:translate(-50%,-50%); background:#eceee8; box-shadow:0 0 0 2px #17332b; left:{{ mk.left }}%;"></span></sc-for>
+            <span style="position:absolute; top:-6px; bottom:-6px; width:3px; margin-left:-1.5px; border-radius:2px; background:#d99a6c; transition:left 300ms; left:{{ sun.at }}%;"></span>
+          </div>
+          <sc-if value="{{ sun.hasNote }}"><p style="margin-top:12px; font-size:13px; font-weight:600; color:#d99a6c;">{{ sun.note }}</p></sc-if>
+        </div>
+        <div style="margin-top:12px; display:grid; gap:12px; padding:16px; border-radius:18px; background:rgba(233,231,224,0.06); border:1px solid rgba(233,231,224,0.12);">
+          <div>
+            <p style="font-size:11.5px; font-weight:600; letter-spacing:0.14em; color:#a7b6b1;">WHERE</p>
+            <p style="margin-top:6px; font-size:16px; font-weight:500;">{{ ctx.where }}</p>
+            <p style="margin-top:2px; font-size:13px; color:#a7b6b1;">From Grove Cottage #3</p>
+          </div>
+          <sc-if value="{{ ctx.hasGroup }}">
+            <div style="padding-top:12px; border-top:1px solid rgba(233,231,224,0.12);">
+              <p style="font-size:11.5px; font-weight:600; letter-spacing:0.14em; color:#a7b6b1;">YOUR GROUP</p>
+              <ul style="margin-top:8px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px 12px;">
+                <sc-for list="{{ ctx.group }}" as="g"><li style="display:flex; align-items:baseline; gap:6px; font-size:15px; font-weight:500;">{{ g.name }}<sc-if value="{{ g.you }}"><span style="font-size:11px; font-weight:600; color:#d99a6c;">You</span></sc-if></li></sc-for>
+              </ul>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+  </section>
+
+  <nav style="position:absolute; left:0; right:0; bottom:0; z-index:10; height:78px; border-top:1px solid rgba(233,231,224,0.12); background:linear-gradient(180deg, rgba(16,38,31,0.86), rgba(10,26,21,0.95)); backdrop-filter:blur(20px) saturate(1.3);">
+    <ul style="display:grid; height:100%; padding-bottom:10px; grid-template-columns:repeat(4,minmax(0,1fr));">
+      <li><a href="#" style="display:flex; height:100%; flex-direction:column; align-items:center; justify-content:center; gap:5px; font-size:13px; color:#c3d0cd;"><svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"><path d="M11 19V4.5"></path><path d="M11 5l7 2.6L11 10.5"></path><path d="M4 19.5c2.4-1.4 4.6-2 7-2s4.6.6 7 2"></path></svg>Home</a></li>
+      <li><a href="#" style="display:flex; height:100%; flex-direction:column; align-items:center; justify-content:center; gap:5px; font-size:13px; color:#c3d0cd;"><svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6.5h14M4 11.5h14M4 16.5h9"></path></svg>Schedule</a></li>
+      <li><a href="#" style="position:relative; display:flex; height:100%; flex-direction:column; align-items:center; justify-content:center; gap:5px; font-size:13px; font-weight:600; color:#eceee8;"><svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5h9.5a2.5 2.5 0 10-2.4-3.2"></path><path d="M3 12h13.5a2.5 2.5 0 11-2.4 3.2"></path><path d="M3 15.5h6"></path></svg>Wind<span style="position:absolute; bottom:6px; width:44px; height:3px; border-radius:2px; background:#d99a6c;"></span></a></li>
+      <li><a href="#" style="display:flex; height:100%; flex-direction:column; align-items:center; justify-content:center; gap:5px; font-size:13px; color:#c3d0cd;"><svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"><path d="M5 8.5h12v9.5a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 015 18z"></path><path d="M8.5 8.5V6a2.5 2.5 0 015 0v2.5M5 13h12"></path></svg>Packing</a></li>
+    </ul>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;start&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:10,&quot;tsType&quot;:&quot;number&quot;},&quot;sheet&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;peek&quot;,&quot;half&quot;,&quot;full&quot;],&quot;default&quot;:&quot;half&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;menu&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;label&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Wind glass&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = {};
+  S = { w: 0, h: 0, n: 0, x: [], y: [], age: [], life: [] };
+  cv = el => { if (el) this.canvas = el; };
+  stripRef = el => { if (el) this.strip = el; };
+  TOPS = { peek: 656, half: 398, full: 196 };
+
+  K = (() => {
+    const days = [
+      { short: 'Thu', n: 19, kind: 'partly', rise: 7 + 13 / 60, set: 16 + 51 / 60, riseL: '7:13 AM', setL: '4:51 PM',
+        sp: [6, 6, 7, 11, 13, 15, 12, 9, 8], go: [5, 5, 6, 7, 9, 9, 8, 6, 6], dir: [190, 192, 195, 200, 205, 220, 225, 230, 232], tp: [46, 45, 45, 48, 52, 54, 50, 47, 46], rn: [20, 20, 25, 30, 35, 35, 30, 25, 20] },
+      { short: 'Fri', n: 20, kind: 'rain', rise: 7 + 14 / 60, set: 16 + 50 / 60, riseL: '7:14 AM', setL: '4:50 PM',
+        sp: [8, 9, 11, 14, 17, 18, 16, 13, 11], go: [7, 8, 9, 10, 12, 13, 11, 9, 8], dir: [175, 178, 180, 182, 185, 188, 190, 195, 200], tp: [47, 46, 46, 47, 50, 52, 50, 48, 47], rn: [50, 55, 60, 70, 70, 65, 60, 55, 50] },
+      { short: 'Sat', n: 21, kind: 'cloud', rise: 7 + 15 / 60, set: 16 + 50 / 60, riseL: '7:15 AM', setL: '4:50 PM',
+        sp: [9, 8, 7, 7, 10, 11, 9, 7, 6], go: [5, 5, 5, 5, 6, 6, 5, 4, 4], dir: [300, 305, 310, 315, 300, 295, 290, 300, 330], tp: [44, 43, 43, 44, 48, 51, 47, 45, 44], rn: [20, 20, 15, 15, 20, 20, 15, 10, 10] },
+      { short: 'Sun', n: 22, kind: 'clear', rise: 7 + 16 / 60, set: 16 + 49 / 60, riseL: '7:16 AM', setL: '4:49 PM',
+        sp: [6, 5, 5, 6, 8, 9, 7, 6, 5], go: [4, 4, 4, 4, 5, 5, 4, 4, 4], dir: [355, 352, 350, 350, 345, 340, 345, 350, 355], tp: [41, 40, 40, 41, 47, 53, 48, 44, 42], rn: [5, 5, 5, 5, 5, 5, 5, 5, 5] },
+    ];
+    const g = (...n) => n;
+    const ev = (id, title, type, start, until, place, where, group, late) => ({ id, title, type, start, until, place, where, group, late });
+    const events = [
+      ev('om', 'Old Macdonald', 'golf', 10 + 20 / 60, 14 + 20 / 60, 'old-macdonald', 'Old Macdonald clubhouse', g('Erich Krueck', 'Jason Koerner', 'Cam Woolsey')),
+      ev('pb', 'Punchbowl', 'activity', 16, 17, 'pacific-dunes', 'The Punchbowl, Pacific Dunes clubhouse', null, 'Sunset 4:51 PM. Punchbowl runs past it.'),
+      ev('te', 'Trails End', 'dining', 17.5, 19.5, 'bandon-trails', 'Trails End Restaurant, Bandon Trails clubhouse'),
+      ev('pd', 'Pacific Dunes', 'golf', 32.5, 36.5, 'pacific-dunes', 'Pacific Dunes clubhouse', g('Cam Woolsey', 'Justin Pennington', 'JD Kritser')),
+      ev('sh', "Shorty's", 'activity', 39, 40.5, 'shortys', "Shorty's"),
+      ev('pg', 'Pacific Grill', 'dining', 43.5, 45.5, 'pacific-dunes', 'Pacific Dunes clubhouse'),
+      ev('bt', 'Bandon Trails', 'golf', 56 + 20 / 60, 60 + 20 / 60, 'bandon-trails', 'Bandon Trails clubhouse', g('Cam Woolsey', 'Aaron Wagner', 'Brian Campagna')),
+      ev('gt', 'Ghost Tree', 'dining', 65, 67, 'ghost-tree', 'Ghost Tree Grill'),
+      ev('bd', 'Bandon Dunes', 'golf', 80 + 20 / 60, 84 + 20 / 60, 'bandon-dunes', 'Bandon Dunes clubhouse', g('Erich Krueck', 'Jason Koerner', 'Cam Woolsey')),
+    ];
+    const places = {
+      'old-macdonald': { name: 'Old Macdonald', lat: 43.20303, lon: -124.3836, kind: 'golf' },
+      'ghost-tree': { name: 'Ghost Tree Grill', lat: 43.20289, lon: -124.38282, kind: 'dining' },
+      'pacific-dunes': { name: 'Pacific Dunes', lat: 43.1936, lon: -124.3899, kind: 'golf' },
+      'bandon-dunes': { name: 'Bandon Dunes', lat: 43.18838, lon: -124.39038, kind: 'golf' },
+      'grove-cottages': { name: 'Grove Cottages', lat: 43.1866, lon: -124.3855, kind: 'home' },
+      'bandon-trails': { name: 'Bandon Trails', lat: 43.18472, lon: -124.39117, kind: 'golf' },
+      shortys: { name: "Shorty's", lat: 43.17599, lon: -124.3937, kind: 'other' },
+    };
+    for (const p of Object.values(places)) {
+      const x = ((p.lon + 180) / 360) * 32768, r = (p.lat * Math.PI) / 180;
+      const y = ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * 32768;
+      p.x = (x - 5059) * 256; p.y = (y - 12012) * 256;
+    }
+    return { days, events, places };
+  })();
+
+  ICONS = {
+    home: 'M2.5 7.5L8 3l5.5 4.5V13h-11z', golf: 'M5 14V2.5l7 2.7L5 8',
+    dining: 'M4 2v4.5a1.5 1.5 0 003 0V2M5.5 8v6M11.5 14V2c-1.6 1.2-2.2 3.2-2.2 5.5h2.2',
+    other: 'M5.5 8a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0',
+  };
+  glyph(kind) {
+    const circ = (cx, cy, r) => `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0`;
+    const cloud = 'M7 18.5h9.5a3.5 3.500 0 0 0 .6-6.950A5 5 0 0 0 7.600 10.200 4.200 4.200 0 0 0 7 18.500Z', n = 'translate(0 0)';
+    return ({
+      clear: [{ d: circ(12, 12, 4), t: n }, { d: 'M12 3v2M12 19v2M3 12h2M19 12h2M5.600 5.600l1.400 1.400M17 17l1.400 1.400M5.600 18.400 7 17M17 7l1.400-1.400', t: n }],
+      partly: [{ d: circ(8.5, 8, 3), t: n }, { d: 'M8.500 2.500v1.300M3 8h1.300M4.600 4.100l.9.900M12.400 4.100l-.9.900', t: n }, { d: 'M9 19.500h8a3 3 0 0 0 .5-5.950 4.300 4.300 0 0 0-8.100-1.150A3.600 3.600 0 0 0 9 19.500Z', t: n }],
+      rain: [{ d: cloud, t: 'translate(0 -3)' }, { d: 'M8.500 18.500l-1 2.500M12.500 18.500l-1 2.500M16.500 18.500l-1 2.500', t: n }],
+      cloud: [{ d: cloud, t: n }],
+    })[kind];
+  }
+  wx(t) {
+    const d = Math.max(0, Math.min(3, Math.floor(t / 24))), h = Math.max(0, Math.min(24, t - d * 24));
+    const D = this.K.days[d], i = Math.min(7, Math.floor(h / 3)), f = (h - i * 3) / 3, L = a => a[i] + (a[i + 1] - a[i]) * f;
+    const speed = L(D.sp);
+    return { speed, gust: speed + L(D.go), from: L(D.dir), temp: L(D.tp), rain: L(D.rn) };
+  }
+  compass(deg) { return ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'][Math.round((((deg % 360) + 360) % 360) / 22.5) % 16]; }
+  clock(t) { const m = Math.round((((t % 24) + 24) % 24) * 60) % 1440; return `${Math.floor(m / 60) % 12 || 12}:${String(m % 60).padStart(2, '0')} ${m < 720 ? 'AM' : 'PM'}`; }
+  hourLabel(h) { return h === 12 ? 'NOON' : `${h % 12 || 12} ${h < 12 ? 'AM' : 'PM'}`; }
+  speedColor(mph) {
+    const S = [[0, [150, 205, 200]], [6, [238, 226, 196]], [12, [242, 205, 130]], [18, [226, 140, 78]], [25, [214, 78, 60]], [35, [170, 40, 90]]];
+    for (let i = 1; i < S.length; i++) if (mph <= S[i][0]) { const [s0, c0] = S[i - 1], [s1, c1] = S[i], k = (mph - s0) / (s1 - s0); return c0.map((c, j) => c + (c1[j] - c) * k); }
+    return S[S.length - 1][1];
+  }
+  along(h) { return Math.max(0, Math.min(100, ((h - 6) / 14) * 100)); }
+
+  t() { return this.state.t ?? Number(this.props.start ?? 10); }
+  sheet() { return this.state.sheet ?? this.props.sheet ?? 'half'; }
+  menuOpen() { return this.state.menu ?? (this.props.menu === true || this.props.menu === 'true'); }
+
+  componentDidMount() {
+    this.loop = setInterval(() => this.frame(), 33);
+    this.player = setInterval(() => {
+      if (!this.state.playing) return;
+      const t = this.t(), day = Math.floor(t / 24), next = Math.floor(t) + 1;
+      if (next > day * 24 + 21) this.setState({ playing: false }); else this.setState({ t: next });
+    }, 750);
+    this.last = null;
+    this.centerStrip();
+  }
+  componentDidUpdate() { const h = Math.floor(this.t()); if (h !== this.last) { this.last = h; this.centerStrip(); } }
+  componentWillUnmount() { clearInterval(this.loop); clearInterval(this.player); }
+  centerStrip() {
+    if (!this.strip) return;
+    const h = Math.floor(this.t()) % 24;
+    this.strip.scrollTo({ left: Math.max(0, (h - 6) * 58 - 140), behavior: this.last === null ? 'auto' : 'smooth' });
+  }
+  spawn(i, scatter) { const S = this.S; S.x[i] = Math.random() * S.w; S.y[i] = Math.random() * S.h; S.life[i] = 50 + Math.random() * 80; S.age[i] = scatter ? Math.random() * S.life[i] : 0; }
+  frame() {
+    const cv = this.canvas, S = this.S;
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    if (cv.clientWidth !== S.w || cv.clientHeight !== S.h) {
+      S.w = cv.clientWidth; S.h = cv.clientHeight;
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      cv.width = S.w * dpr; cv.height = S.h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      S.n = Math.round((S.w * S.h) / 900);
+      for (let i = 0; i < S.n; i++) this.spawn(i, true);
+    }
+    const W = this.wx(this.t()), f0 = (W.from * Math.PI) / 180;
+    ctx.globalCompositeOperation = 'destination-out'; ctx.fillStyle = 'rgba(0,0,0,0.06)'; ctx.fillRect(0, 0, S.w, S.h);
+    ctx.globalCompositeOperation = 'source-over'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    for (let i = 0; i < S.n; i++) {
+      const x0 = S.x[i], y0 = S.y[i];
+      const a = f0 + 0.12 * Math.sin(x0 / 110 + y0 / 160), s = W.speed * (1 + 0.12 * Math.sin(y0 / 80 - x0 / 130));
+      const x1 = x0 - s * Math.sin(a) * 0.16, y1 = y0 + s * Math.cos(a) * 0.16;
+      S.x[i] = x1; S.y[i] = y1; S.age[i]++;
+      if (S.age[i] > S.life[i] || x1 < -4 || y1 < -4 || x1 > S.w + 4 || y1 > S.h + 4) { this.spawn(i); continue; }
+      const [r, g, b] = this.speedColor(s + 3);
+      const al = Math.sin((Math.PI * S.age[i]) / S.life[i]) * 0.85;
+      ctx.strokeStyle = `rgba(${r | 0},${g | 0},${b | 0},${al.toFixed(3)})`;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    }
+  }
+
+  renderVals() {
+    const { days, events, places } = this.K;
+    const t = this.t(), day = Math.max(0, Math.min(3, Math.floor(t / 24))), D = days[day], H = Math.floor(t);
+    const W = this.wx(t), sheet = this.sheet(), full = sheet === 'full', top = this.state.dragTop ?? this.TOPS[sheet];
+    const dayEv = events.filter(e => Math.floor(e.start / 24) === day);
+    const cand = dayEv.find(e => e.until > t);
+    const upcoming = cand && (cand.start > t || Math.floor(cand.start) === H);
+    let ctx;
+    if (!cand) ctx = { label: 'DONE FOR THE DAY', title: 'Grove Cottage #3', sub: 'Your cottage', where: 'Grove Cottages', place: 'grove-cottages', group: [], hasGroup: false };
+    else {
+      const what = cand.type === 'golf' ? 'Tee time' : cand.type === 'dining' ? 'Dinner' : 'Starts';
+      const label = upcoming ? 'NEXT UP' : cand.type === 'golf' ? 'ON THE COURSE' : cand.type === 'dining' ? 'AT DINNER' : 'HAPPENING NOW';
+      ctx = { label, title: cand.title, sub: `${what} ${this.clock(cand.start)}`, where: cand.where, place: cand.place,
+        group: cand.group ? [{ name: 'Cody Wilson', you: true }, ...cand.group.map(name => ({ name, you: false }))] : [], hasGroup: !!cand.group };
+    }
+    ctx.labC = ctx.label === 'NEXT UP' ? '#c3d0cd' : '#d99a6c';
+
+    const ids = [...new Set([...dayEv.map(e => e.place), 'grove-cottages'])];
+    const xs = ids.map(i => places[i].x), ys = ids.map(i => places[i].y);
+    const mapBottom = Math.min(this.TOPS.peek, Math.max(this.TOPS.half, top)) - 30, box = { top: 150, left: 64, right: 64, bottom: mapBottom };
+    const aw = 390 - box.left - box.right, ah = Math.max(120, box.bottom - box.top);
+    const s = Math.min(aw / Math.max(1, Math.max(...xs) - Math.min(...xs)), ah / Math.max(1, Math.max(...ys) - Math.min(...ys)), 0.9);
+    const vx = box.left + aw / 2 - ((Math.min(...xs) + Math.max(...xs)) / 2) * s, vy = box.top + ah / 2 - ((Math.min(...ys) + Math.max(...ys)) / 2) * s;
+    const P = id => ({ x: places[id].x * s + vx, y: places[id].y * s + vy });
+    const kindOf = id => { const e = cand && cand.place === id ? cand : null; return e ? (e.type === 'golf' ? 'golf' : e.type === 'dining' ? 'dining' : 'other') : places[id].kind; };
+    const pins = ids.filter(id => id !== ctx.place).map(id => {
+      const k = places[id].kind, me = P(id);
+      const crowd = me.x + places[id].name.length * 7.4 + 40 > 382 || ids.some(o => o !== id && Math.abs(P(o).y - me.y) < 28 && P(o).x > me.x && Math.abs(P(o).x - me.x) < 170);
+      return { ...me, name: places[id].name, icon: this.ICONS[k], fill: k === 'other' ? 'currentColor' : 'none',
+        l: crowd ? 'auto' : '-15px', r: crowd ? '-15px' : 'auto', dir: crowd ? 'row-reverse' : 'row', m: crowd ? '0 -8px 0 0' : '0 0 0 -8px' };
+    });
+    const ap = P(ctx.place), ak = kindOf(ctx.place), leftSide = ap.x > 200;
+    const act = { has: true, ...ap, title: cand ? cand.title : places[ctx.place].name, icon: this.ICONS[ak], fill: ak === 'other' ? 'currentColor' : 'none',
+      l: leftSide ? 'auto' : '-14px', r: leftSide ? '-14px' : 'auto', pad: leftSide ? '7px 40px 8px 16px' : '7px 16px 8px 40px' };
+
+    const cols = dayEv.map(e => `minmax(0,${Math.max(9, e.title.length)}fr)`);
+    while (cols.length < 3) cols.push('minmax(0,10fr)');
+    const sel = cand ? cand.id : null;
+    const go = v => this.setState({ t: v, playing: false });
+    const hours = Array.from({ length: 16 }, (_, k) => {
+      const hh = 6 + k, abs = day * 24 + hh, w = this.wx(abs), on = abs === H, night = hh + 1 <= D.rise || hh >= D.set;
+      return {
+        label: this.hourLabel(hh), rot: w.from + 180, speed: Math.round(w.speed), gust: `g ${Math.round(w.gust)}`,
+        bg: on ? 'rgba(217,154,108,0.1)' : 'transparent', border: on ? '#d99a6c' : 'transparent',
+        labC: on ? '#eceee8' : night ? '#7f918b' : '#c3d0cd', arrowC: night && !on ? '#a98067' : '#d99a6c',
+        dot: dayEv.some(e => Math.floor(e.start) === abs) ? 1 : 0, onClick: () => go(abs),
+      };
+    });
+    const grab = {
+      down: e => { this.drag = { y: e.clientY, top, moved: false }; e.currentTarget.setPointerCapture(e.pointerId); },
+      move: e => {
+        if (!this.drag) return;
+        const dy = e.clientY - this.drag.y;
+        if (Math.abs(dy) > 4) this.drag.moved = true;
+        if (this.drag.moved) this.setState({ dragTop: Math.max(this.TOPS.full, Math.min(this.TOPS.peek, this.drag.top + dy)) });
+      },
+      up: () => {
+        if (!this.drag) return;
+        const d = this.drag; this.drag = null;
+        if (!d.moved) { this.setState({ sheet: sheet === 'half' ? 'full' : sheet === 'full' ? 'peek' : 'half', dragTop: null }); return; }
+        const cur = this.state.dragTop ?? top;
+        const near = Object.entries(this.TOPS).sort((a, b) => Math.abs(a[1] - cur) - Math.abs(b[1] - cur))[0][0];
+        this.setState({ sheet: near, dragTop: null });
+      },
+    };
+    return {
+      label: this.props.label ?? 'Wind glass',
+      cv: this.cv, stripRef: this.stripRef,
+      map: `translate(${vx}px, ${vy}px) scale(${s})`, pins, act,
+      dayLabel: `${D.short} ${D.n}`, chevron: this.menuOpen() ? 180 : 0, menuOpen: this.menuOpen(),
+      toggleMenu: () => this.setState({ menu: !this.menuOpen() }),
+      menu: days.map((d, i) => {
+        const tee = events.find(e => e.type === 'golf' && Math.floor(e.start / 24) === i), w = this.wx(tee.start);
+        return { short: d.short, n: d.n, course: tee.title, tee: `Tee time ${this.clock(tee.start)}`, glyph: this.glyph(d.kind), wind: `${Math.round(w.speed)} ${this.compass(w.from)}`,
+          bg: i === day ? 'rgba(217,154,108,0.16)' : 'transparent', labC: i === day ? '#d99a6c' : '#a7b6b1',
+          choose: () => this.setState({ t: Math.floor(tee.start), menu: false, playing: false }) };
+      }),
+      r: { rot: W.from + 180, speed: Math.round(W.speed), dir: this.compass(W.from), gust: `${Math.round(W.gust)} mph`, temp: `${Math.round(W.temp)}°F`, rain: `${Math.round(W.rain)}%` },
+      glyph: this.glyph(D.kind), ctx, sheetTop: top, full,
+      stopsTitle: `${D.short === days[0].short ? 'TODAY' : ['THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'][day]}’S STOPS`,
+      stopCols: cols.join(' '),
+      stops: dayEv.map(e => {
+        const on = e.id === sel, k = e.type === 'golf' ? 'golf' : e.type === 'dining' ? 'dining' : 'other';
+        return { title: e.title, time: this.clock(e.start), icon: this.ICONS[k], fill: k === 'other' ? 'currentColor' : 'none',
+          bg: on ? 'linear-gradient(180deg, #b46c3d 0%, #91502b 100%)' : 'rgba(233,231,224,0.05)', border: on ? '#e0a679' : 'rgba(233,231,224,0.16)',
+          shadow: on ? 'inset 0 1px 0 rgba(255,255,255,0.18), 0 10px 24px -12px rgba(166,95,54,0.8)' : 'inset 0 1px 0 rgba(255,255,255,0.05)',
+          timeC: on ? '#fbe6d6' : '#c3d0cd', onClick: () => go(Math.floor(e.start)) };
+      }),
+      hours, underline: 20 + (H - day * 24 - 6) * 58 + 12,
+      playIcon: this.state.playing ? 'M3 2h3v10H3zM8 2h3v10H8z' : 'M3.5 2v10l8.5-5z',
+      togglePlay: () => this.setState({ playing: !this.state.playing, t: this.state.playing ? t : (H >= day * 24 + 21 ? day * 24 + 6 : H) }),
+      sun: {
+        rise: D.riseL, set: D.setL, riseAt: this.along(D.rise), setAt: 100 - this.along(D.set), at: this.along(t - day * 24),
+        marks: dayEv.map(e => ({ left: this.along(e.start - day * 24) })),
+        hasNote: !!(cand && cand.late), note: cand && cand.late ? cand.late : '',
+      },
+      grab,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;border:0 solid}
+html,body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{background:#122e36}
+button{font:inherit;color:inherit;background:none;cursor:pointer;text-align:inherit}
+ol,ul{list-style:none}
+a{color:inherit;text-decoration:none}
+a:hover{color:inherit}
+img,svg{display:block}
+</style>
+</helmet>
+<div data-screen-label="Wind (current)" style="position:relative; width:390px; height:844px; overflow:hidden; isolation:isolate; background:#122e36; color:#14261f; font-family:'Schibsted Grotesk',ui-sans-serif,system-ui,sans-serif;">
+  <div style="position:absolute; inset:0; overflow:hidden;">
+    <img src="public/images/map/aerial-z15.jpg" alt="" draggable="false" style="position:absolute; left:0; top:0; width:1280px; height:2048px; max-width:none; transform-origin:0 0; filter:brightness(0.72) saturate(1.04) contrast(1.04); transition:transform 700ms cubic-bezier(0.2,0.7,0.2,1); transform:{{ map.transform }};">
+  </div>
+  <canvas ref="{{ canvasRef }}" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none;"></canvas>
+
+  <sc-for list="{{ pins }}" as="p" hint-placeholder-count="0">
+    <span style="position:absolute; left:0; top:0; z-index:2; transition:transform 700ms cubic-bezier(0.2,0.7,0.2,1); transform:translate({{ p.x }}px, {{ p.y }}px); display:{{ p.display }};">
+      <button type="button" onClick="{{ p.onClick }}" style="position:absolute; top:0; min-height:36px; display:flex; align-items:center; gap:6px; transform:translateY(-50%); left:{{ p.l }}; right:{{ p.r }}; flex-direction:{{ p.dir }};">
+        <span style="display:flex; height:24px; width:24px; flex-shrink:0; align-items:center; justify-content:center; border-radius:9999px; border:2px solid #f3f1ec; color:#f3f1ec; box-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); transition:background-color 300ms; background:{{ p.bg }};">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="{{ p.icon }}" fill="{{ p.fill }}"></path></svg>
+        </span>
+        <span style="white-space:nowrap; padding:2px 6px; font-size:13px; font-weight:600; box-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); transition:background-color 300ms, color 300ms; background:{{ p.lbg }}; color:{{ p.lfg }};">{{ p.name }}</span>
+      </button>
+    </span>
+  </sc-for>
+
+  <aside style="position:absolute; top:0; left:0; right:0; z-index:5; padding:10px 14px 8px; background:rgba(13,33,27,0.88); color:#e9e7e0; border-bottom:1px solid rgba(233,231,224,0.16); box-shadow:0 1px 2px rgb(0 0 0 / .3), 0 18px 36px -16px rgb(0 0 0 / .7); backdrop-filter:blur(10px) saturate(1.1);">
+    <div style="display:flex; align-items:center; gap:8px; flex-wrap:nowrap;">
+      <svg width="36" height="36" viewBox="0 0 52 52" style="flex-shrink:0; color:#e9e7e0;">
+        <circle cx="26" cy="26" r="24" fill="none" stroke="currentColor" strokeOpacity=".22"></circle>
+        <path d="M26 3v3M49 26h-3M26 49v-3M3 26h3" stroke="currentColor" strokeOpacity=".5"></path>
+        <text x="26" y="13" textAnchor="middle" fontSize="8" fontWeight="600" fill="currentColor" fillOpacity=".7">N</text>
+        <g transform="rotate({{ r.rot }} 26 26)"><path d="M26 16L32 34L26 30L20 34Z" fill="#d99a6c"></path></g>
+      </svg>
+      <p style="display:flex; align-items:center; gap:6px; font-size:34px; font-weight:500; letter-spacing:-.04em; line-height:1; font-variant-numeric:tabular-nums lining-nums;">{{ r.speed }}<span style="font-size:11px; font-weight:600; letter-spacing:0; line-height:1.35;">mph<small style="display:block; color:#a7b6b1; font-size:10px; font-weight:500;">from {{ r.dir }}</small></span></p>
+      <dl style="display:flex; flex:1; margin-left:10px; gap:12px; justify-content:flex-end; font-variant-numeric:tabular-nums;">
+        <div><dt style="font-size:11px; color:#a7b6b1;">Gusts</dt><dd style="font-size:13px; font-weight:600; margin-top:2px;">{{ r.gust }}</dd></div>
+        <div><dt style="font-size:11px; color:#a7b6b1;">Temp</dt><dd style="font-size:13px; font-weight:600; margin-top:2px;">{{ r.temp }}</dd></div>
+        <div><dt style="font-size:11px; color:#a7b6b1;">Rain</dt><dd style="font-size:13px; font-weight:600; margin-top:2px;">{{ r.rain }}</dd></div>
+      </dl>
+    </div>
+    <div style="position:relative; display:flex; flex-direction:row; align-items:baseline; gap:8px; margin-top:6px; padding-top:6px; padding-right:110px; border-top:1px solid rgba(233,231,224,0.16);">
+      <span style="color:#a7b6b1; font-size:11px; flex-shrink:0;">{{ r.ctxLabel }}</span>
+      <strong style="font-family:'Libre Caslon Text',Georgia,serif; font-style:italic; font-weight:400; font-size:16px; line-height:1.2; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">{{ r.ctxName }}</strong>
+      <span style="color:#e9e7e0; font-size:12px; font-weight:600; white-space:nowrap; flex-shrink:0; font-variant-numeric:lining-nums;">{{ r.ctxTime }}</span>
+    </div>
+    <p style="position:absolute; right:14px; bottom:9px; margin:0; font-size:11px; color:{{ r.lightC }};">{{ r.light }}</p>
+  </aside>
+
+  <div style="position:absolute; top:98px; right:10px; z-index:5; display:flex; flex-direction:column; background:rgba(13,33,27,0.88); color:#e9e7e0; border:1px solid rgba(233,231,224,0.16); box-shadow:0 1px 2px rgb(0 0 0 / .3), 0 18px 36px -16px rgb(0 0 0 / .7); backdrop-filter:blur(10px);">
+    <button type="button" title="Reset to resort overview" style="display:grid; place-items:center; width:36px; height:36px;"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V3h4M15 7V3h-4M3 11v4h4M15 11v4h-4"></path></svg></button>
+    <button type="button" onClick="{{ toggleFlow }}" title="Freeze wind particles" style="display:grid; place-items:center; width:36px; height:36px; border-top:1px solid rgba(233,231,224,0.16); color:{{ flowC }};"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6h9a2 2 0 1 0-2-2M2 10h12a2 2 0 1 1-2 2M2 14h4"></path></svg></button>
+  </div>
+
+  <div style="position:absolute; left:0; right:0; bottom:66px; z-index:6; padding:0 12px; background:rgba(13,33,27,0.88); color:#e9e7e0; border-top:1px solid rgba(233,231,224,0.16); box-shadow:0 -12px 28px -18px rgb(12 34 44 / .6); backdrop-filter:blur(10px) saturate(1.1);">
+    <div style="position:absolute; right:8px; bottom:calc(100% + 6px); display:flex; flex-direction:column; align-items:flex-end; gap:4px; font-size:8.5px; color:#e9e7e0;">
+      <span style="display:flex; align-items:center; gap:6px; background:rgba(13,33,27,0.8); padding:2px 5px; font-variant-numeric:tabular-nums;"><span>0</span><i style="display:block; width:48px; height:3px; background:linear-gradient(to right, rgb(150 205 200) 0%, rgb(238 226 196) 17%, rgb(242 205 130) 34%, rgb(226 140 78) 51%, rgb(214 78 60) 71%, rgb(170 40 90) 100%);"></i><span>35+ mph</span></span>
+      <span style="background:rgba(13,33,27,0.8); padding:2px 5px;">Imagery USDA NAIP / USGS · Wind <a href="#" style="text-decoration:underline; text-underline-offset:2px;">Open-Meteo</a> · Places © OpenStreetMap</span>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:0 8px;">
+      <div style="display:flex; align-items:center; gap:0; height:50px;">
+        <button type="button" onClick="{{ prevHour }}" style="width:30px; height:40px; display:grid; place-items:center;"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4L6 9l5 5"></path></svg></button>
+        <button type="button" onClick="{{ togglePlay }}" style="width:36px; height:36px; display:grid; place-items:center; background:#e9e7e0; color:#0d211b;"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="{{ playIcon }}"></path></svg></button>
+        <button type="button" onClick="{{ nextHour }}" style="width:30px; height:40px; display:grid; place-items:center;"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4l5 5-5 5"></path></svg></button>
+      </div>
+      <p style="display:flex; flex-direction:column; gap:0; white-space:nowrap; font-variant-numeric:lining-nums;"><strong style="font-size:19px; font-weight:600; letter-spacing:-.015em;">{{ timeLabel }}</strong><span style="color:#a7b6b1; font-size:11px;">{{ dateLabel }}</span></p>
+      <div style="order:1; flex-basis:100%; display:flex; margin:0; border-top:1px solid rgba(233,231,224,0.16); border-bottom:1px solid rgba(233,231,224,0.16);">
+        <sc-for list="{{ dayBtns }}" as="d" hint-placeholder-count="4">
+          <button type="button" onClick="{{ d.choose }}" style="position:relative; flex:1; display:flex; align-items:center; justify-content:center; gap:5px; min-height:36px; padding:0 4px; font-size:12.5px; transition:color 160ms; color:{{ d.fg }}; font-weight:{{ d.fw }};">{{ d.short }} <span>{{ d.n }}</span><span style="position:absolute; left:10px; right:10px; bottom:-1px; height:2px; background:#d99a6c; transition:transform 260ms cubic-bezier(0.2,0.7,0.2,1); transform:scaleX({{ d.bar }});"></span></button>
+        </sc-for>
+      </div>
+      <div style="margin-left:auto; display:flex; padding:2px; border:1px solid rgba(233,231,224,0.16);">
+        <button type="button" onClick="{{ setDay }}" style="min-height:32px; padding:0 11px; font-size:12.5px; font-weight:500; background:{{ rangeDay.bg }}; color:{{ rangeDay.fg }};">Day</button>
+        <button type="button" onClick="{{ setTrip }}" style="min-height:32px; padding:0 11px; font-size:12.5px; font-weight:500; background:{{ rangeTrip.bg }}; color:{{ rangeTrip.fg }};">Trip</button>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:6px; padding:10px 0 22px;">
+      <div style="position:relative; flex-shrink:0; width:34px; height:90px; font-size:9.5px; color:#a7b6b1; font-variant-numeric:tabular-nums;">
+        <sc-for list="{{ plot.axis }}" as="ax" hint-placeholder-count="3"><span style="position:absolute; right:0; transform:translateY(-50%); white-space:nowrap; top:{{ ax.top }}%;">{{ ax.label }}</span></sc-for>
+      </div>
+      <div style="position:relative; flex:1; min-width:0; height:90px;">
+        <svg viewBox="0 0 1000 90" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%;">
+          <defs><clipPath id="wc-clip"><rect width="1000" height="90"></rect></clipPath></defs>
+          <g clipPath="url(#wc-clip)">
+            <sc-for list="{{ plot.nights }}" as="nt"><rect x="{{ nt.x }}" width="{{ nt.w }}" height="90" fill="rgb(0 0 0 / .3)"></rect></sc-for>
+            <sc-for list="{{ plot.grid }}" as="gl"><line x1="0" x2="1000" y1="{{ gl }}" y2="{{ gl }}" stroke="rgba(233,231,224,0.14)" vectorEffect="non-scaling-stroke"></line></sc-for>
+            <path d="{{ plot.gustArea }}" fill="rgb(233 231 224 / .05)"></path>
+            <path d="{{ plot.gust }}" fill="none" stroke="#a7b6b1" strokeOpacity=".85" strokeWidth="1.25" strokeDasharray="3 3" vectorEffect="non-scaling-stroke"></path>
+            <path d="{{ plot.windArea }}" fill="rgb(233 231 224 / .13)"></path>
+            <path d="{{ plot.wind }}" fill="none" stroke="#e9e7e0" strokeWidth="2" strokeLinejoin="round" vectorEffect="non-scaling-stroke"></path>
+            <sc-for list="{{ plot.spans }}" as="sp"><rect x="{{ sp.x }}" y="27" width="{{ sp.w }}" height="2" fill="{{ sp.fill }}"></rect></sc-for>
+          </g>
+        </svg>
+        <span style="pointer-events:none; position:absolute; left:4px; font-size:10px; font-weight:600; letter-spacing:.02em; color:#a7b6b1; transform:translateY(calc(-100% - 2px)); top:{{ plot.gustTop }}%;">Gusts</span>
+        <span style="pointer-events:none; position:absolute; left:4px; font-size:10px; font-weight:600; letter-spacing:.02em; color:#e9e7e0; top:{{ plot.windTop }}%; transform:{{ plot.windT }};">Wind</span>
+        <span style="pointer-events:none; position:absolute; bottom:-3px; width:2px; margin-left:-1px; background:#d99a6c; left:{{ plot.cursor }}%; top:26.67%;"></span>
+        <span style="pointer-events:none; position:absolute; z-index:1; top:calc(100% + 3px); transform:translateX(-50%); display:flex; align-items:center; gap:6px; height:18px; padding:0 6px; background:#d99a6c; color:#0d211b; font-size:10.5px; font-weight:600; line-height:1; white-space:nowrap; font-variant-numeric:lining-nums; left:clamp(34px, {{ plot.cursor }}%, calc(100% - 34px));">
+          <svg width="5" height="8" viewBox="0 0 5 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style="opacity:.7;"><path d="M4 1 1 4l3 3"></path></svg>
+          {{ plot.clock }}
+          <svg width="5" height="8" viewBox="0 0 5 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style="opacity:.7;"><path d="m1 1 3 3-3 3"></path></svg>
+        </span>
+        <span style="pointer-events:none; position:absolute; width:10px; height:10px; border-radius:50%; transform:translate(-50%,-50%); background:#d99a6c; border:2px solid #0d211b; left:{{ plot.cursor }}%; top:{{ plot.pointTop }}%;"></span>
+        <input type="range" min="{{ plot.from }}" max="{{ plot.max }}" step="0.0166667" value="{{ plot.value }}" onChange="{{ scrub }}" aria-label="Forecast time" style="position:absolute; left:0; top:26px; width:100%; height:calc(100% - 4px); opacity:0; cursor:ew-resize; touch-action:pan-y; margin:0; appearance:none; background:transparent;">
+        <ul style="position:absolute; left:0; right:0; top:0; height:24px; z-index:2; pointer-events:none;">
+          <sc-for list="{{ plot.flags }}" as="f" hint-placeholder-count="3">
+            <li style="position:absolute; top:0; height:100%; display:flex; min-width:22px; left:{{ f.left }}; right:{{ f.right }}; width:{{ f.width }}%; justify-content:{{ f.justify }}; translate:{{ f.shift }} 0; z-index:{{ f.z }};">
+              <button type="button" onClick="{{ f.onClick }}" title="{{ f.title }}" style="pointer-events:auto; position:relative; display:flex; align-items:center; gap:5px; height:22px; font-size:12px; font-weight:600; transition:background 200ms, color 200ms; max-width:{{ f.maxW }}; flex-direction:{{ f.dir }}; padding:{{ f.pad }}; background:{{ f.bg }}; color:{{ f.fg }};">
+                <span style="display:grid; place-items:center; flex-shrink:0; width:18px; height:18px; border-radius:50%; color:#0d211b; transition:background 200ms; background:{{ f.markBg }}; box-shadow:{{ f.ring }};">
+                  <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="{{ f.icon }}" fill="{{ f.fill }}"></path></svg>
+                </span>
+                <span style="min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; display:{{ f.nameD }};">{{ f.title }}</span>
+              </button>
+            </li>
+          </sc-for>
+        </ul>
+        <div style="position:absolute; top:calc(100% + 5px); left:0; right:0; font-size:10px; color:#a7b6b1;">
+          <sc-for list="{{ plot.ticks }}" as="tk" hint-placeholder-count="4"><span style="position:absolute; white-space:nowrap; transition:opacity 160ms; left:{{ tk.left }}%; transform:{{ tk.t }}; opacity:{{ tk.op }};">{{ tk.label }}</span></sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav style="position:absolute; left:0; right:0; bottom:0; z-index:30; border-top:1px solid rgba(20,38,31,0.16); background:rgba(243,241,236,0.88); backdrop-filter:blur(16px);">
+    <ul style="margin:0 auto; display:grid; max-width:448px; grid-template-columns:repeat(4,minmax(0,1fr));">
+      <li><a href="#" style="position:relative; display:flex; height:66px; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:12.5px; font-weight:500; color:#4b5a52;"><svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"><path d="M11 19V4.5"></path><path d="M11 5l7 2.6L11 10.5"></path><path d="M4 19.5c2.4-1.4 4.6-2 7-2s4.6.6 7 2"></path></svg>Home</a></li>
+      <li><a href="#" style="position:relative; display:flex; height:66px; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:12.5px; font-weight:500; color:#4b5a52;"><svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6.5h14M4 11.5h14M4 16.5h9"></path></svg>Schedule</a></li>
+      <li><a href="#" style="position:relative; display:flex; height:66px; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:12.5px; font-weight:600; color:#0d211b;"><span style="position:absolute; top:0; height:2px; width:28px; background:#a65f36;"></span><svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5h9.5a2.5 2.5 0 10-2.4-3.2"></path><path d="M3 12h13.5a2.5 2.5 0 11-2.4 3.2"></path><path d="M3 15.5h6"></path></svg>Wind</a></li>
+      <li><a href="#" style="position:relative; display:flex; height:66px; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:12.5px; font-weight:500; color:#4b5a52;"><svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"><path d="M5 8.5h12v9.5a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 015 18z"></path><path d="M8.5 8.5V6a2.5 2.5 0 015 0v2.5M5 13h12"></path></svg>Packing</a></li>
+    </ul>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844}}">
+class Component extends DCLogic {
+  state = { t: 10 + 20 / 60, sel: null, whole: false, playing: false, flowing: true };
+  canvasRef = el => { if (el) this.cv = el; };
+
+  K = (() => {
+    const days = [
+      { short: 'Thu', n: 19, md: 'Nov 19', rise: 7 + 13 / 60, set: 16 + 51 / 60, setL: '4:51 PM', riseL: '7:13 AM',
+        sp: [6, 6, 7, 11, 13, 15, 12, 9, 8], go: [5, 5, 6, 7, 9, 9, 8, 6, 6], dir: [190, 192, 195, 200, 205, 220, 225, 230, 232], tp: [46, 45, 45, 48, 52, 54, 50, 47, 46], rn: [20, 20, 25, 30, 35, 35, 30, 25, 20] },
+      { short: 'Fri', n: 20, md: 'Nov 20', rise: 7 + 14 / 60, set: 16 + 50 / 60, setL: '4:50 PM', riseL: '7:14 AM',
+        sp: [8, 9, 11, 14, 17, 18, 16, 13, 11], go: [7, 8, 9, 10, 12, 13, 11, 9, 8], dir: [175, 178, 180, 182, 185, 188, 190, 195, 200], tp: [47, 46, 46, 47, 50, 52, 50, 48, 47], rn: [50, 55, 60, 70, 70, 65, 60, 55, 50] },
+      { short: 'Sat', n: 21, md: 'Nov 21', rise: 7 + 15 / 60, set: 16 + 50 / 60, setL: '4:50 PM', riseL: '7:15 AM',
+        sp: [9, 8, 7, 7, 10, 11, 9, 7, 6], go: [5, 5, 5, 5, 6, 6, 5, 4, 4], dir: [300, 305, 310, 315, 300, 295, 290, 300, 330], tp: [44, 43, 43, 44, 48, 51, 47, 45, 44], rn: [20, 20, 15, 15, 20, 20, 15, 10, 10] },
+      { short: 'Sun', n: 22, md: 'Nov 22', rise: 7 + 16 / 60, set: 16 + 49 / 60, setL: '4:49 PM', riseL: '7:16 AM',
+        sp: [6, 5, 5, 6, 8, 9, 7, 6, 5], go: [4, 4, 4, 4, 5, 5, 4, 4, 4], dir: [355, 352, 350, 350, 345, 340, 345, 350, 355], tp: [41, 40, 40, 41, 47, 53, 48, 44, 42], rn: [5, 5, 5, 5, 5, 5, 5, 5, 5] },
+    ];
+    const ev = (id, title, type, start, until, label, place, late) => ({ id, title, type, start, until, label, place, late: !!late });
+    const events = [
+      ev('om', 'Old Macdonald', 'golf', 10 + 20 / 60, 14 + 20 / 60, 'Thu 10:20 AM', 'old-macdonald'),
+      ev('pb', 'Punchbowl', 'activity', 16, 17, 'Thu 4:00 PM', 'pacific-dunes', true),
+      ev('te', 'Trails End', 'dining', 17.5, 19.5, 'Thu 5:30 PM', 'bandon-trails'),
+      ev('pd', 'Pacific Dunes', 'golf', 32.5, 36.5, 'Fri 8:30 AM', 'pacific-dunes'),
+      ev('sh', "Shorty's", 'activity', 39, 40.5, 'Fri 3:00 PM', 'shortys'),
+      ev('pg', 'Pacific Grill', 'dining', 43.5, 45.5, 'Fri 7:30 PM', 'pacific-dunes'),
+      ev('bt', 'Bandon Trails', 'golf', 56 + 20 / 60, 60 + 20 / 60, 'Sat 8:20 AM', 'bandon-trails'),
+      ev('gt', 'Ghost Tree', 'dining', 65, 67, 'Sat 5:00 PM', 'ghost-tree'),
+      ev('bd', 'Bandon Dunes', 'golf', 80 + 20 / 60, 84 + 20 / 60, 'Sun 8:20 AM', 'bandon-dunes'),
+    ];
+    const places = {
+      'old-macdonald': { name: 'Old Macdonald', lat: 43.20303, lon: -124.3836, kind: 'golf', side: 'left' },
+      'ghost-tree': { name: 'Ghost Tree Grill', lat: 43.20289, lon: -124.38282, kind: 'dining', side: 'right' },
+      'pacific-dunes': { name: 'Pacific Dunes', lat: 43.1936, lon: -124.3899, kind: 'golf', side: 'right' },
+      'bandon-dunes': { name: 'Bandon Dunes', lat: 43.18838, lon: -124.39038, kind: 'golf', side: 'right' },
+      'grove-cottages': { name: 'Grove Cottages', lat: 43.1866, lon: -124.3855, kind: 'home', side: 'left', home: true },
+      'bandon-trails': { name: 'Bandon Trails', lat: 43.18472, lon: -124.39117, kind: 'golf', side: 'right' },
+      shortys: { name: "Shorty's", lat: 43.17599, lon: -124.3937, kind: 'other', side: 'right' },
+    };
+    for (const p of Object.values(places)) {
+      const x = ((p.lon + 180) / 360) * 32768, r = (p.lat * Math.PI) / 180;
+      const y = ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * 32768;
+      p.x = (x - 5059) * 256; p.y = (y - 12012) * 256;
+    }
+    return { days, events, places, stay: [16, 83] };
+  })();
+
+  ICONS = {
+    home: 'M2.5 7.5L8 3l5.5 4.5V13h-11z', golf: 'M5 14V2.5l7 2.7L5 8',
+    dining: 'M4 2v4.5a1.5 1.5 0 003 0V2M5.5 8v6M11.5 14V2c-1.6 1.2-2.2 3.2-2.2 5.5h2.2',
+    other: 'M5.5 8a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0',
+  };
+
+  wx(t) {
+    const d = Math.max(0, Math.min(3, Math.floor(t / 24))), h = Math.max(0, Math.min(24, t - d * 24));
+    const D = this.K.days[d], i = Math.min(7, Math.floor(h / 3)), f = (h - i * 3) / 3;
+    const L = a => a[i] + (a[i + 1] - a[i]) * f;
+    const speed = L(D.sp);
+    return { speed, gust: speed + L(D.go), from: L(D.dir), temp: L(D.tp), rain: L(D.rn) };
+  }
+  compass(deg) { return ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'][Math.round((((deg % 360) + 360) % 360) / 22.5) % 16]; }
+  clock(t) {
+    const m = Math.round((((t % 24) + 24) % 24) * 60) % 1440;
+    return `${Math.floor(m / 60) % 12 || 12}:${String(m % 60).padStart(2, '0')} ${m < 720 ? 'AM' : 'PM'}`;
+  }
+  speedColor(mph) {
+    const S = [[0, [150, 205, 200]], [6, [238, 226, 196]], [12, [242, 205, 130]], [18, [226, 140, 78]], [25, [214, 78, 60]], [35, [170, 40, 90]]];
+    for (let i = 1; i < S.length; i++) if (mph <= S[i][0]) {
+      const [s0, c0] = S[i - 1], [s1, c1] = S[i], t = (mph - s0) / (s1 - s0);
+      return c0.map((c, k) => c + (c1[k] - c) * t);
+    }
+    return S[S.length - 1][1];
+  }
+  fit(ids, box, maxScale) {
+    const P = this.K.places, xs = ids.map(i => P[i].x), ys = ids.map(i => P[i].y);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const aw = box.w - box.left - box.right, ah = box.h - box.top - box.bottom;
+    const s = Math.min(aw / Math.max(1, x1 - x0), ah / Math.max(1, y1 - y0), maxScale);
+    return { s, x: box.left + aw / 2 - ((x0 + x1) / 2) * s, y: box.top + ah / 2 - ((y0 + y1) / 2) * s };
+  }
+
+  componentDidMount() {
+    const P = { x: [], y: [], age: [], life: [] };
+    let w = 0, h = 0, frames = 0;
+    const spawn = (i, scatter) => { P.x[i] = Math.random() * w; P.y[i] = Math.random() * h; P.life[i] = 45 + Math.random() * 75; P.age[i] = scatter ? Math.random() * P.life[i] : 0; };
+    const tick = () => {
+      const cv = this.cv || document.querySelector('[data-screen-label="Wind (current)"] canvas');
+      if (!cv) return;
+      const ctx = cv.getContext('2d');
+      if (cv.clientWidth !== w || cv.clientHeight !== h) {
+        w = cv.clientWidth; h = cv.clientHeight;
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+        cv.width = w * dpr; cv.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const n = Math.min(2000, Math.max(240, Math.round((w * h) / 800)));
+        for (let i = 0; i < n; i++) spawn(i, true);
+        P.n = n;
+      }
+      if (!this.state.flowing && frames > 20) return;
+      frames++;
+      const W = this.wx(this.state.t), f0 = (W.from * Math.PI) / 180;
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.fillStyle = 'rgba(0,0,0,0.075)'; ctx.fillRect(0, 0, w, h);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.lineWidth = 2; ctx.lineCap = 'round';
+      for (let i = 0; i < P.n; i++) {
+        const x0 = P.x[i], y0 = P.y[i];
+        const a = f0 + 0.16 * Math.sin(x0 / 95 + y0 / 150), s = W.speed * (1 + 0.14 * Math.sin(y0 / 70 - x0 / 120));
+        const x1 = x0 - s * Math.sin(a) * 0.13, y1 = y0 + s * Math.cos(a) * 0.13;
+        P.x[i] = x1; P.y[i] = y1; P.age[i]++;
+        if (P.age[i] > P.life[i] || x1 < -4 || y1 < -4 || x1 > w + 4 || y1 > h + 4) { spawn(i); continue; }
+        const [r, g, b] = this.speedColor(s);
+        const al = Math.sin((Math.PI * P.age[i]) / P.life[i]) * Math.min(1, 0.62 + s / 16);
+        ctx.strokeStyle = `rgba(${r | 0},${g | 0},${b | 0},${al.toFixed(3)})`;
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      }
+    };
+    this.raf = setInterval(tick, 33);
+    this.timer = setInterval(() => {
+      if (this.state.playing) this.setState(s => {
+        const t = Math.min(95, s.t + 1 / 30);
+        return { t, playing: t < 95 };
+      });
+    }, 50);
+  }
+  componentWillUnmount() { clearInterval(this.raf); clearInterval(this.timer); }
+
+  renderVals() {
+    const { days, events, places, stay } = this.K;
+    const { t, sel, whole } = this.state;
+    const day = Math.max(0, Math.min(3, Math.floor(t / 24))), D = days[day];
+    const W = this.wx(t);
+
+    const happening = events.filter(e => e.start <= t && t < e.until).at(-1);
+    const checkedIn = t >= stay[0] && t < stay[1];
+    const groupPlace = happening ? happening.place : checkedIn ? 'grove-cottages' : null;
+    const selEv = events.find(e => e.id === sel);
+    const shown = selEv || happening;
+    const next = !groupPlace ? events.find(e => e.start > t && Math.floor(e.start / 24) === day) : null;
+    const carded = shown && shown.place === groupPlace ? shown : next;
+    const ctxName = (shown && shown.place === groupPlace && shown.title) || (groupPlace ? places[groupPlace].name : null) || (next && next.title) || 'Resort overview';
+    const h = t - day * 24, mNow = h * 60, sunrise = D.rise * 60, sunset = D.set * 60;
+    const dark = mNow < sunrise || mNow >= sunset;
+    const light = dark ? 'After dark' : sunset - mNow <= 90 ? `${Math.round(sunset - mNow)} min of light` : `Sunset ${D.setL}`;
+
+    const box = { w: 390, h: 844, top: 100, bottom: 320, left: 38, right: 150 };
+    const view = this.fit(Object.keys(places), box, Math.pow(2, 14.4 - 15));
+    const dayIds = events.filter(e => Math.floor(e.start / 24) === day).map(e => e.place);
+    const pins = Object.entries(places).map(([id, p]) => {
+      const on = id === groupPlace;
+      const guest = shown && shown.place === id && !p.home ? shown : null;
+      const kind = guest ? (guest.type === 'golf' ? 'golf' : guest.type === 'dining' ? 'dining' : 'other') : p.kind;
+      const visible = whole || p.home || dayIds.includes(id);
+      return {
+        x: p.x * view.s + view.x, y: p.y * view.s + view.y, display: visible ? 'block' : 'none',
+        l: p.side === 'left' ? 'auto' : '-12px', r: p.side === 'left' ? '-12px' : 'auto', dir: p.side === 'left' ? 'row-reverse' : 'row',
+        bg: on ? '#a65f36' : '#0d211b', lbg: on ? '#a65f36' : 'rgba(243,241,236,0.95)', lfg: on ? '#f3f1ec' : '#14261f',
+        icon: this.ICONS[kind], fill: kind === 'other' ? 'currentColor' : 'none', name: guest ? guest.title : p.name,
+        onClick: () => this.setState({ sel: null }),
+      };
+    });
+
+    const from = whole ? 0 : day * 24, to = whole ? 96 : day * 24 + 24, end = Math.max(from + 1, to - 1), span = end - from;
+    const hrs = Array.from({ length: to - from }, (_, i) => this.wx(from + i));
+    const peak = Math.ceil(Math.max(10, ...hrs.map(x => x.gust)) / 10) * 10;
+    const X = hr => ((hr - from) / span) * 1000, Y = v => 88 - (v / peak) * (88 - 30 - 6);
+    const pct = hr => Math.max(0, Math.min(100, ((hr - from) / span) * 100));
+    const line = key => hrs.map((v, i) => `${i ? 'L' : 'M'}${X(from + i).toFixed(1)},${Y(v[key]).toFixed(1)}`).join(' ');
+    const cursor = pct(t);
+    const nightsRaw = [[0, days[0].rise], ...days.map((d, i) => [i * 24 + d.set, i < 3 ? (i + 1) * 24 + days[i + 1].rise : 96])];
+    const isSel = e => (sel ? sel === e.id : t >= e.start && t < e.until);
+    const fieldW = 390 - 24 - 34 - 6;
+    const inSpan = events.filter(e => e.start >= from && e.start < to);
+    const flags = inSpan.map((e, i) => {
+      const at = pct(e.start), prev = i > 0 ? pct(inSpan[i - 1].start) : 0, nxt = i < inSpan.length - 1 ? pct(inSpan[i + 1].start) : 100;
+      const lastOne = i === inSpan.length - 1, flip = lastOne && 100 - at < 14 && inSpan.length > 1;
+      const beforeFlip = i === inSpan.length - 2 && 100 - pct(inSpan[i + 1].start) < 14;
+      const room = flip ? (at - prev) / 2 : beforeFlip ? (nxt - at) / 2 : lastOne ? 100 - at : nxt - at;
+      const on = isSel(e);
+      return {
+        title: e.title, left: flip ? 'auto' : `${at}%`, right: flip ? `${100 - at}%` : 'auto', width: room,
+        justify: flip ? 'flex-end' : 'flex-start', shift: flip ? '9px' : '-9px', dir: flip ? 'row-reverse' : 'row',
+        pad: flip ? '0 0 0 7px' : '0 7px 0 0', z: on ? 1 : 0, maxW: on ? 'none' : '100%',
+        bg: on ? '#d99a6c' : 'transparent', fg: on ? '#0d211b' : '#e9e7e0', markBg: on ? '#d99a6c' : '#e9e7e0', ring: on ? 'inset 0 0 0 1.5px #0d211b' : 'none',
+        icon: e.type === 'golf' ? this.ICONS.golf : e.type === 'dining' ? this.ICONS.dining : this.ICONS.other, fill: e.type === 'golf' || e.type === 'dining' ? 'none' : 'currentColor',
+        nameD: on || (room / 100) * fieldW > 64 ? 'block' : 'none',
+        onClick: () => this.setState({ sel: e.id, t: e.start, playing: false }),
+      };
+    });
+    const tickStep = span > 24 ? 24 : 6;
+    const ticks = Array.from({ length: Math.floor(span / tickStep) + 1 }, (_, i) => {
+      const left = ((i * tickStep) / span) * 100;
+      const label = span > 24 ? days[i] ? days[i].short : '' : ['12 AM', '6 AM', 'Noon', '6 PM'][i];
+      return { left, label, t: i === 0 ? 'none' : 'translateX(-50%)', op: Math.abs(left - cursor) < 17 ? 0 : 1 };
+    });
+    const windY = Y(hrs[0].speed), windBelow = windY < 88 - 14, gustY = Math.min(Y(hrs[0].gust), windBelow ? windY - 2 : windY - 13);
+    const plot = {
+      axis: [peak, peak / 2, 0].map(v => ({ top: (Y(v) / 90) * 100, label: v === peak ? `${v} mph` : `${v}` })),
+      nights: nightsRaw.map(([a, b]) => ({ x: X(a), w: Math.max(0, X(b) - X(a)) })),
+      grid: [0, peak / 2, peak].map(Y),
+      gust: line('gust'), gustArea: `${line('gust')} L1000,88 L0,88 Z`, wind: line('speed'), windArea: `${line('speed')} L1000,88 L0,88 Z`,
+      spans: inSpan.filter(e => e.until > e.start && e.type === 'activity').map(e => ({ x: X(e.start), w: Math.max(3, X(e.until) - X(e.start)), fill: isSel(e) ? '#d99a6c' : e.late ? '#d99a6c' : 'rgb(233 231 224 / .35)' })),
+      gustTop: (gustY / 90) * 100, windTop: (windY / 90) * 100, windT: windBelow ? 'translateY(3px)' : 'translateY(calc(-100% - 2px))',
+      cursor, clock: this.clock(t), pointTop: (Y(W.speed) / 90) * 100,
+      from, max: to - 1, value: Math.min(to - 1, Math.max(from, t)), flags, ticks,
+    };
+
+    const go = v => this.setState({ t: Math.max(0, Math.min(95, v)), sel: null, playing: false });
+    return {
+      canvasRef: this.canvasRef, map: { transform: `translate(${view.x}px, ${view.y}px) scale(${view.s})` }, pins,
+      r: {
+        rot: W.from + 180, speed: Math.round(W.speed), dir: this.compass(W.from), gust: `${Math.round(W.gust)} mph`, temp: `${Math.round(W.temp)}°F`, rain: `${Math.round(W.rain)}%`,
+        ctxLabel: sel ? 'Selected' : next ? 'Next up' : 'Itinerary', ctxName, ctxTime: carded ? carded.label.replace(/^\S+\s/, '') : '',
+        light, lightC: dark ? '#d99a6c' : '#a7b6b1',
+      },
+      flowC: this.state.flowing ? '#d99a6c' : '#e9e7e0', toggleFlow: () => this.setState(s => ({ flowing: !s.flowing })),
+      prevHour: () => go(t - 1), nextHour: () => go(t + 1),
+      togglePlay: () => this.setState(s => ({ playing: !s.playing, sel: null, t: s.t >= 95 ? 0 : s.t })),
+      playIcon: this.state.playing ? 'M6 4v10M12 4v10' : 'M6 3l9 6-9 6V3',
+      timeLabel: this.clock(t), dateLabel: `${D.short}, ${D.md}`,
+      dayBtns: days.map((d, i) => ({ short: d.short, n: d.n, fg: i === day ? '#e9e7e0' : '#a7b6b1', fw: i === day ? 600 : 500, bar: i === day ? 1 : 0, choose: () => go(i * 24 + (t % 24)) })),
+      rangeDay: { bg: whole ? 'transparent' : '#e9e7e0', fg: whole ? '#a7b6b1' : '#0d211b' }, rangeTrip: { bg: whole ? '#e9e7e0' : 'transparent', fg: whole ? '#0d211b' : '#a7b6b1' },
+      setDay: () => this.setState({ whole: false }), setTrip: () => this.setState({ whole: true }),
+      plot, scrub: e => go(Number(e.target.value)),
+    };
+  }
+}
+</script>
+</body>
+</html>
