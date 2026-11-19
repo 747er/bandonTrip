@@ -92,7 +92,7 @@ export default async function HolesPage({ searchParams }: PageProps<"/holes">) {
   return (
     <>
       <h1 className="sr-only">Holes</h1>
-      <HoleFlyover wind={wind} rounds={rounds} initial={{ round, hole: n }} center={[trip.longitude, trip.latitude]} />
+      <HoleFlyover wind={wind} rounds={rounds} initial={{ round, hole: n, asked: asked >= 0 }} center={[trip.longitude, trip.latitude]} timezone={trip.timezone} />
     </>
   );
 }
