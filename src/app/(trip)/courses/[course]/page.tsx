@@ -78,6 +78,7 @@ export default async function CoursePage({ params }: PageProps<"/courses/[course
       <div className="course-card-strip"><dl>{facts.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl></div>
       <nav className="course-chapters" aria-label="On this course page"><div>
         <a href="#course-overview">The course</a><a href="#expect">What to expect</a>{round && <a href="#your-round">Your round</a>}
+        {round && <Link href={`/holes?course=${course.id}`}>Hole by hole</Link>}
         <Link href={`/wind${round ? `?day=${round.date}` : ""}`}>Hourly Wind Map <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14" /></svg></Link>
       </div></nav>
 
@@ -142,6 +143,9 @@ export default async function CoursePage({ params }: PageProps<"/courses/[course
                 </Link>
                 <Link className="action" href={`/wind?day=${round.date}`}>
                   Wind that day
+                </Link>
+                <Link className="action" href={`/holes?course=${course.id}`}>
+                  Hole by hole
                 </Link>
               </div>
             </section>
